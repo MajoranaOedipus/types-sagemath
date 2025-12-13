@@ -1,0 +1,5 @@
+import _cython_3_2_1
+
+__pyx_capi__: dict
+mkgraph: _cython_3_2_1.cython_function_or_method
+rank_decomposition: _cython_3_2_1.cython_function_or_method

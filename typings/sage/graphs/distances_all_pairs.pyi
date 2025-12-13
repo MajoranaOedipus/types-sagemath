@@ -1,0 +1,16 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+__pyx_capi__: dict
+antipodal_graph: _cython_3_2_1.cython_function_or_method
+diameter: _cython_3_2_1.cython_function_or_method
+distances_all_pairs: _cython_3_2_1.cython_function_or_method
+distances_and_predecessors_all_pairs: _cython_3_2_1.cython_function_or_method
+distances_distribution: _cython_3_2_1.cython_function_or_method
+eccentricity: _cython_3_2_1.cython_function_or_method
+floyd_warshall: _cython_3_2_1.cython_function_or_method
+is_distance_regular: _cython_3_2_1.cython_function_or_method
+radius_DHV: _cython_3_2_1.cython_function_or_method
+shortest_path_all_pairs: _cython_3_2_1.cython_function_or_method
+szeged_index: _cython_3_2_1.cython_function_or_method
+wiener_index: _cython_3_2_1.cython_function_or_method

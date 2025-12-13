@@ -1,0 +1,5 @@
+import _cython_3_2_1
+
+cellular: _cython_3_2_1.cython_function_or_method
+julia: _cython_3_2_1.cython_function_or_method
+mandel: _cython_3_2_1.cython_function_or_method

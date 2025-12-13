@@ -1,0 +1,9 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+greedy_is_comparability: _cython_3_2_1.cython_function_or_method
+greedy_is_comparability_with_certificate: _cython_3_2_1.cython_function_or_method
+is_comparability: _cython_3_2_1.cython_function_or_method
+is_comparability_MILP: _cython_3_2_1.cython_function_or_method
+is_permutation: _cython_3_2_1.cython_function_or_method
+is_transitive: _cython_3_2_1.cython_function_or_method

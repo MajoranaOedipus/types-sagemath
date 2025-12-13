@@ -1,0 +1,6 @@
+import _cython_3_2_1
+
+EXCLUDE: set
+reset: _cython_3_2_1.cython_function_or_method
+reset_interfaces: _cython_3_2_1.cython_function_or_method
+restore: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,6 @@
+import _cython_3_2_1
+
+fast_vector_partitions: _cython_3_2_1.cython_function_or_method
+recursive_vector_partitions: _cython_3_2_1.cython_function_or_method
+recursive_within_from_to: _cython_3_2_1.cython_function_or_method
+within_from_to: _cython_3_2_1.cython_function_or_method

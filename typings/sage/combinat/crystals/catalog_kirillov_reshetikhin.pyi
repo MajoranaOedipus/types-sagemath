@@ -1,0 +1,2 @@
+from .kirillov_reshetikhin import KashiwaraNakashimaTableaux as KashiwaraNakashimaTableaux
+from sage.combinat.rigged_configurations.kr_tableaux import KirillovReshetikhinTableaux as KirillovReshetikhinTableaux

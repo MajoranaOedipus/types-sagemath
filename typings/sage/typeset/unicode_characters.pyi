@@ -1,0 +1,9 @@
+unicode_otimes: str
+unicode_bigotimes: str
+unicode_wedge: str
+unicode_bigwedge: str
+unicode_partial: str
+unicode_to: str
+unicode_mapsto: str
+unicode_mathbbR: str
+unicode_mathbbC: str

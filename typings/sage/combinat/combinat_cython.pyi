@@ -1,0 +1,11 @@
+import _cython_3_2_1
+from sage.combinat.posets.linear_extension_iterator import linear_extension_iterator as linear_extension_iterator
+from sage.combinat.set_partition_iterator import set_partition_iterator as set_partition_iterator, set_partition_iterator_blocks as set_partition_iterator_blocks
+from sage.misc.lazy_import import LazyImport as LazyImport
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+conjugate: _cython_3_2_1.cython_function_or_method
+lyndon_word_iterator: _cython_3_2_1.cython_function_or_method
+perfect_matchings_iterator: _cython_3_2_1.cython_function_or_method
+set_partition_composition: _cython_3_2_1.cython_function_or_method

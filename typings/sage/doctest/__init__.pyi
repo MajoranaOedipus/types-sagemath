@@ -1,0 +1,1 @@
+DOCTEST_MODE: bool

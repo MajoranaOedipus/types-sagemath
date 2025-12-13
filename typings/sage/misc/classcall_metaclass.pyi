@@ -1,0 +1,1069 @@
+import _cython_3_2_1
+import sage.misc.nested_class
+from typing import Any, overload
+
+timeCall: _cython_3_2_1.cython_function_or_method
+typecall: _cython_3_2_1.cython_function_or_method
+
+class C2:
+    def __init__(self, i) -> Any:
+        """C2.__init__(self, i)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 490)
+
+        TESTS::
+
+            sage: from sage.misc.classcall_metaclass import C2
+            sage: P = C2(2); P.i
+            3"""
+
+class C2C:
+    @staticmethod
+    def __classcall__(cls, i) -> Any:
+        """C2C.__classcall__(cls, i)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 514)
+
+        TESTS::
+
+            sage: from sage.misc.classcall_metaclass import C2C
+            sage: C2C(2)
+            3"""
+
+class C3:
+    def __init__(self, i) -> Any:
+        """C3.__init__(self, i)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 502)
+
+        TESTS::
+
+            sage: from sage.misc.classcall_metaclass import C3
+            sage: P = C3(2); P.i
+            3"""
+
+class CRef:
+    def __init__(self, i) -> Any:
+        """CRef.__init__(self, i)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 478)
+
+        TESTS::
+
+            sage: from sage.misc.classcall_metaclass import CRef
+            sage: P = CRef(2); P.i
+            3"""
+
+class ClasscallMetaclass(sage.misc.nested_class.NestedClassMetaclass):
+    """File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 30)
+
+        A metaclass providing support for special methods for classes.
+
+        From the Section :python:`Special method names
+        <reference/datamodel.html#special-method-names>` of the Python Reference
+        Manual:
+
+            \\`a class ``cls`` can implement certain operations on its instances
+            that are invoked by special syntax (such as arithmetic operations or
+            subscripting and slicing) by defining methods with special
+            names\\'.
+
+        The purpose of this metaclass is to allow for the class ``cls`` to
+        implement analogues of those special methods for the operations on the
+        class itself.
+
+        Currently, the following special methods are supported:
+
+         - ``.__classcall__`` (and ``.__classcall_private__``) for
+           customizing ``cls(...)`` (analogue of ``.__call__``).
+
+         - ``.__classcontains__`` for customizing membership testing
+           ``x in cls`` (analogue of ``.__contains__``).
+
+         - ``.__classget__`` for customizing the binding behavior in
+           ``foo.cls`` (analogue of ``.__get__``).
+
+        See the documentation of :meth:`__call__` and of :meth:`__get__`
+        and :meth:`__contains__` for the description of the respective
+        protocols.
+
+        .. WARNING::
+
+            For technical reasons, ``__classcall__``,
+            ``__classcall_private__``, ``__classcontains__``, and
+            ``__classget__`` must be defined as :func:`staticmethod`'s,
+            even though they receive the class itself as their first
+            argument.
+
+        .. WARNING::
+
+            For efficiency reasons, the resolution for the special methods
+            is done once for all, upon creation of the class. Thus, later
+            dynamic changes to those methods are ignored. But see also
+            :meth:`_set_classcall`.
+
+        ``ClasscallMetaclass`` is an extension of the base :class:`type`.
+
+        .. TODO:: find a good name for this metaclass.
+
+        TESTS::
+
+            sage: PerfectMatchings(2).list()                                                # needs sage.combinat
+            [[(1, 2)]]
+
+        .. NOTE::
+
+            If a class is put in this metaclass it automatically becomes a
+            new-style class::
+
+                sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+                sage: class Foo(metaclass=ClasscallMetaclass): pass
+                sage: x = Foo(); x
+                <__main__.Foo object at 0x...>
+                sage: issubclass(Foo, object)
+                True
+                sage: isinstance(Foo, type)
+                True
+    """
+    @classmethod
+    def __init__(cls, *args, **kwargs) -> None:
+        """Create and return a new object.  See help(type) for accurate signature."""
+    @overload
+    @classmethod
+    def __call__(cls, *args, **kwds) -> Any:
+        '''ClasscallMetaclass.__call__(cls, *args, **kwds)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 160)
+
+        This method implements ``cls(<some arguments>)``.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and
+        consider a call of the form::
+
+            cls(<some arguments>)
+
+        - If ``cls`` defines a method ``__classcall_private__``, then
+          this results in a call to::
+
+            cls.__classcall_private__(cls, <some arguments>)
+
+        - Otherwise, if ``cls`` has a method ``__classcall__``, then instead
+          the following is called::
+
+            cls.__classcall__(cls, <some arguments>)
+
+        - If neither of these two methods are implemented, then the standard
+          ``type.__call__(cls, <some arguments>)`` is called, which in turn
+          uses :meth:`~object.__new__` and :meth:`~object.__init__` as usual
+          (see Section :python:`Basic Customization
+          <reference/datamodel.html#basic-customization>` in the Python
+          Reference Manual).
+
+        .. warning:: for technical reasons, ``__classcall__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        EXAMPLES::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall")
+            ....:         return type.__call__(cls)
+            ....:     def __new__(cls):
+            ....:         print("calling new")
+            ....:         return super(Foo, cls).__new__(cls)
+            ....:     def __init__(self):
+            ....:         print("calling init")
+            sage: Foo()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Foo object at ...>
+
+        This behavior is inherited::
+
+            sage: class Bar(Foo): pass
+            sage: Bar()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Bar object at ...>
+
+        We now show the usage of ``__classcall_private__``::
+
+            sage: class FooNoInherits(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            sage: FooNoInherits()
+            calling private classcall
+            <__main__.FooNoInherits object at ...>
+
+        Here the behavior is not inherited::
+
+            sage: class BarNoInherits(FooNoInherits): pass
+            sage: BarNoInherits()
+            <__main__.BarNoInherits object at ...>
+
+        We now show the usage of both::
+
+            sage: class Foo2(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall with %s" % cls)
+            ....:         return type.__call__(cls)
+            ...
+            sage: Foo2()
+            calling private classcall
+            <__main__.Foo2 object at ...>
+
+            sage: class Bar2(Foo2): pass
+            sage: Bar2()
+            calling classcall with <class \'__main__.Bar2\'>
+            <__main__.Bar2 object at ...>
+
+
+        .. rubric:: Discussion
+
+        Typical applications include the implementation of factories or of
+        unique representation (see :class:`UniqueRepresentation`). Such
+        features are traditionally implemented by either using a wrapper
+        function, or fiddling with :meth:`~object.__new__`.
+
+        The benefit, compared with fiddling directly with
+        :meth:`~object.__new__` is a clear separation of the three distinct
+        roles:
+
+        - ``cls.__classcall__``: what ``cls(<...>)`` does
+        - ``cls.__new__``: memory allocation for a *new* instance
+        - ``cls.__init__``: initialization of a newly created instance
+
+        The benefit, compared with using a wrapper function, is that the
+        user interface has a single handle for the class::
+
+            sage: x = Partition([3,2,2])                                                # needs sage.combinat
+            sage: isinstance(x, Partition)      # not implemented                       # needs sage.combinat
+
+        instead of::
+
+            sage: isinstance(x, sage.combinat.partition.Partition)                      # needs sage.combinat
+            True
+
+        Another difference is that ``__classcall__`` is inherited by
+        subclasses, which may be desirable, or not. If not, one should
+        instead define the method ``__classcall_private__`` which will
+        not be called for subclasses. Specifically, if a class ``cls``
+        defines both methods ``__classcall__`` and
+        ``__classcall_private__`` then, for any subclass ``sub`` of ``cls``:
+
+        - ``cls(<args>)`` will call ``cls.__classcall_private__(cls, <args>)``
+        - ``sub(<args>)`` will call ``cls.__classcall__(sub, <args>)``
+
+
+        TESTS:
+
+        We check that the idiom ``method_name in cls.__dict__`` works
+        for extension types::
+
+           sage: "_sage_" in SageObject.__dict__, "_sage_" in Parent.__dict__
+           (True, False)
+
+        We check for memory leaks::
+
+            sage: class NOCALL(object, metaclass=ClasscallMetaclass):
+            ....:    pass
+            sage: sys.getrefcount(NOCALL())
+            1
+
+        We check that exceptions are correctly handled::
+
+            sage: class Exc(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         raise ValueError("Calling classcall")
+            sage: Exc()
+            Traceback (most recent call last):
+            ...
+            ValueError: Calling classcall'''
+    @overload
+    @classmethod
+    def __call__(cls) -> Any:
+        '''ClasscallMetaclass.__call__(cls, *args, **kwds)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 160)
+
+        This method implements ``cls(<some arguments>)``.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and
+        consider a call of the form::
+
+            cls(<some arguments>)
+
+        - If ``cls`` defines a method ``__classcall_private__``, then
+          this results in a call to::
+
+            cls.__classcall_private__(cls, <some arguments>)
+
+        - Otherwise, if ``cls`` has a method ``__classcall__``, then instead
+          the following is called::
+
+            cls.__classcall__(cls, <some arguments>)
+
+        - If neither of these two methods are implemented, then the standard
+          ``type.__call__(cls, <some arguments>)`` is called, which in turn
+          uses :meth:`~object.__new__` and :meth:`~object.__init__` as usual
+          (see Section :python:`Basic Customization
+          <reference/datamodel.html#basic-customization>` in the Python
+          Reference Manual).
+
+        .. warning:: for technical reasons, ``__classcall__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        EXAMPLES::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall")
+            ....:         return type.__call__(cls)
+            ....:     def __new__(cls):
+            ....:         print("calling new")
+            ....:         return super(Foo, cls).__new__(cls)
+            ....:     def __init__(self):
+            ....:         print("calling init")
+            sage: Foo()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Foo object at ...>
+
+        This behavior is inherited::
+
+            sage: class Bar(Foo): pass
+            sage: Bar()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Bar object at ...>
+
+        We now show the usage of ``__classcall_private__``::
+
+            sage: class FooNoInherits(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            sage: FooNoInherits()
+            calling private classcall
+            <__main__.FooNoInherits object at ...>
+
+        Here the behavior is not inherited::
+
+            sage: class BarNoInherits(FooNoInherits): pass
+            sage: BarNoInherits()
+            <__main__.BarNoInherits object at ...>
+
+        We now show the usage of both::
+
+            sage: class Foo2(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall with %s" % cls)
+            ....:         return type.__call__(cls)
+            ...
+            sage: Foo2()
+            calling private classcall
+            <__main__.Foo2 object at ...>
+
+            sage: class Bar2(Foo2): pass
+            sage: Bar2()
+            calling classcall with <class \'__main__.Bar2\'>
+            <__main__.Bar2 object at ...>
+
+
+        .. rubric:: Discussion
+
+        Typical applications include the implementation of factories or of
+        unique representation (see :class:`UniqueRepresentation`). Such
+        features are traditionally implemented by either using a wrapper
+        function, or fiddling with :meth:`~object.__new__`.
+
+        The benefit, compared with fiddling directly with
+        :meth:`~object.__new__` is a clear separation of the three distinct
+        roles:
+
+        - ``cls.__classcall__``: what ``cls(<...>)`` does
+        - ``cls.__new__``: memory allocation for a *new* instance
+        - ``cls.__init__``: initialization of a newly created instance
+
+        The benefit, compared with using a wrapper function, is that the
+        user interface has a single handle for the class::
+
+            sage: x = Partition([3,2,2])                                                # needs sage.combinat
+            sage: isinstance(x, Partition)      # not implemented                       # needs sage.combinat
+
+        instead of::
+
+            sage: isinstance(x, sage.combinat.partition.Partition)                      # needs sage.combinat
+            True
+
+        Another difference is that ``__classcall__`` is inherited by
+        subclasses, which may be desirable, or not. If not, one should
+        instead define the method ``__classcall_private__`` which will
+        not be called for subclasses. Specifically, if a class ``cls``
+        defines both methods ``__classcall__`` and
+        ``__classcall_private__`` then, for any subclass ``sub`` of ``cls``:
+
+        - ``cls(<args>)`` will call ``cls.__classcall_private__(cls, <args>)``
+        - ``sub(<args>)`` will call ``cls.__classcall__(sub, <args>)``
+
+
+        TESTS:
+
+        We check that the idiom ``method_name in cls.__dict__`` works
+        for extension types::
+
+           sage: "_sage_" in SageObject.__dict__, "_sage_" in Parent.__dict__
+           (True, False)
+
+        We check for memory leaks::
+
+            sage: class NOCALL(object, metaclass=ClasscallMetaclass):
+            ....:    pass
+            sage: sys.getrefcount(NOCALL())
+            1
+
+        We check that exceptions are correctly handled::
+
+            sage: class Exc(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         raise ValueError("Calling classcall")
+            sage: Exc()
+            Traceback (most recent call last):
+            ...
+            ValueError: Calling classcall'''
+    @overload
+    @classmethod
+    def __call__(cls) -> Any:
+        '''ClasscallMetaclass.__call__(cls, *args, **kwds)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 160)
+
+        This method implements ``cls(<some arguments>)``.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and
+        consider a call of the form::
+
+            cls(<some arguments>)
+
+        - If ``cls`` defines a method ``__classcall_private__``, then
+          this results in a call to::
+
+            cls.__classcall_private__(cls, <some arguments>)
+
+        - Otherwise, if ``cls`` has a method ``__classcall__``, then instead
+          the following is called::
+
+            cls.__classcall__(cls, <some arguments>)
+
+        - If neither of these two methods are implemented, then the standard
+          ``type.__call__(cls, <some arguments>)`` is called, which in turn
+          uses :meth:`~object.__new__` and :meth:`~object.__init__` as usual
+          (see Section :python:`Basic Customization
+          <reference/datamodel.html#basic-customization>` in the Python
+          Reference Manual).
+
+        .. warning:: for technical reasons, ``__classcall__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        EXAMPLES::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall")
+            ....:         return type.__call__(cls)
+            ....:     def __new__(cls):
+            ....:         print("calling new")
+            ....:         return super(Foo, cls).__new__(cls)
+            ....:     def __init__(self):
+            ....:         print("calling init")
+            sage: Foo()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Foo object at ...>
+
+        This behavior is inherited::
+
+            sage: class Bar(Foo): pass
+            sage: Bar()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Bar object at ...>
+
+        We now show the usage of ``__classcall_private__``::
+
+            sage: class FooNoInherits(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            sage: FooNoInherits()
+            calling private classcall
+            <__main__.FooNoInherits object at ...>
+
+        Here the behavior is not inherited::
+
+            sage: class BarNoInherits(FooNoInherits): pass
+            sage: BarNoInherits()
+            <__main__.BarNoInherits object at ...>
+
+        We now show the usage of both::
+
+            sage: class Foo2(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall with %s" % cls)
+            ....:         return type.__call__(cls)
+            ...
+            sage: Foo2()
+            calling private classcall
+            <__main__.Foo2 object at ...>
+
+            sage: class Bar2(Foo2): pass
+            sage: Bar2()
+            calling classcall with <class \'__main__.Bar2\'>
+            <__main__.Bar2 object at ...>
+
+
+        .. rubric:: Discussion
+
+        Typical applications include the implementation of factories or of
+        unique representation (see :class:`UniqueRepresentation`). Such
+        features are traditionally implemented by either using a wrapper
+        function, or fiddling with :meth:`~object.__new__`.
+
+        The benefit, compared with fiddling directly with
+        :meth:`~object.__new__` is a clear separation of the three distinct
+        roles:
+
+        - ``cls.__classcall__``: what ``cls(<...>)`` does
+        - ``cls.__new__``: memory allocation for a *new* instance
+        - ``cls.__init__``: initialization of a newly created instance
+
+        The benefit, compared with using a wrapper function, is that the
+        user interface has a single handle for the class::
+
+            sage: x = Partition([3,2,2])                                                # needs sage.combinat
+            sage: isinstance(x, Partition)      # not implemented                       # needs sage.combinat
+
+        instead of::
+
+            sage: isinstance(x, sage.combinat.partition.Partition)                      # needs sage.combinat
+            True
+
+        Another difference is that ``__classcall__`` is inherited by
+        subclasses, which may be desirable, or not. If not, one should
+        instead define the method ``__classcall_private__`` which will
+        not be called for subclasses. Specifically, if a class ``cls``
+        defines both methods ``__classcall__`` and
+        ``__classcall_private__`` then, for any subclass ``sub`` of ``cls``:
+
+        - ``cls(<args>)`` will call ``cls.__classcall_private__(cls, <args>)``
+        - ``sub(<args>)`` will call ``cls.__classcall__(sub, <args>)``
+
+
+        TESTS:
+
+        We check that the idiom ``method_name in cls.__dict__`` works
+        for extension types::
+
+           sage: "_sage_" in SageObject.__dict__, "_sage_" in Parent.__dict__
+           (True, False)
+
+        We check for memory leaks::
+
+            sage: class NOCALL(object, metaclass=ClasscallMetaclass):
+            ....:    pass
+            sage: sys.getrefcount(NOCALL())
+            1
+
+        We check that exceptions are correctly handled::
+
+            sage: class Exc(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         raise ValueError("Calling classcall")
+            sage: Exc()
+            Traceback (most recent call last):
+            ...
+            ValueError: Calling classcall'''
+    @overload
+    @classmethod
+    def __call__(cls) -> Any:
+        '''ClasscallMetaclass.__call__(cls, *args, **kwds)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 160)
+
+        This method implements ``cls(<some arguments>)``.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and
+        consider a call of the form::
+
+            cls(<some arguments>)
+
+        - If ``cls`` defines a method ``__classcall_private__``, then
+          this results in a call to::
+
+            cls.__classcall_private__(cls, <some arguments>)
+
+        - Otherwise, if ``cls`` has a method ``__classcall__``, then instead
+          the following is called::
+
+            cls.__classcall__(cls, <some arguments>)
+
+        - If neither of these two methods are implemented, then the standard
+          ``type.__call__(cls, <some arguments>)`` is called, which in turn
+          uses :meth:`~object.__new__` and :meth:`~object.__init__` as usual
+          (see Section :python:`Basic Customization
+          <reference/datamodel.html#basic-customization>` in the Python
+          Reference Manual).
+
+        .. warning:: for technical reasons, ``__classcall__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        EXAMPLES::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall")
+            ....:         return type.__call__(cls)
+            ....:     def __new__(cls):
+            ....:         print("calling new")
+            ....:         return super(Foo, cls).__new__(cls)
+            ....:     def __init__(self):
+            ....:         print("calling init")
+            sage: Foo()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Foo object at ...>
+
+        This behavior is inherited::
+
+            sage: class Bar(Foo): pass
+            sage: Bar()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Bar object at ...>
+
+        We now show the usage of ``__classcall_private__``::
+
+            sage: class FooNoInherits(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            sage: FooNoInherits()
+            calling private classcall
+            <__main__.FooNoInherits object at ...>
+
+        Here the behavior is not inherited::
+
+            sage: class BarNoInherits(FooNoInherits): pass
+            sage: BarNoInherits()
+            <__main__.BarNoInherits object at ...>
+
+        We now show the usage of both::
+
+            sage: class Foo2(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall with %s" % cls)
+            ....:         return type.__call__(cls)
+            ...
+            sage: Foo2()
+            calling private classcall
+            <__main__.Foo2 object at ...>
+
+            sage: class Bar2(Foo2): pass
+            sage: Bar2()
+            calling classcall with <class \'__main__.Bar2\'>
+            <__main__.Bar2 object at ...>
+
+
+        .. rubric:: Discussion
+
+        Typical applications include the implementation of factories or of
+        unique representation (see :class:`UniqueRepresentation`). Such
+        features are traditionally implemented by either using a wrapper
+        function, or fiddling with :meth:`~object.__new__`.
+
+        The benefit, compared with fiddling directly with
+        :meth:`~object.__new__` is a clear separation of the three distinct
+        roles:
+
+        - ``cls.__classcall__``: what ``cls(<...>)`` does
+        - ``cls.__new__``: memory allocation for a *new* instance
+        - ``cls.__init__``: initialization of a newly created instance
+
+        The benefit, compared with using a wrapper function, is that the
+        user interface has a single handle for the class::
+
+            sage: x = Partition([3,2,2])                                                # needs sage.combinat
+            sage: isinstance(x, Partition)      # not implemented                       # needs sage.combinat
+
+        instead of::
+
+            sage: isinstance(x, sage.combinat.partition.Partition)                      # needs sage.combinat
+            True
+
+        Another difference is that ``__classcall__`` is inherited by
+        subclasses, which may be desirable, or not. If not, one should
+        instead define the method ``__classcall_private__`` which will
+        not be called for subclasses. Specifically, if a class ``cls``
+        defines both methods ``__classcall__`` and
+        ``__classcall_private__`` then, for any subclass ``sub`` of ``cls``:
+
+        - ``cls(<args>)`` will call ``cls.__classcall_private__(cls, <args>)``
+        - ``sub(<args>)`` will call ``cls.__classcall__(sub, <args>)``
+
+
+        TESTS:
+
+        We check that the idiom ``method_name in cls.__dict__`` works
+        for extension types::
+
+           sage: "_sage_" in SageObject.__dict__, "_sage_" in Parent.__dict__
+           (True, False)
+
+        We check for memory leaks::
+
+            sage: class NOCALL(object, metaclass=ClasscallMetaclass):
+            ....:    pass
+            sage: sys.getrefcount(NOCALL())
+            1
+
+        We check that exceptions are correctly handled::
+
+            sage: class Exc(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         raise ValueError("Calling classcall")
+            sage: Exc()
+            Traceback (most recent call last):
+            ...
+            ValueError: Calling classcall'''
+    @overload
+    @classmethod
+    def __call__(cls) -> Any:
+        '''ClasscallMetaclass.__call__(cls, *args, **kwds)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 160)
+
+        This method implements ``cls(<some arguments>)``.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and
+        consider a call of the form::
+
+            cls(<some arguments>)
+
+        - If ``cls`` defines a method ``__classcall_private__``, then
+          this results in a call to::
+
+            cls.__classcall_private__(cls, <some arguments>)
+
+        - Otherwise, if ``cls`` has a method ``__classcall__``, then instead
+          the following is called::
+
+            cls.__classcall__(cls, <some arguments>)
+
+        - If neither of these two methods are implemented, then the standard
+          ``type.__call__(cls, <some arguments>)`` is called, which in turn
+          uses :meth:`~object.__new__` and :meth:`~object.__init__` as usual
+          (see Section :python:`Basic Customization
+          <reference/datamodel.html#basic-customization>` in the Python
+          Reference Manual).
+
+        .. warning:: for technical reasons, ``__classcall__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        EXAMPLES::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall")
+            ....:         return type.__call__(cls)
+            ....:     def __new__(cls):
+            ....:         print("calling new")
+            ....:         return super(Foo, cls).__new__(cls)
+            ....:     def __init__(self):
+            ....:         print("calling init")
+            sage: Foo()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Foo object at ...>
+
+        This behavior is inherited::
+
+            sage: class Bar(Foo): pass
+            sage: Bar()
+            calling classcall
+            calling new
+            calling init
+            <__main__.Bar object at ...>
+
+        We now show the usage of ``__classcall_private__``::
+
+            sage: class FooNoInherits(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            sage: FooNoInherits()
+            calling private classcall
+            <__main__.FooNoInherits object at ...>
+
+        Here the behavior is not inherited::
+
+            sage: class BarNoInherits(FooNoInherits): pass
+            sage: BarNoInherits()
+            <__main__.BarNoInherits object at ...>
+
+        We now show the usage of both::
+
+            sage: class Foo2(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall_private__(cls):
+            ....:         print("calling private classcall")
+            ....:         return type.__call__(cls)
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         print("calling classcall with %s" % cls)
+            ....:         return type.__call__(cls)
+            ...
+            sage: Foo2()
+            calling private classcall
+            <__main__.Foo2 object at ...>
+
+            sage: class Bar2(Foo2): pass
+            sage: Bar2()
+            calling classcall with <class \'__main__.Bar2\'>
+            <__main__.Bar2 object at ...>
+
+
+        .. rubric:: Discussion
+
+        Typical applications include the implementation of factories or of
+        unique representation (see :class:`UniqueRepresentation`). Such
+        features are traditionally implemented by either using a wrapper
+        function, or fiddling with :meth:`~object.__new__`.
+
+        The benefit, compared with fiddling directly with
+        :meth:`~object.__new__` is a clear separation of the three distinct
+        roles:
+
+        - ``cls.__classcall__``: what ``cls(<...>)`` does
+        - ``cls.__new__``: memory allocation for a *new* instance
+        - ``cls.__init__``: initialization of a newly created instance
+
+        The benefit, compared with using a wrapper function, is that the
+        user interface has a single handle for the class::
+
+            sage: x = Partition([3,2,2])                                                # needs sage.combinat
+            sage: isinstance(x, Partition)      # not implemented                       # needs sage.combinat
+
+        instead of::
+
+            sage: isinstance(x, sage.combinat.partition.Partition)                      # needs sage.combinat
+            True
+
+        Another difference is that ``__classcall__`` is inherited by
+        subclasses, which may be desirable, or not. If not, one should
+        instead define the method ``__classcall_private__`` which will
+        not be called for subclasses. Specifically, if a class ``cls``
+        defines both methods ``__classcall__`` and
+        ``__classcall_private__`` then, for any subclass ``sub`` of ``cls``:
+
+        - ``cls(<args>)`` will call ``cls.__classcall_private__(cls, <args>)``
+        - ``sub(<args>)`` will call ``cls.__classcall__(sub, <args>)``
+
+
+        TESTS:
+
+        We check that the idiom ``method_name in cls.__dict__`` works
+        for extension types::
+
+           sage: "_sage_" in SageObject.__dict__, "_sage_" in Parent.__dict__
+           (True, False)
+
+        We check for memory leaks::
+
+            sage: class NOCALL(object, metaclass=ClasscallMetaclass):
+            ....:    pass
+            sage: sys.getrefcount(NOCALL())
+            1
+
+        We check that exceptions are correctly handled::
+
+            sage: class Exc(object, metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcall__(cls):
+            ....:         raise ValueError("Calling classcall")
+            sage: Exc()
+            Traceback (most recent call last):
+            ...
+            ValueError: Calling classcall'''
+    @classmethod
+    def __contains__(cls, x) -> Any:
+        """ClasscallMetaclass.__contains__(cls, x)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 401)
+
+        This method implements membership testing for a class.
+
+        Let ``cls`` be a class in :class:`ClasscallMetaclass`, and consider
+        a call of the form::
+
+            x in cls
+
+        If ``cls`` defines a method ``__classcontains__``, then this
+        results in a call to::
+
+           cls.__classcontains__(cls, x)
+
+        .. warning:: for technical reasons, ``__classcontains__`` must
+            be defined as a :func:`staticmethod`, even though it
+            receives the class itself as its first argument.
+
+        EXAMPLES:
+
+        We construct a class which implements membership testing, and
+        which contains ``1`` and no other x::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Foo(metaclass=ClasscallMetaclass):
+            ....:     @staticmethod
+            ....:     def __classcontains__(cls, x):
+            ....:         return x == 1
+            sage: 1 in Foo
+            True
+            sage: 2 in Foo
+            False
+
+        We now check that for a class without ``__classcontains__``
+        method, we emulate the usual error message::
+
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Bar(metaclass=ClasscallMetaclass): pass
+            sage: 1 in Bar
+            Traceback (most recent call last):
+            ...
+            TypeError: argument of type 'type' is not iterable"""
+    @classmethod
+    def __get__(cls, instance, owner) -> Any:
+        '''ClasscallMetaclass.__get__(cls, instance, owner)
+
+        File: /build/sagemath/src/sage/src/sage/misc/classcall_metaclass.pyx (starting at line 326)
+
+        This method implements instance binding behavior for nested classes.
+
+        Suppose that a class ``Outer`` contains a nested class ``cls`` which
+        is an instance of this metaclass. For any object ``obj`` of ``cls``,
+        this method implements a instance binding behavior for ``obj.cls`` by
+        delegating it to ``cls.__classget__(Outer, obj, owner)`` if available.
+        Otherwise, ``obj.cls`` results in ``cls``, as usual.
+
+        Similarly, a class binding as in ``Outer.cls`` is delegated
+        to ``cls.__classget__(Outer, None, owner)`` if available and
+        to ``cls`` if not.
+
+        .. warning:: for technical reasons, ``__classget__`` must be
+            defined as a :func:`staticmethod`, even though it receives
+            the class itself as its first argument.
+
+        For technical details, and in particular the description of the
+        ``owner`` argument, see the Section :python:`Implementing Descriptor
+        <reference/datamodel.html#implementing-descriptors>` in the Python
+        reference manual.
+
+        EXAMPLES:
+
+        We show how to implement a nested class ``Outer.Inner`` with a
+        binding behavior, as if it was a method of ``Outer``: namely,
+        for ``obj`` an instance of ``Outer``, calling
+        ``obj.Inner(...)`` is equivalent to ``Outer.Inner(obj, ...)``::
+
+            sage: import functools
+            sage: from sage.misc.nested_class import NestedClassMetaclass
+            sage: from sage.misc.classcall_metaclass import ClasscallMetaclass
+            sage: class Outer(metaclass=NestedClassMetaclass):
+            ....:     class Inner(metaclass=ClasscallMetaclass):
+            ....:         @staticmethod
+            ....:         def __classget__(cls, instance, owner):
+            ....:             print("calling __classget__(%s, %s, %s)" % (
+            ....:                        cls, instance, owner))
+            ....:             if instance is None:
+            ....:                 return cls
+            ....:             return functools.partial(cls, instance)
+            ....:         def __init__(self, instance):
+            ....:             self.instance = instance
+            sage: obj = Outer()
+            sage: bar = obj.Inner()
+            calling __classget__(<class \'__main__.Outer.Inner\'>, <__main__.Outer object at 0x...>, <class \'__main__.Outer\'>)
+            sage: bar.instance == obj
+            True
+
+        Calling ``Outer.Inner`` returns the (unbinded) class as usual::
+
+            sage: Inner = Outer.Inner
+            calling __classget__(<class \'__main__.Outer.Inner\'>, None, <class \'__main__.Outer\'>)
+            sage: Inner
+            <class \'__main__.Outer.Inner\'>
+            sage: type(bar) is Inner
+            True
+
+        .. warning:: Inner has to be a new style class (i.e. a subclass of object).
+
+        .. warning::
+
+            Calling ``obj.Inner`` no longer returns a class::
+
+                sage: bind = obj.Inner
+                calling __classget__(<class \'__main__.Outer.Inner\'>, <__main__.Outer object at 0x...>, <class \'__main__.Outer\'>)
+                sage: bind
+                functools.partial(<class \'__main__.Outer.Inner\'>, <__main__.Outer object at 0x...>)'''

@@ -1,0 +1,6 @@
+import _cython_3_2_1
+
+dual_GQ_ovoid: _cython_3_2_1.cython_function_or_method
+generalised_quadrangle_hermitian_with_ovoid: _cython_3_2_1.cython_function_or_method
+generalised_quadrangle_with_spread: _cython_3_2_1.cython_function_or_method
+is_GQ_with_spread: _cython_3_2_1.cython_function_or_method

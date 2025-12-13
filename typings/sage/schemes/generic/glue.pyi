@@ -1,0 +1,53 @@
+from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.schemes.generic.scheme import Scheme as Scheme
+
+class GluedScheme(Scheme):
+    '''
+    INPUT:
+
+    - ``f`` -- open immersion from a scheme `U` to a scheme `X`
+
+    - ``g`` -- open immersion from `U` to a scheme `Y`
+
+    OUTPUT: the scheme obtained by gluing `X` and `Y` along the open set `U`
+
+    .. NOTE::
+
+       Checking that `f` and `g` are open
+       immersions is not implemented.
+
+    EXAMPLES::
+
+        sage: R.<x, y> = QQ[]
+        sage: S.<xbar, ybar> = R.quotient(x * y - 1)
+        sage: Rx = QQ["x"]
+        sage: Ry = QQ["y"]
+        sage: phi_x = Rx.hom([xbar])
+        sage: phi_y = Ry.hom([ybar])
+        sage: Sx = Schemes()(phi_x)
+        sage: Sy = Schemes()(phi_y)
+        sage: Sx.glue_along_domains(Sy)
+        Scheme obtained by gluing X and Y along U, where
+          X: Spectrum of Univariate Polynomial Ring in x over Rational Field
+          Y: Spectrum of Univariate Polynomial Ring in y over Rational Field
+          U: Spectrum of Quotient of Multivariate Polynomial Ring in x, y over Rational Field by the ideal (x*y - 1)
+    '''
+    def __init__(self, f, g, check: bool = True) -> None: ...
+    def gluing_maps(self):
+        '''
+        Return the gluing maps of this glued scheme, i.e. the maps `f` and `g`.
+
+        EXAMPLES::
+
+            sage: R.<x, y> = QQ[]
+            sage: S.<xbar, ybar> = R.quotient(x * y - 1)
+            sage: Rx = QQ["x"]
+            sage: Ry = QQ["y"]
+            sage: phi_x = Rx.hom([xbar])
+            sage: phi_y = Ry.hom([ybar])
+            sage: Sx = Schemes()(phi_x)
+            sage: Sy = Schemes()(phi_y)
+            sage: Sxy = Sx.glue_along_domains(Sy)
+            sage: Sxy.gluing_maps() == (Sx, Sy)
+            True
+        '''

@@ -1,0 +1,14 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+__pyx_capi__: dict
+is_valid_lex_M_order: _cython_3_2_1.cython_function_or_method
+lex_BFS: _cython_3_2_1.cython_function_or_method
+lex_DFS: _cython_3_2_1.cython_function_or_method
+lex_DOWN: _cython_3_2_1.cython_function_or_method
+lex_M: _cython_3_2_1.cython_function_or_method
+lex_M_fast: _cython_3_2_1.cython_function_or_method
+lex_M_slow: _cython_3_2_1.cython_function_or_method
+lex_UP: _cython_3_2_1.cython_function_or_method
+maximum_cardinality_search: _cython_3_2_1.cython_function_or_method
+maximum_cardinality_search_M: _cython_3_2_1.cython_function_or_method

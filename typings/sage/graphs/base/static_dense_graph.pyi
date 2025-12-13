@@ -1,0 +1,10 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+from sage.misc.flatten import flatten as flatten
+
+__pyx_capi__: dict
+connected_full_subgraphs: _cython_3_2_1.cython_function_or_method
+connected_subgraph_iterator: _cython_3_2_1.cython_function_or_method
+is_strongly_regular: _cython_3_2_1.cython_function_or_method
+is_triangle_free: _cython_3_2_1.cython_function_or_method
+triangles_count: _cython_3_2_1.cython_function_or_method

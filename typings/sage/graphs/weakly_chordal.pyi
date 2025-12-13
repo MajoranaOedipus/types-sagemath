@@ -1,0 +1,6 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+is_long_antihole_free: _cython_3_2_1.cython_function_or_method
+is_long_hole_free: _cython_3_2_1.cython_function_or_method
+is_weakly_chordal: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,5 @@
+import _cython_3_2_1
+
+getattr_debug: _cython_3_2_1.cython_function_or_method
+shortrepr: _cython_3_2_1.cython_function_or_method
+type_debug: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,14 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+__pyx_capi__: dict
+is_valid_ordering: _cython_3_2_1.cython_function_or_method
+linear_ordering_to_path_decomposition: _cython_3_2_1.cython_function_or_method
+lower_bound: _cython_3_2_1.cython_function_or_method
+path_decomposition: _cython_3_2_1.cython_function_or_method
+pathwidth: _cython_3_2_1.cython_function_or_method
+vertex_separation: _cython_3_2_1.cython_function_or_method
+vertex_separation_BAB: _cython_3_2_1.cython_function_or_method
+vertex_separation_MILP: _cython_3_2_1.cython_function_or_method
+vertex_separation_exp: _cython_3_2_1.cython_function_or_method
+width_of_path_decomposition: _cython_3_2_1.cython_function_or_method

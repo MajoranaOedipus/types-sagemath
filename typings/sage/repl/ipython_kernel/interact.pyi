@@ -1,0 +1,134 @@
+from _typeshed import Incomplete
+from ipywidgets.widgets.interaction import interactive
+from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.repl.ipython_kernel.widgets import EvalText as EvalText, SageColorPicker as SageColorPicker
+from sage.structure.element import Matrix as Matrix, parent as parent
+
+class sage_interactive(interactive):
+    '''
+    Wrapper around the ipywidgets interactive which handles some SageNB
+    specifics.
+
+    EXAMPLES::
+
+        sage: from sage.repl.ipython_kernel.interact import sage_interactive
+        sage: def myfunc(x=10, y=\'hello\', z=None): pass
+        sage: sage_interactive(myfunc, x=(0,100), z=["one", "two", "three"])
+        ...Interactive function <function myfunc at ...> with 3 widgets
+          x: IntSlider(value=10, description=\'x\')
+          y: Text(value=\'hello\', description=\'y\')
+          z: Dropdown(description=\'z\', options=(\'one\', \'two\', \'three\'), value=None)
+    '''
+    def __init__(self, *args, **kwds) -> None:
+        """
+        See :class:`ipywidgets.widgets.interaction.interactive`.
+
+        TESTS::
+
+            sage: from sage.repl.ipython_kernel.interact import sage_interactive
+            sage: def myfunc(): pass
+            sage: sage_interactive(myfunc, dict(manual=True))
+            Manual interactive function <function myfunc ...> with 0 widgets
+
+        ::
+
+            sage: def myfunc(auto_update=False): pass
+            sage: sage_interactive(myfunc)
+            ...Manual interactive function <function myfunc ...> with 0 widgets
+            sage: def myfunc(auto_update=None): pass
+            sage: sage_interactive(myfunc)
+            ...Interactive function <function myfunc ...> with 0 widgets
+        """
+    def signature(self):
+        '''
+        Return the fixed signature of the interactive function (after
+        a possible ``auto_update`` parameter was removed).
+
+        EXAMPLES::
+
+            sage: from sage.repl.ipython_kernel.interact import sage_interactive
+            sage: def myfunc(x=[1,2,3], auto_update=False): pass
+            sage: sage_interactive(myfunc).signature().parameters
+            ...mappingproxy({\'x\': <Parameter "x=[1, 2, 3]">})
+        '''
+    @classmethod
+    def widget_from_single_value(cls, abbrev, *args, **kwds):
+        '''
+        Convert a single value (i.e. a non-iterable) to a widget.
+
+        This supports the Sage :class:`Color` and ``Matrix`` classes.
+        Any unknown type is changed to a string for evaluating.
+        This is meant to support symbolic expressions like ``sin(x)``.
+
+        EXAMPLES::
+
+            sage: from sage.repl.ipython_kernel.interact import sage_interactive
+            sage: sage_interactive.widget_from_single_value("sin(x)")
+            ...Text(value=\'sin(x)\')
+            sage: sage_interactive.widget_from_single_value(sin(x))                     # needs sage.symbolic
+            ...EvalText(value=\'sin(x)\')
+            sage: sage_interactive.widget_from_single_value(matrix([[1, 2], [3, 4]]))   # needs sage.modules
+            ...Grid(value=[[1, 2], [3, 4]], children=(Label(value=\'\'), VBox(children=(EvalText(value=\'1\', layout=Layout(max_width=\'5em\')), EvalText(value=\'3\', layout=Layout(max_width=\'5em\')))), VBox(children=(EvalText(value=\'2\', layout=Layout(max_width=\'5em\')), EvalText(value=\'4\', layout=Layout(max_width=\'5em\'))))))
+            sage: from sage.plot.colors import Color                                    # needs sage.plot
+            sage: sage_interactive.widget_from_single_value(Color(\'cornflowerblue\'))    # needs sage.plot
+            ...SageColorPicker(value=\'#6495ed\')
+        '''
+    @classmethod
+    def widget_from_tuple(cls, abbrev, *args, **kwds):
+        '''
+        Convert a tuple to a widget.
+
+        This supports two SageNB extensions: ``(description, abbrev)``
+        if ``description`` is a string and ``(default, abbrev)`` if
+        ``abbrev`` is not a single value.
+
+        Symbolic expressions are changed to a floating-point number.
+
+        EXAMPLES::
+
+            sage: from sage.repl.ipython_kernel.interact import sage_interactive
+            sage: sage_interactive.widget_from_tuple( (0, 10) )
+            ...IntSlider(value=5, max=10)
+            sage: sage_interactive.widget_from_tuple( ("number", (0, 10)) )
+            ...IntSlider(value=5, description=\'number\', max=10)
+            sage: sage_interactive.widget_from_tuple( (3, (0, 10)) )
+            ...IntSlider(value=3, max=10)
+            sage: sage_interactive.widget_from_tuple((2, [(\'one\', 1), (\'two\', 2), (\'three\', 3)]))
+            ...Dropdown(index=1, options=((\'one\', 1), (\'two\', 2), (\'three\', 3)), value=2)
+            sage: sage_interactive.widget_from_tuple( (sqrt(2), pi) )                   # needs sage.symbolic
+            ...FloatSlider(value=2.277903107981444, max=3.141592653589793, min=1.4142135623730951)
+
+        TESTS:
+
+        Symbolic subrings::
+
+            sage: SCR = SR.subring(no_variables=True)                                   # needs sage.symbolic
+            sage: sage_interactive.widget_from_tuple( (SCR(sqrt(2)), SCR(pi)) )         # needs sage.symbolic
+            ...FloatSlider(value=2.277903107981444, max=3.141592653589793, min=1.4142135623730951)
+        '''
+    @classmethod
+    def widget_from_iterable(cls, abbrev, *args, **kwds):
+        """
+        Convert an unspecified iterable to a widget.
+
+        This behaves like in ipywidgets, except that an iterator (like
+        a generator object) becomes a ``SelectionSlider``.
+
+        EXAMPLES::
+
+            sage: from sage.repl.ipython_kernel.interact import sage_interactive
+            sage: sage_interactive.widget_from_iterable([1..5])
+            ...Dropdown(options=(1, 2, 3, 4, 5), value=1)
+            sage: sage_interactive.widget_from_iterable(iter([1..5]))
+            ...SelectionSlider(options=(1, 2, 3, 4, 5), value=1)
+            sage: sage_interactive.widget_from_iterable((1..5))
+            ...SelectionSlider(options=(1, 2, 3, 4, 5), value=1)
+            sage: sage_interactive.widget_from_iterable(x for x in [1..5])
+            ...SelectionSlider(options=(1, 2, 3, 4, 5), value=1)
+            sage: def gen():
+            ....:     yield 1; yield 2; yield 3; yield 4; yield 5
+            sage: sage_interactive.widget_from_iterable(gen())
+            ...SelectionSlider(options=(1, 2, 3, 4, 5), value=1)
+        """
+
+interact: Incomplete

@@ -1,0 +1,11 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+bell_number: _cython_3_2_1.cython_function_or_method
+bernoulli_number: _cython_3_2_1.cython_function_or_method
+dedekind_sum: _cython_3_2_1.cython_function_or_method
+euler_number: _cython_3_2_1.cython_function_or_method
+harmonic_number: _cython_3_2_1.cython_function_or_method
+number_of_partitions: _cython_3_2_1.cython_function_or_method
+stirling_number_1: _cython_3_2_1.cython_function_or_method
+stirling_number_2: _cython_3_2_1.cython_function_or_method

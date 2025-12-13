@@ -1,0 +1,12 @@
+import _cython_3_2_1
+
+call_pickled_function: _cython_3_2_1.cython_function_or_method
+code_ctor: _cython_3_2_1.cython_function_or_method
+oldModules: dict
+pickleMethod: _cython_3_2_1.cython_function_or_method
+pickleModule: _cython_3_2_1.cython_function_or_method
+pickle_function: _cython_3_2_1.cython_function_or_method
+reduce_code: _cython_3_2_1.cython_function_or_method
+unpickleMethod: _cython_3_2_1.cython_function_or_method
+unpickleModule: _cython_3_2_1.cython_function_or_method
+unpickle_function: _cython_3_2_1.cython_function_or_method

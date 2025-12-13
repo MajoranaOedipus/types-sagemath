@@ -1,0 +1,9 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+from sage.structure.sequence import Sequence as Sequence
+
+__pyx_capi__: dict
+interred_libsingular: _cython_3_2_1.cython_function_or_method
+kbase_libsingular: _cython_3_2_1.cython_function_or_method
+slimgb_libsingular: _cython_3_2_1.cython_function_or_method
+std_libsingular: _cython_3_2_1.cython_function_or_method

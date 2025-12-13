@@ -1,0 +1,3 @@
+from sage.modular.arithgroup.arithgroup_element import ArithmeticSubgroupElement as ArithmeticSubgroupElement
+
+CongruenceSubgroupElement = ArithmeticSubgroupElement

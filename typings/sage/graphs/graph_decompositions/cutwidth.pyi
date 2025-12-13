@@ -1,0 +1,8 @@
+import _cython_3_2_1
+from sage.categories.category import ZZ as ZZ
+from sage.graphs.graph_decompositions.vertex_separation import is_valid_ordering as is_valid_ordering
+
+cutwidth: _cython_3_2_1.cython_function_or_method
+cutwidth_MILP: _cython_3_2_1.cython_function_or_method
+cutwidth_dyn: _cython_3_2_1.cython_function_or_method
+width_of_cut_decomposition: _cython_3_2_1.cython_function_or_method

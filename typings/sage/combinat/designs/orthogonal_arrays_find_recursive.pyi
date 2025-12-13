@@ -1,0 +1,27 @@
+import _cython_3_2_1
+import sage.misc.cachefunc
+from sage.arith.misc import prime_powers as prime_powers
+from sage.combinat.designs.database import _ as _
+from sage.combinat.designs.orthogonal_arrays import orthogonal_array as orthogonal_array
+from sage.misc.cachefunc import cached_function as cached_function
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+find_brouwer_separable_design: _cython_3_2_1.cython_function_or_method
+find_brouwer_van_rees_with_one_truncated_column: _cython_3_2_1.cython_function_or_method
+find_construction_3_3: _cython_3_2_1.cython_function_or_method
+find_construction_3_4: _cython_3_2_1.cython_function_or_method
+find_construction_3_5: _cython_3_2_1.cython_function_or_method
+find_construction_3_6: _cython_3_2_1.cython_function_or_method
+find_product_decomposition: _cython_3_2_1.cython_function_or_method
+find_q_x: _cython_3_2_1.cython_function_or_method
+find_recursive_construction: sage.misc.cachefunc.CachedFunction
+find_three_factor_product: _cython_3_2_1.cython_function_or_method
+find_thwart_lemma_3_5: _cython_3_2_1.cython_function_or_method
+find_thwart_lemma_4_1: _cython_3_2_1.cython_function_or_method
+find_wilson_decomposition_with_one_truncated_group: _cython_3_2_1.cython_function_or_method
+find_wilson_decomposition_with_two_truncated_groups: _cython_3_2_1.cython_function_or_method
+int_as_sum: _cython_3_2_1.cython_function_or_method
+k: int
+n: int
+u: int
+x: dict

@@ -1,0 +1,13 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+apply_coeff_map: _cython_3_2_1.cython_function_or_method
+compute_known_powers: _cython_3_2_1.cython_function_or_method
+constant_coeff: _cython_3_2_1.cython_function_or_method
+get_variables_degrees: _cython_3_2_1.cython_function_or_method
+poly_to_tup: _cython_3_2_1.cython_function_or_method
+poly_tup_sortkey: _cython_3_2_1.cython_function_or_method
+resize: _cython_3_2_1.cython_function_or_method
+tup_to_univ_poly: _cython_3_2_1.cython_function_or_method
+variables: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,3 @@
+import _cython_3_2_1
+
+init_memory_functions: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,4 @@
+import _cython_3_2_1
+
+is_cartesian_product: _cython_3_2_1.cython_function_or_method
+rooted_product: _cython_3_2_1.cython_function_or_method

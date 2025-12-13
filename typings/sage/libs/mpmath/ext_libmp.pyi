@@ -1,0 +1,15 @@
+import _cython_3_2_1
+from sage.libs.mpmath.ext_impl import cos_sin_fixed as cos_sin_fixed, exp_fixed as exp_fixed, log_int_fixed as log_int_fixed
+
+mpc_exp: _cython_3_2_1.cython_function_or_method
+mpc_sqrt: _cython_3_2_1.cython_function_or_method
+mpf_add: _cython_3_2_1.cython_function_or_method
+mpf_cos: _cython_3_2_1.cython_function_or_method
+mpf_div: _cython_3_2_1.cython_function_or_method
+mpf_exp: _cython_3_2_1.cython_function_or_method
+mpf_log: _cython_3_2_1.cython_function_or_method
+mpf_mul: _cython_3_2_1.cython_function_or_method
+mpf_pow: _cython_3_2_1.cython_function_or_method
+mpf_sin: _cython_3_2_1.cython_function_or_method
+mpf_sqrt: _cython_3_2_1.cython_function_or_method
+mpf_sub: _cython_3_2_1.cython_function_or_method

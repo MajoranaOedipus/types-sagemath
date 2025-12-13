@@ -1,0 +1,846 @@
+from .hecke_triangle_group_element import HeckeTriangleGroupElement as HeckeTriangleGroupElement, coerce_AA as coerce_AA, cyclic_representative as cyclic_representative
+from sage.arith.misc import divisors as divisors
+from sage.groups.matrix_gps.finitely_generated import FinitelyGeneratedMatrixGroup_generic as FinitelyGeneratedMatrixGroup_generic
+from sage.matrix.constructor import matrix as matrix
+from sage.misc.cachefunc import cached_method as cached_method
+from sage.misc.latex import latex as latex
+from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.misc.misc_c import prod as prod
+from sage.rings.infinity import infinity as infinity
+from sage.rings.integer_ring import ZZ as ZZ
+from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing as PolynomialRing
+from sage.rings.rational_field import QQ as QQ
+from sage.structure.unique_representation import UniqueRepresentation as UniqueRepresentation
+
+class HeckeTriangleGroup(FinitelyGeneratedMatrixGroup_generic, UniqueRepresentation):
+    """
+    Hecke triangle group `(2, n, \\infty)`.
+    """
+    Element = HeckeTriangleGroupElement
+    @staticmethod
+    def __classcall__(cls, n: int = 3):
+        """
+        Return a (cached) instance with canonical parameters.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(QQ(3)) == HeckeTriangleGroup(int(3))
+            True
+        """
+    def __init__(self, n) -> None:
+        """
+        Hecke triangle group (2, n, infinity).
+
+        Namely the von Dyck group corresponding to the triangle group
+        with angles (pi/2, pi/n, 0).
+
+        INPUT:
+
+        - ``n`` -- ``infinity`` or an integer greater or equal to `3`
+
+        OUTPUT: the Hecke triangle group for the given parameter `n`
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(12)
+            sage: G
+            Hecke triangle group for n = 12
+            sage: G.category()
+            Category of groups
+        """
+    def element_repr_method(self, method=None):
+        '''
+        Either return or set the representation method for elements of ``self``.
+
+        INPUT:
+
+        - ``method`` -- if ``method=None`` (default) the current default
+          representation method is returned. Otherwise the default method is
+          set to ``method``. If ``method`` is not available a
+          :exc:`ValueError` is raised. Possible methods are:
+
+          - ``default``: use the usual representation method for matrix group
+            elements
+
+          - ``basic``: the representation is given as a word in ``S`` and
+            powers of ``T``
+
+          - ``conj``: the conjugacy representative of the element is
+            represented as a word in powers of the basic blocks, together with
+            an unspecified conjugation matrix
+
+          - ``block``: same as ``conj`` but the conjugation matrix is
+            specified as well
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(5)
+            sage: G.element_repr_method()
+            \'default\'
+            sage: G.element_repr_method("basic")
+            sage: G.element_repr_method()
+            \'basic\'
+        '''
+    def one(self):
+        """
+        Return the identity element/matrix for ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(10)
+            sage: G(1) == G.one()
+            True
+            sage: G(1)
+            [1 0]
+            [0 1]
+
+            sage: G(1).parent()
+            Hecke triangle group for n = 10
+        """
+    def lam_minpoly(self):
+        """
+        Return the minimal polynomial of the corresponding lambda parameter of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(10).lam_minpoly()
+            x^4 - 5*x^2 + 5
+            sage: HeckeTriangleGroup(17).lam_minpoly()
+            x^8 - x^7 - 7*x^6 + 6*x^5 + 15*x^4 - 10*x^3 - 10*x^2 + 4*x + 1
+            sage: HeckeTriangleGroup(infinity).lam_minpoly()
+            x - 2
+        """
+    def base_ring(self):
+        """
+        Return the base ring of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(n=infinity).base_ring()
+            Integer Ring
+            sage: HeckeTriangleGroup(n=7).base_ring()
+            Maximal Order generated by lam in Number Field in lam with defining polynomial x^3 - x^2 - 2*x + 1 with lam = 1.801937735804839?
+        """
+    def base_field(self):
+        """
+        Return the base field of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(n=infinity).base_field()
+            Rational Field
+            sage: HeckeTriangleGroup(n=7).base_field()
+            Number Field in lam with defining polynomial x^3 - x^2 - 2*x + 1 with lam = 1.801937735804839?
+        """
+    def n(self):
+        """
+        Return the parameter ``n`` of ``self``, where
+        ``pi/n`` is the angle at ``rho`` of the corresponding
+        basic hyperbolic triangle with vertices ``i``, ``rho``
+        and ``infinity``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(10).n()
+            10
+            sage: HeckeTriangleGroup(infinity).n()
+            +Infinity
+        """
+    def lam(self):
+        """
+        Return the parameter ``lambda`` of ``self``,
+        where ``lambda`` is twice the real part of ``rho``,
+        lying between ``1`` (when ``n=3``) and ``2`` (when ``n=infinity``).
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).lam()
+            1
+            sage: HeckeTriangleGroup(4).lam()
+            lam
+            sage: HeckeTriangleGroup(4).lam()^2
+            2
+            sage: HeckeTriangleGroup(6).lam()^2
+            3
+            sage: AA(HeckeTriangleGroup(10).lam())
+            1.9021130325903...?
+            sage: HeckeTriangleGroup(infinity).lam()
+            2
+        """
+    def rho(self):
+        """
+        Return the vertex ``rho`` of the basic hyperbolic
+        triangle which describes ``self``. ``rho`` has
+        absolute value 1 and angle ``pi/n``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).rho() == QQbar(1/2 + sqrt(3)/2*i)
+            True
+            sage: HeckeTriangleGroup(4).rho() == QQbar(sqrt(2)/2*(1 + i))
+            True
+            sage: HeckeTriangleGroup(6).rho() == QQbar(sqrt(3)/2 + 1/2*i)
+            True
+            sage: HeckeTriangleGroup(10).rho()
+            0.95105651629515...? + 0.30901699437494...?*I
+            sage: HeckeTriangleGroup(infinity).rho()
+            1
+        """
+    def alpha(self):
+        """
+        Return the parameter ``alpha`` of ``self``.
+
+        This is the first parameter of the hypergeometric series used
+        in the calculation of the Hauptmodul of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).alpha()
+            1/12
+            sage: HeckeTriangleGroup(4).alpha()
+            1/8
+            sage: HeckeTriangleGroup(5).alpha()
+            3/20
+            sage: HeckeTriangleGroup(6).alpha()
+            1/6
+            sage: HeckeTriangleGroup(10).alpha()
+            1/5
+            sage: HeckeTriangleGroup(infinity).alpha()
+            1/4
+        """
+    def beta(self):
+        """
+        Return the parameter ``beta`` of ``self``.
+
+        This is the second parameter of the hypergeometric series used
+        in the calculation of the Hauptmodul of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).beta()
+            5/12
+            sage: HeckeTriangleGroup(4).beta()
+            3/8
+            sage: HeckeTriangleGroup(5).beta()
+            7/20
+            sage: HeckeTriangleGroup(6).beta()
+            1/3
+            sage: HeckeTriangleGroup(10).beta()
+            3/10
+            sage: HeckeTriangleGroup(infinity).beta()
+            1/4
+        """
+    @cached_method
+    def I(self):
+        """
+        Return the identity element/matrix for ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(10).I()
+            [1 0]
+            [0 1]
+
+            sage: HeckeTriangleGroup(10).I().parent()
+            Hecke triangle group for n = 10
+        """
+    @cached_method
+    def T(self, m: int = 1):
+        """
+        Return the element in ``self`` corresponding to the translation by
+        ``m*self.lam()``.
+
+        INPUT:
+
+        - ``m`` -- integer (default: 1); namely the second generator of
+          ``self``
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).T()
+            [1 1]
+            [0 1]
+            sage: HeckeTriangleGroup(10).T(-4)
+            [     1 -4*lam]
+            [     0      1]
+            sage: HeckeTriangleGroup(10).T().parent()
+            Hecke triangle group for n = 10
+        """
+    @cached_method
+    def S(self):
+        """
+        Return the generator of ``self`` corresponding to the
+        conformal circle inversion.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).S()
+            [ 0 -1]
+            [ 1  0]
+            sage: HeckeTriangleGroup(10).S()
+            [ 0 -1]
+            [ 1  0]
+            sage: HeckeTriangleGroup(10).S()^2 == -HeckeTriangleGroup(10).I()
+            True
+            sage: HeckeTriangleGroup(10).S()^4 == HeckeTriangleGroup(10).I()
+            True
+
+            sage: HeckeTriangleGroup(10).S().parent()
+            Hecke triangle group for n = 10
+        """
+    @cached_method
+    def U(self):
+        """
+        Return an alternative generator of ``self`` instead of ``T``.
+        ``U`` stabilizes ``rho`` and has order ``2*self.n()``.
+
+        If ``n=infinity`` then ``U`` is parabolic and has infinite order,
+        it then fixes the cusp ``[-1]``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).U()
+            [ 1 -1]
+            [ 1  0]
+            sage: HeckeTriangleGroup(3).U()^3 == -HeckeTriangleGroup(3).I()
+            True
+            sage: HeckeTriangleGroup(3).U()^6 == HeckeTriangleGroup(3).I()
+            True
+            sage: HeckeTriangleGroup(10).U()
+            [lam  -1]
+            [  1   0]
+            sage: HeckeTriangleGroup(10).U()^10 == -HeckeTriangleGroup(10).I()
+            True
+            sage: HeckeTriangleGroup(10).U()^20 == HeckeTriangleGroup(10).I()
+            True
+
+            sage: HeckeTriangleGroup(10).U().parent()
+            Hecke triangle group for n = 10
+        """
+    def V(self, j):
+        '''
+        Return the j\'th generator for the usual representatives of
+        conjugacy classes of ``self``. It is given by ``V=U^(j-1)*T``.
+
+        INPUT:
+
+        - ``j`` --integer; to get the usual representatives
+          ``j`` should range from ``1`` to ``self.n()-1``
+
+        OUTPUT: the corresponding matrix/element
+
+        The matrix is parabolic if ``j`` is congruent to `\\pm 1` modulo ``self.n()``.
+        It is elliptic if ``j`` is congruent to 0 modulo ``self.n()``.
+        It is hyperbolic otherwise.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(3)
+            sage: G.V(0) == -G.S()
+            True
+            sage: G.V(1) == G.T()
+            True
+            sage: G.V(2)
+            [1 0]
+            [1 1]
+            sage: G.V(3) == G.S()
+            True
+
+            sage: G = HeckeTriangleGroup(5)
+            sage: G.element_repr_method("default")
+            sage: G.V(1)
+            [  1 lam]
+            [  0   1]
+            sage: G.V(2)
+            [lam lam]
+            [  1 lam]
+            sage: G.V(3)
+            [lam   1]
+            [lam lam]
+            sage: G.V(4)
+            [  1   0]
+            [lam   1]
+            sage: G.V(5) == G.S()
+            True
+        '''
+    def dvalue(self):
+        """
+        Return a symbolic expression (or an exact value in case n=3, 4, 6)
+        for the transfinite diameter (or capacity) of ``self``.
+
+        This is the first nontrivial Fourier coefficient of the Hauptmodul
+        for the Hecke triangle group in case it is normalized to ``J_inv(i)=1``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).dvalue()
+            1/1728
+            sage: HeckeTriangleGroup(4).dvalue()
+            1/256
+            sage: HeckeTriangleGroup(5).dvalue()
+            e^(2*euler_gamma - 4*pi/(sqrt(5) + 1) + psi(17/20) + psi(13/20))
+            sage: HeckeTriangleGroup(6).dvalue()
+            1/108
+            sage: HeckeTriangleGroup(10).dvalue()
+            e^(2*euler_gamma - 4*pi/sqrt(2*sqrt(5) + 10) + psi(4/5) + psi(7/10))
+            sage: HeckeTriangleGroup(infinity).dvalue()
+            1/64
+        """
+    def is_arithmetic(self) -> bool:
+        """
+        Return ``True`` if ``self`` is an arithmetic subgroup.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(3).is_arithmetic()
+            True
+            sage: HeckeTriangleGroup(4).is_arithmetic()
+            True
+            sage: HeckeTriangleGroup(5).is_arithmetic()
+            False
+            sage: HeckeTriangleGroup(6).is_arithmetic()
+            True
+            sage: HeckeTriangleGroup(10).is_arithmetic()
+            False
+            sage: HeckeTriangleGroup(infinity).is_arithmetic()
+            True
+        """
+    def get_FD(self, z):
+        """
+        Return a tuple (A,w) which determines how to map ``z``
+        to the usual (strict) fundamental domain of ``self``.
+
+        INPUT:
+
+        - ``z`` -- a complex number or an element of AlgebraicField()
+
+        OUTPUT:
+
+        A tuple ``(A, w)``.
+
+        - ``A`` -- a matrix in ``self`` such that ``A.acton(w)==z``
+          (if ``z`` is exact at least)
+
+        - ``w`` -- a complex number or an element of AlgebraicField()
+          (depending on the type ``z``) which lies inside the (strict)
+          fundamental domain of ``self`` (``self.in_FD(w)==True``) and
+          which is equivalent to ``z`` (by the above property)
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(8)
+            sage: z = AlgebraicField()(1+i/2)
+            sage: (A, w) = G.get_FD(z)
+            sage: A
+            [-lam    1]
+            [  -1    0]
+            sage: A.acton(w) == z
+            True
+
+            sage: from sage.modular.modform_hecketriangle.space import ModularForms
+            sage: z = (134.12 + 0.22*i).n()
+            sage: (A, w) = G.get_FD(z)
+            sage: A
+            [-73*lam^3 + 74*lam       73*lam^2 - 1]
+            [        -lam^2 + 1                lam]
+            sage: w
+            0.769070776942... + 0.779859114103...*I
+            sage: z
+            134.120000000... + 0.220000000000...*I
+            sage: A.acton(w)
+            134.1200000... + 0.2200000000...*I
+        """
+    def in_FD(self, z) -> bool:
+        """
+        Return ``True`` if ``z`` lies in the (strict) fundamental
+        domain of ``self``.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: HeckeTriangleGroup(5).in_FD(CC(1.5/2 + 0.9*i))
+            True
+            sage: HeckeTriangleGroup(4).in_FD(CC(1.5/2 + 0.9*i))
+            False
+        """
+    def root_extension_field(self, D):
+        """
+        Return the quadratic extension field of the base field by
+        the square root of the given discriminant ``D``.
+
+        INPUT:
+
+        - ``D`` -- an element of the base ring of ``self``
+          corresponding to a discriminant
+
+        OUTPUT:
+
+        A relative (at most quadratic) extension to the base field
+        of ``self`` in the variable ``e`` which corresponds to ``sqrt(D)``.
+        If the extension degree is ``1`` then the base field is returned.
+
+        The correct embedding is the positive resp. positive imaginary one.
+        Unfortunately no default embedding can be specified for relative
+        number fields yet.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=infinity)
+            sage: G.root_extension_field(32)
+            Number Field in e with defining polynomial x^2 - 32
+            sage: G.root_extension_field(-4)
+            Number Field in e with defining polynomial x^2 + 4
+            sage: G.root_extension_field(4) == G.base_field()
+            True
+
+            sage: G = HeckeTriangleGroup(n=7)
+            sage: lam = G.lam()
+            sage: D = 4*lam^2 + 4*lam - 4
+            sage: G.root_extension_field(D)
+            Number Field in e with defining polynomial x^2 - 4*lam^2 - 4*lam + 4 over its base field
+            sage: G.root_extension_field(4) == G.base_field()
+            True
+            sage: D = lam^2 - 4
+            sage: G.root_extension_field(D)
+            Number Field in e with defining polynomial x^2 - lam^2 + 4 over its base field
+        """
+    @cached_method
+    def root_extension_embedding(self, D, K=None):
+        """
+        Return the correct embedding from the root extension field
+        of the given discriminant ``D``  to the field ``K``.
+
+        Also see the method ``root_extension_embedding(K)`` of
+        ``HeckeTriangleGroupElement`` for more examples.
+
+        INPUT:
+
+        - ``D`` -- an element of the base ring of ``self``
+          corresponding to a discriminant
+
+        - ``K`` -- a field to which we want the (correct) embedding;
+          if ``K=None`` (default) then ``AlgebraicField()`` is
+          used for positive ``D`` and ``AlgebraicRealField()``
+          otherwise
+
+        OUTPUT:
+
+        The corresponding embedding if it was found.
+        Otherwise a :exc:`ValueError` is raised.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=infinity)
+            sage: G.root_extension_embedding(32)
+            Ring morphism:
+              From: Number Field in e with defining polynomial x^2 - 32
+              To:   Algebraic Real Field
+              Defn: e |--> 5.656854249492...?
+            sage: G.root_extension_embedding(-4)
+            Ring morphism:
+              From: Number Field in e with defining polynomial x^2 + 4
+              To:   Algebraic Field
+              Defn: e |--> 2*I
+            sage: G.root_extension_embedding(4)
+            Coercion map:
+              From: Rational Field
+              To:   Algebraic Real Field
+
+            sage: G = HeckeTriangleGroup(n=7)
+            sage: lam = G.lam()
+            sage: D = 4*lam^2 + 4*lam - 4
+            sage: G.root_extension_embedding(D, CC)
+            Relative number field morphism:
+              From: Number Field in e with defining polynomial x^2 - 4*lam^2 - 4*lam + 4 over its base field
+              To:   Complex Field with 53 bits of precision
+              Defn: e |--> 4.02438434522...
+                    lam |--> 1.80193773580...
+            sage: D = lam^2 - 4
+            sage: G.root_extension_embedding(D)
+            Relative number field morphism:
+              From: Number Field in e with defining polynomial x^2 - lam^2 + 4 over its base field
+              To:   Algebraic Field
+              Defn: e |--> 0.?... + 0.867767478235...?*I
+                    lam |--> 1.801937735804...?
+        """
+    def class_representatives(self, D, primitive: bool = True):
+        '''
+        Return a representative for each conjugacy class for the
+        discriminant ``D`` (ignoring the sign).
+
+        If ``primitive=True`` only one representative for each
+        fixed point is returned (ignoring sign).
+
+        INPUT:
+
+        - ``D`` -- an element of the base ring corresponding
+          to a valid discriminant
+
+        - ``primitive`` -- if ``True`` (default) then only primitive
+          representatives are considered
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+            sage: G.element_repr_method("conj")
+
+            sage: R = G.class_representatives(4)
+            sage: R
+            [[V(2)]]
+            sage: [v.continued_fraction()[1] for v in R]
+            [(2,)]
+
+            sage: R = G.class_representatives(0)
+            sage: R
+            [[V(3)]]
+            sage: [v.continued_fraction()[1] for v in R]
+            [(1, 2)]
+
+            sage: R = G.class_representatives(-4)
+            sage: R
+            [[S]]
+            sage: R = G.class_representatives(-4, primitive=False)
+            sage: R
+            [[S], [U^2]]
+
+            sage: R = G.class_representatives(G.lam()^2 - 4)
+            sage: R
+            [[U]]
+            sage: R = G.class_representatives(G.lam()^2 - 4, primitive=False)
+            sage: R
+            [[U], [U^(-1)]]
+
+            sage: R = G.class_representatives(14)
+            sage: sorted(R)
+            [[V(2)*V(3)], [V(1)*V(2)]]
+            sage: sorted(v.continued_fraction()[1] for v in R)
+            [(1, 2, 2), (3,)]
+
+            sage: R = G.class_representatives(32)
+            sage: sorted(R)
+            [[V(3)^2*V(1)], [V(1)^2*V(3)]]
+            sage: [v.continued_fraction()[1] for v in sorted(R)]
+            [(1, 2, 1, 3), (1, 4)]
+
+            sage: R = G.class_representatives(32, primitive=False)
+            sage: sorted(R)
+            [[V(3)^2*V(1)], [V(1)^2*V(3)], [V(2)^2]]
+
+            sage: G.element_repr_method("default")
+        '''
+    def class_number(self, D, primitive: bool = True):
+        """
+        Return the class number of ``self`` for the discriminant ``D``.
+
+        This is the number of conjugacy classes of (primitive) elements
+        of discriminant ``D``.
+
+        Note: Due to the 1-1 correspondence with hyperbolic fixed
+        points resp. hyperbolic binary quadratic forms
+        this also gives the class number in those cases.
+
+        INPUT:
+
+        - ``D`` -- an element of the base ring corresponding
+          to a valid discriminant
+
+        - ``primitive`` -- if ``True`` (default) then only primitive
+          elements are considered
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+
+            sage: G.class_number(4)
+            1
+            sage: G.class_number(4, primitive=False)
+            1
+            sage: G.class_number(14)
+            2
+            sage: G.class_number(32)
+            2
+            sage: G.class_number(32, primitive=False)
+            3
+            sage: G.class_number(68)
+            4
+        """
+    def is_discriminant(self, D, primitive: bool = True) -> bool:
+        """
+        Return whether ``D`` is a discriminant of an element of ``self``.
+
+        Note: Checking that something isn't a discriminant takes much
+        longer than checking for valid discriminants.
+
+        INPUT:
+
+        - ``D`` -- an element of the base ring
+
+        - ``primitive`` -- if ``True`` (default) then only primitive
+          elements are considered
+
+        OUTPUT:
+
+        ``True`` if ``D`` is a primitive discriminant (a discriminant of
+        a primitive element) and ``False`` otherwise.
+        If ``primitive=False`` then also non-primitive elements are considered.
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+
+            sage: G.is_discriminant(68)
+            True
+            sage: G.is_discriminant(196, primitive=False)    # long time
+            True
+            sage: G.is_discriminant(2)
+            False
+        """
+    def list_discriminants(self, D, primitive: bool = True, hyperbolic: bool = True, incomplete: bool = False):
+        """
+        Return a list of all discriminants up to some upper bound ``D``.
+
+        INPUT:
+
+        - ``D`` -- an element/discriminant of the base ring or
+          more generally an upper bound for the discriminant
+
+        - ``primitive`` -- if ``True`` (default) then only primitive
+          discriminants are listed
+
+        - ``hyperbolic`` -- if ``True`` (default) then only positive
+          discriminants are listed
+
+        - ``incomplete`` -- if ``True`` (default: ``False``) then all
+          (also higher) discriminants which were gathered so far are listed
+          (however there might be missing discriminants in between).
+
+        OUTPUT: list of discriminants less than or equal to ``D``
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+            sage: G.list_discriminants(D=68)
+            [4, 12, 14, 28, 32, 46, 60, 68]
+            sage: G.list_discriminants(D=0, hyperbolic=False, primitive=False)
+            [-4, -2, 0]
+
+            sage: G = HeckeTriangleGroup(n=5)
+            sage: G.list_discriminants(D=20)
+            [4*lam, 7*lam + 6, 9*lam + 5]
+            sage: G.list_discriminants(D=0, hyperbolic=False, primitive=False)
+            [-4, -lam - 2, lam - 3, 0]
+        """
+    def reduced_elements(self, D):
+        """
+        Return all reduced (primitive) elements of discriminant ``D``.
+
+        Also see the element method :meth:`is_reduced` for more information.
+
+        - ``D`` -- an element of the base ring corresponding
+          to a valid discriminant
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+            sage: R = G.reduced_elements(D=12)
+            sage: R
+            [
+            [    5  -lam]  [     5 -3*lam]
+            [3*lam    -1], [   lam     -1]
+            ]
+            sage: [v.continued_fraction() for v in R]
+            [((), (1, 3)), ((), (3, 1))]
+            sage: R = G.reduced_elements(D=14)
+            sage: sorted(R)
+            [
+            [3*lam    -1]  [4*lam    -3]  [ 5*lam     -7]  [ 5*lam     -3]
+            [    1     0], [    3  -lam], [     3 -2*lam], [     7 -2*lam]
+            ]
+            sage: sorted(v.continued_fraction() for v in R)
+            [((), (1, 2, 2)), ((), (2, 1, 2)), ((), (2, 2, 1)), ((), (3,))]
+        """
+    def simple_elements(self, D):
+        """
+        Return all simple elements of discriminant ``D``.
+
+        Also see the element method ``is_simple()`` for more information.
+
+        - ``D`` -- an element of the base ring corresponding to a valid
+          discriminant
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+            sage: sorted(G.simple_elements(D=12))
+            [
+            [  1 lam]  [  3 lam]
+            [lam   3], [lam   1]
+            ]
+            sage: sorted(G.simple_elements(D=14))
+            [
+            [  lam     1]  [  lam     3]  [2*lam     1]  [2*lam     3]
+            [    3 2*lam], [    1 2*lam], [    3   lam], [    1   lam]
+            ]
+        """
+    def rational_period_functions(self, k, D):
+        """
+        Return a list of basic rational period functions of weight ``k`` for
+        discriminant ``D``.
+
+        The list is expected to be a generating set for all rational
+        period functions of the given weight and discriminant (unknown).
+
+        The method assumes that ``D > 0``.
+
+        Also see the element method ``rational_period_function`` for more information.
+
+        - ``k`` -- even integer, the desired weight of the rational period
+          functions
+
+        - ``D`` -- an element of the base ring corresponding to a valid
+          discriminant
+
+        EXAMPLES::
+
+            sage: from sage.modular.modform_hecketriangle.hecke_triangle_groups import HeckeTriangleGroup
+            sage: G = HeckeTriangleGroup(n=4)
+            sage: sorted(G.rational_period_functions(k=4, D=12))
+            [(z^4 - 1)/z^4]
+            sage: sorted(G.rational_period_functions(k=-2, D=12))
+            [-z^2 + 1, 4*lam*z^2 - 4*lam]
+            sage: sorted(G.rational_period_functions(k=2, D=14))
+            [(24*z^6 - 120*z^4 + 120*z^2 - 24)/(9*z^8 - 80*z^6 + 146*z^4 - 80*z^2 + 9),
+             (24*z^6 - 120*z^4 + 120*z^2 - 24)/(9*z^8 - 80*z^6 + 146*z^4 - 80*z^2 + 9),
+             1/z,
+             (z^2 - 1)/z^2]
+            sage: sorted(G.rational_period_functions(k=-4, D=14))
+            [-16*z^4 + 16, -z^4 + 1, 16*z^4 - 16]
+        """

@@ -1,0 +1,5 @@
+import _cython_3_2_1
+
+FS_ENCODING: str
+bytes_to_str: _cython_3_2_1.cython_function_or_method
+str_to_bytes: _cython_3_2_1.cython_function_or_method

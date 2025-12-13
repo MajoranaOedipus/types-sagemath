@@ -1,0 +1,14 @@
+import _cython_3_2_1
+from sage.categories.morphism import IdentityMorphism as IdentityMorphism
+from sage.categories.pushout import construction_tower as construction_tower
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+backend_element: _cython_3_2_1.cython_function_or_method
+backend_morphism: _cython_3_2_1.cython_function_or_method
+backend_parent: _cython_3_2_1.cython_function_or_method
+from_backend: _cython_3_2_1.cython_function_or_method
+from_backend_element: _cython_3_2_1.cython_function_or_method
+from_backend_morphism: _cython_3_2_1.cython_function_or_method
+from_backend_parent: _cython_3_2_1.cython_function_or_method
+to_backend: _cython_3_2_1.cython_function_or_method

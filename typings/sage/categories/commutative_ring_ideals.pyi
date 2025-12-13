@@ -1,0 +1,38 @@
+from sage.categories.category_types import Category_ideal as Category_ideal
+from sage.categories.commutative_rings import CommutativeRings as CommutativeRings
+from sage.categories.ring_ideals import RingIdeals as RingIdeals
+
+class CommutativeRingIdeals(Category_ideal):
+    """
+    The category of ideals in a fixed commutative ring.
+
+    EXAMPLES::
+
+        sage: C = CommutativeRingIdeals(IntegerRing())
+        sage: C
+        Category of commutative ring ideals in Integer Ring
+    """
+    def __init__(self, R) -> None:
+        """
+        EXAMPLES::
+
+            sage: CommutativeRingIdeals(ZZ)
+            Category of commutative ring ideals in Integer Ring
+            sage: CommutativeRingIdeals(IntegerModRing(4))
+            Category of commutative ring ideals in Ring of integers modulo 4
+
+        TESTS::
+
+            sage: CommutativeRingIdeals(Partitions(4))                                  # needs sage.combinat
+            Traceback (most recent call last):
+            ...
+            TypeError: R (=Partitions of the integer 4) must be a commutative ring
+            sage: TestSuite(CommutativeRingIdeals(ZZ)).run()
+        """
+    def super_categories(self):
+        """
+        EXAMPLES::
+
+            sage: CommutativeRingIdeals(ZZ).super_categories()
+            [Category of ring ideals in Integer Ring]
+        """

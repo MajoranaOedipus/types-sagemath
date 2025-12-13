@@ -1,0 +1,65 @@
+from sage.rings.integer import Integer as Integer
+from sage.rings.integer_ring import ZZ as ZZ
+from sage.rings.power_series_ring import PowerSeriesRing as PowerSeriesRing
+
+def theta2_qexp(prec: int = 10, var: str = 'q', K=..., sparse: bool = False):
+    """
+    Return the `q`-expansion of the series `\\theta_2 = \\sum_{n \\text{ odd}} q^{n^2}`.
+
+    INPUT:
+
+    - ``prec`` -- integer; the absolute precision of the output
+    - ``var`` -- (default: ``'q'``) variable name
+    - ``K`` -- (default: ZZ) base ring of answer
+
+    OUTPUT: a power series over K
+
+    EXAMPLES::
+
+        sage: theta2_qexp(18)
+        q + q^9 + O(q^18)
+        sage: theta2_qexp(49)
+        q + q^9 + q^25 + O(q^49)
+        sage: theta2_qexp(100, 'q', QQ)
+        q + q^9 + q^25 + q^49 + q^81 + O(q^100)
+        sage: f = theta2_qexp(100, 't', GF(3)); f
+        t + t^9 + t^25 + t^49 + t^81 + O(t^100)
+        sage: parent(f)
+        Power Series Ring in t over Finite Field of size 3
+        sage: theta2_qexp(200)
+        q + q^9 + q^25 + q^49 + q^81 + q^121 + q^169 + O(q^200)
+        sage: f = theta2_qexp(20,sparse=True); f
+        q + q^9 + O(q^20)
+        sage: parent(f)
+        Sparse Power Series Ring in q over Integer Ring
+    """
+def theta_qexp(prec: int = 10, var: str = 'q', K=..., sparse: bool = False):
+    """
+    Return the `q`-expansion of the standard `\\theta` series
+    `\\theta = 1 + 2\\sum_{n=1}^{\\infty} q^{n^2}`.
+
+    INPUT:
+
+    - ``prec`` -- integer; the absolute precision of the output
+    - ``var`` -- (default: ``'q'``) variable name
+    - ``K`` -- (default: ZZ) base ring of answer
+
+    OUTPUT: a power series over K
+
+    EXAMPLES::
+
+        sage: theta_qexp(25)
+        1 + 2*q + 2*q^4 + 2*q^9 + 2*q^16 + O(q^25)
+        sage: theta_qexp(10)
+        1 + 2*q + 2*q^4 + 2*q^9 + O(q^10)
+        sage: theta_qexp(100)
+        1 + 2*q + 2*q^4 + 2*q^9 + 2*q^16 + 2*q^25 + 2*q^36 + 2*q^49 + 2*q^64 + 2*q^81 + O(q^100)
+        sage: theta_qexp(100, 't')
+        1 + 2*t + 2*t^4 + 2*t^9 + 2*t^16 + 2*t^25 + 2*t^36 + 2*t^49 + 2*t^64 + 2*t^81 + O(t^100)
+        sage: theta_qexp(100, 't', GF(2))
+        1 + O(t^100)
+        sage: f = theta_qexp(20,sparse=True); f
+        1 + 2*q + 2*q^4 + 2*q^9 + 2*q^16 + O(q^20)
+        sage: parent(f)
+        Sparse Power Series Ring in q over Integer Ring
+    """

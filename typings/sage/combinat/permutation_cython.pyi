@@ -1,0 +1,10 @@
+import _cython_3_2_1
+
+__pyx_capi__: dict
+left_action_product: _cython_3_2_1.cython_function_or_method
+left_action_same_n: _cython_3_2_1.cython_function_or_method
+map_to_list: _cython_3_2_1.cython_function_or_method
+next_perm: _cython_3_2_1.cython_function_or_method
+permutation_iterator_transposition_list: _cython_3_2_1.cython_function_or_method
+right_action_product: _cython_3_2_1.cython_function_or_method
+right_action_same_n: _cython_3_2_1.cython_function_or_method

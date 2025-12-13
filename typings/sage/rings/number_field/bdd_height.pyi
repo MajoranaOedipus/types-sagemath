@@ -1,0 +1,309 @@
+from _typeshed import Incomplete
+from collections.abc import Generator
+from sage.geometry.polyhedron.constructor import Polyhedron as Polyhedron
+from sage.matrix.constructor import column_matrix as column_matrix
+from sage.modules.free_module_element import vector as vector
+from sage.rings.infinity import Infinity as Infinity
+from sage.rings.number_field.unit_group import UnitGroup as UnitGroup
+from sage.rings.rational_field import QQ as QQ
+from sage.rings.real_mpfr import RR as RR, RealField as RealField
+
+def bdd_norm_pr_gens_iq(K, norm_list):
+    """
+    Compute generators for all principal ideals in an imaginary quadratic field
+    `K` whose norms are in ``norm_list``.
+
+    The only keys for the output dictionary are integers n appearing in
+    ``norm_list``.
+
+    The function will only be called with `K` an imaginary quadratic field.
+
+    The function will return a dictionary for other number fields, but it may be
+    incorrect.
+
+    INPUT:
+
+    - ``K`` -- an imaginary quadratic number field
+
+    - ``norm_list`` -- list of positive integers
+
+    OUTPUT: dictionary of number field elements, keyed by norm
+
+    EXAMPLES:
+
+    In `QQ(i)`, there is one principal ideal of norm 4, two principal ideals of
+    norm 5, but no principal ideals of norm 7::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_gens_iq
+        sage: x = polygen(ZZ, 'x')
+        sage: K.<g> = NumberField(x^2 + 1)
+        sage: L = range(10)
+        sage: bdd_pr_ideals = bdd_norm_pr_gens_iq(K, L)
+        sage: bdd_pr_ideals[4]
+        [2]
+        sage: bdd_pr_ideals[5]
+        [-g - 2, -g + 2]
+        sage: bdd_pr_ideals[7]
+        []
+
+    There are no ideals in the ring of integers with negative norm::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_gens_iq
+        sage: K.<g> = NumberField(x^2 + 10)
+        sage: L = range(-5,-1)
+        sage: bdd_pr_ideals = bdd_norm_pr_gens_iq(K,L)
+        sage: bdd_pr_ideals
+        {-5: [], -4: [], -3: [], -2: []}
+
+    Calling a key that is not in the input ``norm_list`` raises a KeyError::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_gens_iq
+        sage: K.<g> = NumberField(x^2 + 20)
+        sage: L = range(100)
+        sage: bdd_pr_ideals = bdd_norm_pr_gens_iq(K, L)
+        sage: bdd_pr_ideals[100]
+        Traceback (most recent call last):
+        ...
+        KeyError: 100
+    """
+def bdd_height_iq(K, height_bound) -> Generator[Incomplete]:
+    """
+    Compute all elements in the imaginary quadratic field `K` which have
+    relative multiplicative height at most ``height_bound``.
+
+    The function will only be called with `K` an imaginary quadratic field.
+
+    If called with `K` not an imaginary quadratic, the function will likely
+    yield incorrect output.
+
+    ALGORITHM:
+
+    This is an implementation of Algorithm 5 in [DK2013]_.
+
+    INPUT:
+
+    - ``K`` -- an imaginary quadratic number field
+
+    - ``height_bound`` -- a real number
+
+    OUTPUT: an iterator of number field elements
+
+    EXAMPLES::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height_iq
+        sage: x = polygen(ZZ, 'x')
+        sage: K.<a> = NumberField(x^2 + 191)
+        sage: for t in bdd_height_iq(K,8):
+        ....:     print(exp(2*t.global_height()))
+        1.00000000000000
+        1.00000000000000
+        1.00000000000000
+        4.00000000000000
+        4.00000000000000
+        4.00000000000000
+        4.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+        8.00000000000000
+
+    There are 175 elements of height at most 10 in `QQ(\\sqrt(-3))`::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height_iq
+        sage: K.<a> = NumberField(x^2 + 3)
+        sage: len(list(bdd_height_iq(K,10)))
+        175
+
+    The only elements of multiplicative height 1 in a number field are 0 and
+    the roots of unity::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height_iq
+        sage: K.<a> = NumberField(x^2 + x + 1)
+        sage: list(bdd_height_iq(K,1))
+        [0, a + 1, a, -1, -a - 1, -a, 1]
+
+    A number field has no elements of multiplicative height less than 1::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height_iq
+        sage: K.<a> = NumberField(x^2 + 5)
+        sage: list(bdd_height_iq(K,0.9))
+        []
+    """
+def bdd_norm_pr_ideal_gens(K, norm_list):
+    """
+    Compute generators for all principal ideals in a number field `K` whose
+    norms are in ``norm_list``.
+
+    INPUT:
+
+    - ``K`` -- a number field
+
+    - ``norm_list`` -- list of positive integers
+
+    OUTPUT: dictionary of number field elements, keyed by norm
+
+    EXAMPLES:
+
+    There is only one principal ideal of norm 1, and it is generated by the
+    element 1::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_ideal_gens
+        sage: K.<g> = QuadraticField(101)
+        sage: bdd_norm_pr_ideal_gens(K, [1])
+        {1: [1]}
+
+    ::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_ideal_gens
+        sage: K.<g> = QuadraticField(123)
+        sage: bdd_norm_pr_ideal_gens(K, range(5))
+        {0: [0], 1: [1], 2: [g + 11], 3: [], 4: [2]}  # 64-bit
+        {0: [0], 1: [1], 2: [g - 11], 3: [], 4: [2]}  # 32-bit
+
+    ::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_norm_pr_ideal_gens
+        sage: x = polygen(ZZ, 'x')
+        sage: K.<g> = NumberField(x^5 - x + 19)
+        sage: b = bdd_norm_pr_ideal_gens(K, range(30))
+        sage: key = ZZ(28)
+        sage: b[key]
+        [157*g^4 - 139*g^3 - 369*g^2 + 848*g + 158, g^4 + g^3 - g - 7]
+    """
+def integer_points_in_polytope(matrix, interval_radius):
+    """
+    Return the set of integer points in the polytope obtained by acting on a
+    cube by a linear transformation.
+
+    Given an `r`-by-`r` matrix ``matrix`` and a real number ``interval_radius``,
+    this function finds all integer lattice points in the polytope obtained by
+    transforming the cube ``[-interval_radius, interval_radius]^r`` via the linear
+    map induced by ``matrix``.
+
+    INPUT:
+
+    - ``matrix`` -- a square matrix of real numbers
+
+    - ``interval_radius`` -- a real number
+
+    OUTPUT: list of tuples of integers
+
+    EXAMPLES:
+
+    Stretch the interval `[-1,1]` by a factor of 2 and find the integers in the
+    resulting interval::
+
+        sage: from sage.rings.number_field.bdd_height import integer_points_in_polytope
+        sage: m = matrix([2])
+        sage: r = 1
+        sage: integer_points_in_polytope(m, r)
+        [(-2), (-1), (0), (1), (2)]
+
+    Integer points inside a parallelogram::
+
+        sage: from sage.rings.number_field.bdd_height import integer_points_in_polytope
+        sage: m = matrix([[1, 2], [3, 4]])
+        sage: r = RealField()(1.3)
+        sage: integer_points_in_polytope(m, r)
+        [(-3, -7), (-2, -5), (-2, -4), (-1, -3), (-1, -2), (-1, -1), (0, -1),
+         (0, 0), (0, 1), (1, 1), (1, 2), (1, 3), (2, 4), (2, 5), (3, 7)]
+
+    Integer points inside a parallelepiped::
+
+        sage: from sage.rings.number_field.bdd_height import integer_points_in_polytope
+        sage: m = matrix([[1.2,3.7,0.2], [-5.3,-.43,3], [1.2,4.7,-2.1]])
+        sage: r = 2.2
+        sage: L = integer_points_in_polytope(m, r)
+        sage: len(L)
+        4143
+
+    If ``interval_radius`` is 0, the output should include only the zero tuple::
+
+        sage: from sage.rings.number_field.bdd_height import integer_points_in_polytope
+        sage: m = matrix([[1,2,3,7], [4,5,6,2], [7,8,9,3], [0,3,4,5]])
+        sage: integer_points_in_polytope(m, 0)
+        [(0, 0, 0, 0)]
+    """
+def bdd_height(K, height_bound, tolerance: float = 0.01, precision: int = 53) -> Generator[Incomplete, None, Incomplete]:
+    """
+    Compute all elements in the number field `K` which have relative
+    multiplicative height at most ``height_bound``.
+
+    The function can only be called for number fields `K` with positive unit
+    rank. An error will occur if `K` is `\\QQ` or an imaginary quadratic field.
+
+    This algorithm computes 2 lists: `L`, containing elements `x` in `K` such that
+    `H_k(x) \\leq B`, and a list `L'` containing elements `x` in `K` that, due to
+    floating point issues,
+    may be slightly larger then the bound. This can be controlled
+    by lowering the tolerance.
+
+    In current implementation both lists `(L,L')` are merged and returned in
+    form of iterator.
+
+    ALGORITHM:
+
+    This is an implementation of the revised algorithm (Algorithm 4) in
+    [DK2013]_.
+
+    INPUT:
+
+    - ``height_bound`` -- real number
+
+    - ``tolerance`` -- (default: 0.01) a rational number in (0,1]
+
+    - ``precision`` -- (default: 53) positive integer
+
+    OUTPUT: an iterator of number field elements
+
+    EXAMPLES:
+
+    There are no elements of negative height::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: x = polygen(ZZ, 'x')
+        sage: K.<g> = NumberField(x^5 - x + 7)
+        sage: list(bdd_height(K, -3))
+        []
+
+    The only nonzero elements of height 1 are the roots of unity::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: K.<g> = QuadraticField(3)
+        sage: list(bdd_height(K, 1))
+        [0, -1, 1]
+
+    ::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: K.<g> = QuadraticField(36865)
+        sage: len(list(bdd_height(K, 101))) # long time (4 s)
+        131
+
+    ::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: K.<g> = NumberField(x^6 + 2)
+        sage: len(list(bdd_height(K, 60))) # long time (5 s)
+        1899
+
+    ::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: K.<g> = NumberField(x^4 - x^3 - 3*x^2 + x + 1)
+        sage: len(list(bdd_height(K, 10)))
+        99
+
+    TESTS:
+
+    Check that :issue:`22771` is fixed::
+
+        sage: from sage.rings.number_field.bdd_height import bdd_height
+        sage: K.<v> = NumberField(x^3 + x + 1)
+        sage: len(list(bdd_height(K,3)))
+        23
+    """

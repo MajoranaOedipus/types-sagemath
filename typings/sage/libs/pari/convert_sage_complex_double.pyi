@@ -1,0 +1,12 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+complex_double_element_agm: _cython_3_2_1.cython_function_or_method
+complex_double_element_dilog: _cython_3_2_1.cython_function_or_method
+complex_double_element_eta: _cython_3_2_1.cython_function_or_method
+complex_double_element_gamma: _cython_3_2_1.cython_function_or_method
+complex_double_element_gamma_inc: _cython_3_2_1.cython_function_or_method
+complex_double_element_zeta: _cython_3_2_1.cython_function_or_method
+new_gen_from_complex_double_element: _cython_3_2_1.cython_function_or_method
+pari_to_cdf: _cython_3_2_1.cython_function_or_method

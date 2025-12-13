@@ -1,0 +1,3 @@
+from sage.categories.covariant_functorial_construction import RegressiveCovariantConstructionCategory as RegressiveCovariantConstructionCategory
+
+class SubquotientsCategory(RegressiveCovariantConstructionCategory): ...

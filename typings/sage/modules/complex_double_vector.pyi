@@ -1,0 +1,3 @@
+from sage.modules.vector_complex_double_dense import Vector_complex_double_dense as Vector_complex_double_dense
+
+ComplexDoubleVectorSpaceElement = Vector_complex_double_dense

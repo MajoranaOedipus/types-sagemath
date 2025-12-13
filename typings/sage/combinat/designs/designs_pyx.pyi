@@ -1,0 +1,12 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+from sage.misc.unknown import Unknown as Unknown
+
+__pyx_capi__: dict
+is_covering_array: _cython_3_2_1.cython_function_or_method
+is_difference_matrix: _cython_3_2_1.cython_function_or_method
+is_group_divisible_design: _cython_3_2_1.cython_function_or_method
+is_orthogonal_array: _cython_3_2_1.cython_function_or_method
+is_pairwise_balanced_design: _cython_3_2_1.cython_function_or_method
+is_projective_plane: _cython_3_2_1.cython_function_or_method
+is_quasi_difference_matrix: _cython_3_2_1.cython_function_or_method

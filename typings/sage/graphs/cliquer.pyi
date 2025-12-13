@@ -1,0 +1,6 @@
+import _cython_3_2_1
+
+all_cliques: _cython_3_2_1.cython_function_or_method
+all_max_clique: _cython_3_2_1.cython_function_or_method
+clique_number: _cython_3_2_1.cython_function_or_method
+max_clique: _cython_3_2_1.cython_function_or_method

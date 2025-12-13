@@ -1,0 +1,9 @@
+import _cython_3_2_1
+import sage.rings.integer as integer
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+four_squares_pyx: _cython_3_2_1.cython_function_or_method
+is_sum_of_two_squares_pyx: _cython_3_2_1.cython_function_or_method
+three_squares_pyx: _cython_3_2_1.cython_function_or_method
+two_squares_pyx: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,4 @@
+import _cython_3_2_1
+
+set_partition_iterator: _cython_3_2_1.cython_function_or_method
+set_partition_iterator_blocks: _cython_3_2_1.cython_function_or_method

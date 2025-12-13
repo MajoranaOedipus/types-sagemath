@@ -1,0 +1,8 @@
+import _cython_3_2_1
+from sage.arith.misc import is_prime as is_prime, kronecker_symbol as kronecker_symbol, valuation as valuation
+from sage.rings.finite_rings.integer_mod import Mod as Mod
+from sage.rings.finite_rings.integer_mod_ring import IntegerModRing as IntegerModRing
+
+CountAllLocalTypesNaive: _cython_3_2_1.cython_function_or_method
+count_all_local_good_types_normal_form: _cython_3_2_1.cython_function_or_method
+count_modp__by_gauss_sum: _cython_3_2_1.cython_function_or_method

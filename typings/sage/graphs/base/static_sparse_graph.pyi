@@ -1,0 +1,8 @@
+import _cython_3_2_1
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+
+__pyx_capi__: dict
+spectral_radius: _cython_3_2_1.cython_function_or_method
+strongly_connected_components_digraph: _cython_3_2_1.cython_function_or_method
+tarjan_strongly_connected_components: _cython_3_2_1.cython_function_or_method
+triangles_count: _cython_3_2_1.cython_function_or_method

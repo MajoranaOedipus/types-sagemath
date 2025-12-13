@@ -1,0 +1,404 @@
+import types
+from _typeshed import Incomplete
+from typing import IO
+
+TMP_DIR_FILENAME_BASE: Incomplete
+
+def tmp_dir(name: str = 'dir_', ext: str = '') -> str:
+    """
+    Create and return a temporary directory in
+    ``$HOME/.sage/temp/hostname/pid/``
+
+    The temporary directory is deleted automatically when Sage exits.
+
+    INPUT:
+
+    - ``name`` -- (default: ``'dir_'``) a prefix for the directory name
+
+    - ``ext`` -- (default: ``''``) a suffix for the directory name
+
+    OUTPUT:
+
+    The absolute path of the temporary directory created, with a
+    trailing slash (or whatever the path separator is on your OS).
+
+    EXAMPLES::
+
+        sage: d = tmp_dir('dir_testing_', '.extension')
+        sage: d   # random output
+        '/home/username/.sage/temp/hostname/7961/dir_testing_XgRu4p.extension/'
+        sage: os.chdir(d)
+        sage: f = open('file_inside_d', 'w')
+
+    Temporary directories are unaccessible by other users::
+
+        sage: os.stat(d).st_mode & 0o077
+        0
+        sage: f.close()
+    """
+def tmp_filename(name: str = 'tmp_', ext: str = '') -> str:
+    '''
+    Create and return a temporary file in
+    ``$HOME/.sage/temp/hostname/pid/``
+
+    The temporary file is deleted automatically when Sage exits.
+
+    .. warning::
+
+        If you need a particular file extension always use
+        ``tmp_filename(ext=\'.foo\')``, this will ensure that the file
+        does not yet exist. If you were to use
+        ``tmp_filename()+".foo"``, then you might overwrite an
+        existing file!
+
+    INPUT:
+
+    - ``name`` -- (default: ``\'tmp_\'``) a prefix for the file name
+
+    - ``ext`` -- (default: ``\'\'``) a suffix for the file name. If you
+      want a filename extension in the usual sense, this should start
+      with a dot.
+
+    OUTPUT: the absolute path of the temporary file created
+
+    EXAMPLES::
+
+        sage: fn = tmp_filename(\'just_for_testing_\', \'.extension\')
+        sage: fn  # random
+        \'/home/username/.sage/temp/hostname/8044/just_for_testing_tVVHsn.extension\'
+        sage: f = open(fn, \'w\')
+
+    Temporary files are unaccessible by other users::
+
+        sage: os.stat(fn).st_mode & 0o077
+        0
+        sage: f.close()
+    '''
+
+class atomic_write:
+    '''
+    Write to a given file using a temporary file and then rename it
+    to the target file. This renaming should be atomic on modern
+    operating systems. Therefore, this class can be used to avoid race
+    conditions when a file might be read while it is being written.
+    It also avoids having partially written files due to exceptions
+    or crashes.
+
+    This is to be used in a ``with`` statement, where a temporary file
+    is created when entering the ``with`` and is moved in place of the
+    target file when exiting the ``with`` (if no exceptions occurred).
+
+    INPUT:
+
+    - ``target_filename`` -- the name of the file to be written
+      Normally, the contents of this file will be overwritten
+
+    - ``append`` -- boolean (default: ``False``); if ``True`` and
+      ``target_filename`` is an existing file, then copy the current
+      contents of ``target_filename`` to the temporary file when
+      entering the ``with`` statement. Otherwise, the temporary file is
+      initially empty.
+
+    - ``mode`` -- (default: ``0o666``) mode bits for the file. The
+      temporary file is created with mode ``mode & ~umask`` and the
+      resulting file will also have these permissions (unless the
+      mode bits of the file were changed manually). (Not to be confused with
+      the file opening mode.)
+
+    - ``binary`` -- boolean (default: ``False``);
+      the underlying file is opened in binary mode.  If ``False`` then it is
+      opened in text mode and an encoding with which to write the file may be
+      supplied.
+
+    - ``**kwargs`` -- additional keyword arguments passed to the underlying
+      `io.open` call
+
+    EXAMPLES::
+
+        sage: from sage.misc.temporary_file import atomic_write
+        sage: target_file = tmp_filename()
+        sage: with open(target_file, \'w\') as f:
+        ....:     _ = f.write("Old contents")
+        sage: with atomic_write(target_file) as f:
+        ....:     _ = f.write("New contents")
+        ....:     f.flush()
+        ....:     with open(target_file, \'r\') as f2:
+        ....:         f2.read()
+        \'Old contents\'
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'New contents\'
+
+    The name of the temporary file can be accessed using ``f.name``.
+    It is not a problem to close and re-open the temporary file::
+
+        sage: from sage.misc.temporary_file import atomic_write
+        sage: target_file = tmp_filename()
+        sage: with open(target_file, \'w\') as f:
+        ....:     _ = f.write("Old contents")
+        sage: with atomic_write(target_file) as f:
+        ....:     f.close()
+        ....:     with open(f.name, \'w\') as f2:
+        ....:         _ = f2.write("Newer contents")
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'Newer contents\'
+
+    If an exception occurs while writing the file, the target file is
+    not touched::
+
+        sage: with atomic_write(target_file) as f:
+        ....:     _ = f.write("Newest contents")
+        ....:     raise RuntimeError
+        Traceback (most recent call last):
+        ...
+        RuntimeError
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'Newer contents\'
+
+    Some examples of using the ``append`` option. Note that the file
+    is never opened in "append" mode, it is possible to overwrite
+    existing data::
+
+        sage: target_file = tmp_filename()
+        sage: with atomic_write(target_file, append=True) as f:
+        ....:     _ = f.write("Hello")
+        sage: with atomic_write(target_file, append=True) as f:
+        ....:     _ = f.write(" World")
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'Hello World\'
+        sage: with atomic_write(target_file, append=True) as f:
+        ....:     _ = f.seek(0)
+        ....:     _ = f.write("HELLO")
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'HELLO World\'
+
+    If the target file is a symbolic link, the link is kept and the
+    target of the link is written to::
+
+        sage: link_to_target = os.path.join(tmp_dir(), "templink")
+        sage: os.symlink(target_file, link_to_target)
+        sage: with atomic_write(link_to_target) as f:
+        ....:     _ = f.write("Newest contents")
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'Newest contents\'
+
+    We check the permission bits of the new file. Note that the old
+    permissions do not matter::
+
+        sage: os.chmod(target_file, 0o600)
+        sage: _ = os.umask(0o022)
+        sage: with atomic_write(target_file) as f:
+        ....:     pass
+        sage: \'{:#o}\'.format(os.stat(target_file).st_mode & 0o777)
+        \'0o644\'
+        sage: _ = os.umask(0o077)
+        sage: with atomic_write(target_file, mode=0o777) as f:
+        ....:     pass
+        sage: \'{:#o}\'.format(os.stat(target_file).st_mode & 0o777)
+        \'0o700\'
+
+    Test writing twice to the same target file. The outermost ``with``
+    "wins"::
+
+        sage: with open(target_file, \'w\') as f:
+        ....:     _ = f.write(\'>>> \')
+        sage: with atomic_write(target_file, append=True) as f,         ....:          atomic_write(target_file, append=True) as g:
+        ....:     _ = f.write("AAA"); f.close()
+        ....:     _ = g.write("BBB"); g.close()
+        sage: with open(target_file, \'r\') as f:
+        ....:     f.read()
+        \'>>> AAA\'
+
+    Supplying an encoding means we\'re writing the file in "text mode" (in the
+    same sense as `io.open`) and so we must write unicode strings::
+
+        sage: target_file = tmp_filename()
+        sage: with atomic_write(target_file, binary=False,
+        ....:                   encoding=\'utf-8\') as f:
+        ....:     _ = f.write(u\'Hélas\')
+        sage: import io
+        sage: with io.open(target_file, encoding=\'utf-8\') as f:
+        ....:     print(f.read())
+        Hélas
+
+    Supplying an encoding in binary mode (or other arguments that don\'t
+    make sense to `io.open` in binary mode) is an error::
+
+        sage: writer = atomic_write(target_file, binary=True,
+        ....:                       encoding=\'utf-8\')
+        sage: with writer as f:
+        ....:     _ = f.write(u\'Hello\')
+        Traceback (most recent call last):
+        ...
+        ValueError: binary mode doesn\'t take an encoding argument
+        sage: os.path.exists(writer.tempname)
+        False
+    '''
+    target: Incomplete
+    tmpdir: Incomplete
+    append: Incomplete
+    mode: Incomplete
+    binary: Incomplete
+    kwargs: Incomplete
+    def __init__(self, target_filename, append: bool = False, mode: int = 438, binary: bool = False, **kwargs) -> None:
+        '''
+        TESTS::
+
+            sage: from sage.misc.temporary_file import atomic_write
+            sage: link_to_target = os.path.join(tmp_dir(), "templink")
+            sage: os.symlink("/foobar", link_to_target)
+            sage: aw = atomic_write(link_to_target)
+            sage: print(aw.target)
+            /foobar
+            sage: print(aw.tmpdir)
+            /
+        '''
+    tempname: Incomplete
+    tempfile: Incomplete
+    def __enter__(self) -> IO:
+        """
+        Create and return a temporary file in ``self.tmpdir`` (normally
+        the same directory as the target file).
+
+        If ``self.append``, then copy the current contents of
+        ``self.target`` to the temporary file.
+
+        OUTPUT: a file returned by :func:`tempfile.NamedTemporaryFile`
+
+        TESTS::
+
+            sage: from sage.misc.temporary_file import atomic_write
+            sage: aw = atomic_write(tmp_filename())
+            sage: with aw as f:
+            ....:     os.path.dirname(aw.target) == os.path.dirname(f.name)
+            True
+        """
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: types.TracebackType | None) -> None:
+        """
+        If the ``with`` block was successful, move the temporary file
+        to the target file. Otherwise, delete the temporary file.
+
+        TESTS:
+
+        Check that the temporary file is deleted if there was an
+        exception::
+
+            sage: from sage.misc.temporary_file import atomic_write
+            sage: with atomic_write(tmp_filename()) as f:
+            ....:     tempname = f.name
+            ....:     raise RuntimeError
+            Traceback (most recent call last):
+            ...
+            RuntimeError
+            sage: os.path.exists(tempname)
+            False
+        """
+
+class atomic_dir:
+    '''
+    Write to a given directory using a temporary directory and then rename it
+    to the target directory. This is for creating a directory whose contents
+    are determined uniquely by the directory name. If multiple threads or
+    processes attempt to create it in parallel, then it does not matter which
+    thread created it. Despite this assumption the contents of the directories
+    differ in the examples for demonstration purpose.
+
+    See also :class:`atomic_write`.
+
+    INPUT:
+
+    - ``target_directory`` -- the name of the directory to be written;
+      if it exists then the previous contents will be kept
+
+    EXAMPLES::
+
+        sage: from sage.misc.temporary_file import atomic_dir
+        sage: target_dir = tmp_dir()
+        sage: with atomic_dir(target_dir) as d:
+        ....:     target_file = os.path.join(d.name, \'test\')
+        ....:     with open(target_file, \'w\') as f:
+        ....:        _ = f.write("First")
+        ....:        f.flush()
+        ....:     with atomic_dir(target_dir) as e:
+        ....:         target_file2 = os.path.join(e.name, \'test\')
+        ....:         with open(target_file2, \'w\') as g:
+        ....:            _ = g.write("Second")
+        ....:            g.flush()
+        ....:     with open(target_file, \'r\') as f:
+        ....:         f.read()
+        \'First\'
+        sage: with atomic_dir(target_dir) as d:
+        ....:     target_file = os.path.join(d.name, \'test\')
+        ....:     with open(target_file, \'w\') as f:
+        ....:        _ = f.write("Third")
+        sage: target = os.path.join(target_dir, \'test\')
+        sage: with open(target, \'r\') as h:
+        ....:     h.read()
+        \'Second\'
+    '''
+    target: Incomplete
+    tmpdir: Incomplete
+    def __init__(self, target_directory) -> None:
+        '''
+        TESTS::
+
+            sage: from sage.misc.temporary_file import atomic_dir
+            sage: link_to_target = os.path.join(tmp_dir(), "templink")
+            sage: os.symlink("/foobar", link_to_target)
+            sage: aw = atomic_dir(link_to_target)
+            sage: print(aw.target)
+            /foobar
+            sage: print(aw.tmpdir)
+            /
+        '''
+    tempname: Incomplete
+    def __enter__(self):
+        """
+        Create and return a temporary directory in ``self.tmpdir`` (normally
+        the same directory as the target file).
+
+        OUTPUT: a directory returned by :func:`tempfile.TemporaryDirectory`
+
+        TESTS::
+
+            sage: from sage.misc.temporary_file import atomic_dir
+            sage: aw = atomic_dir(tmp_dir())
+            sage: with aw as d:
+            ....:     os.path.dirname(aw.target) == os.path.dirname(d.name)
+            True
+        """
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: types.TracebackType | None) -> None:
+        """
+        If the ``with`` block was successful, move the temporary directory
+        to the target directory. Otherwise, delete the temporary directory.
+
+        TESTS:
+
+        Check that the temporary directory is deleted if there was an
+        exception::
+
+            sage: from sage.misc.temporary_file import atomic_dir
+            sage: with atomic_dir(tmp_dir()) as d:
+            ....:     tempname = d.name
+            ....:     raise RuntimeError
+            Traceback (most recent call last):
+            ...
+            RuntimeError
+            sage: os.path.exists(tempname)
+            False
+        """
+
+def spyx_tmp() -> str:
+    '''
+    The temporary directory used to store pyx files.
+
+    We cache the result of this function "by hand" so that the same
+    temporary directory will always be returned. A function is used to
+    delay creating a directory until (if) it is needed. The temporary
+    directory is automatically removed when sage terminates.
+    '''

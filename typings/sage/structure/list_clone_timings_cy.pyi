@@ -1,0 +1,7 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+cy_add1_immutable: _cython_3_2_1.cython_function_or_method
+cy_add1_internal: _cython_3_2_1.cython_function_or_method
+cy_add1_mutable: _cython_3_2_1.cython_function_or_method
+cy_add1_with: _cython_3_2_1.cython_function_or_method

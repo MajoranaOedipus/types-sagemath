@@ -1,0 +1,4 @@
+import _cython_3_2_1
+
+__pyx_capi__: dict
+can_assign_class: _cython_3_2_1.cython_function_or_method

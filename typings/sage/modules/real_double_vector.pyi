@@ -1,0 +1,3 @@
+from sage.modules.vector_real_double_dense import Vector_real_double_dense as Vector_real_double_dense
+
+RealDoubleVectorSpaceElement = Vector_real_double_dense

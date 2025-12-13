@@ -1,0 +1,4 @@
+from sage.schemes.hyperelliptic_curves import monsky_washnitzer as monsky_washnitzer
+from sage.schemes.hyperelliptic_curves.constructor import HyperellipticCurve as HyperellipticCurve
+from sage.schemes.hyperelliptic_curves.kummer_surface import KummerSurface as KummerSurface
+from sage.schemes.hyperelliptic_curves.mestre import HyperellipticCurve_from_invariants as HyperellipticCurve_from_invariants, Mestre_conic as Mestre_conic

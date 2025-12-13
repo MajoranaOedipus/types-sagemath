@@ -1,0 +1,11 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+bitcount: _cython_3_2_1.cython_function_or_method
+call: _cython_3_2_1.cython_function_or_method
+from_man_exp: _cython_3_2_1.cython_function_or_method
+isqrt: _cython_3_2_1.cython_function_or_method
+mpmath_to_sage: _cython_3_2_1.cython_function_or_method
+normalize: _cython_3_2_1.cython_function_or_method
+sage_to_mpmath: _cython_3_2_1.cython_function_or_method

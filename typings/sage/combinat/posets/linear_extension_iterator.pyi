@@ -1,0 +1,3 @@
+import _cython_3_2_1
+
+linear_extension_iterator: _cython_3_2_1.cython_function_or_method

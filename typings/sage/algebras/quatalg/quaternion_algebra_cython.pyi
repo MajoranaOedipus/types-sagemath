@@ -1,0 +1,9 @@
+import _cython_3_2_1
+from sage.categories.category import ZZ as ZZ
+from sage.matrix.matrix_space import MatrixSpace as MatrixSpace
+from sage.rings.rational_field import QQ as QQ
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+integral_matrix_and_denom_from_rational_quaternions: _cython_3_2_1.cython_function_or_method
+rational_matrix_from_rational_quaternions: _cython_3_2_1.cython_function_or_method
+rational_quaternions_from_integral_matrix_and_denom: _cython_3_2_1.cython_function_or_method

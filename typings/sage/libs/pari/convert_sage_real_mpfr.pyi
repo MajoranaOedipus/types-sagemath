@@ -1,0 +1,6 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+new_gen_from_real_mpfr_element: _cython_3_2_1.cython_function_or_method
+set_real_mpfr_element_from_gen: _cython_3_2_1.cython_function_or_method

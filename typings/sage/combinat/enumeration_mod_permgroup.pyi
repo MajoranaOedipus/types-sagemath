@@ -1,0 +1,11 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+all_children: _cython_3_2_1.cython_function_or_method
+canonical_children: _cython_3_2_1.cython_function_or_method
+canonical_representative_of_orbit_of: _cython_3_2_1.cython_function_or_method
+is_canonical: _cython_3_2_1.cython_function_or_method
+lex_cmp: _cython_3_2_1.cython_function_or_method
+lex_cmp_partial: _cython_3_2_1.cython_function_or_method
+orbit: _cython_3_2_1.cython_function_or_method

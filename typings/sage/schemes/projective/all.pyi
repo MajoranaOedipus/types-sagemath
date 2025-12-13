@@ -1,0 +1,1 @@
+from sage.schemes.projective.projective_space import ProjectiveSpace as ProjectiveSpace, is_ProjectiveSpace as is_ProjectiveSpace

@@ -1,0 +1,12 @@
+import _cython_3_2_1
+from sage.categories.category import ZZ as ZZ
+from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
+from sage.misc.misc_c import prod as prod
+
+all_paths: _cython_3_2_1.cython_function_or_method
+all_paths_iterator: _cython_3_2_1.cython_function_or_method
+all_simple_paths: _cython_3_2_1.cython_function_or_method
+feng_k_shortest_simple_paths: _cython_3_2_1.cython_function_or_method
+pnc_k_shortest_simple_paths: _cython_3_2_1.cython_function_or_method
+shortest_simple_paths: _cython_3_2_1.cython_function_or_method
+yen_k_shortest_simple_paths: _cython_3_2_1.cython_function_or_method

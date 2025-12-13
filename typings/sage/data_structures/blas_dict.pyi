@@ -1,0 +1,13 @@
+import _cython_3_2_1
+
+__pyx_capi__: dict
+add: _cython_3_2_1.cython_function_or_method
+axpy: _cython_3_2_1.cython_function_or_method
+convert_remove_zeroes: _cython_3_2_1.cython_function_or_method
+iaxpy: _cython_3_2_1.cython_function_or_method
+linear_combination: _cython_3_2_1.cython_function_or_method
+negate: _cython_3_2_1.cython_function_or_method
+scal: _cython_3_2_1.cython_function_or_method
+sum: _cython_3_2_1.cython_function_or_method
+sum_of_monomials: _cython_3_2_1.cython_function_or_method
+sum_of_terms: _cython_3_2_1.cython_function_or_method

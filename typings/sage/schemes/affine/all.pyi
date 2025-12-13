@@ -1,0 +1,2 @@
+from sage.schemes.affine.affine_rational_point import enum_affine_finite_field as enum_affine_finite_field, enum_affine_rational_field as enum_affine_rational_field
+from sage.schemes.affine.affine_space import AffineSpace as AffineSpace

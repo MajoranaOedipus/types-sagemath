@@ -1,0 +1,6 @@
+import _cython_3_2_1
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+
+__pyx_capi__: dict
+set_matrix_mod2_from_numpy: _cython_3_2_1.cython_function_or_method
+set_mzd_from_numpy: _cython_3_2_1.cython_function_or_method

@@ -1,0 +1,3 @@
+import _cython_3_2_1
+
+C3_algorithm: _cython_3_2_1.cython_function_or_method

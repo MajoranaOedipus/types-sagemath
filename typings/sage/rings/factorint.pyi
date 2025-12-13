@@ -1,0 +1,9 @@
+import _cython_3_2_1
+from sage.misc.misc_c import prod as prod
+from sage.structure.element import have_same_parent as have_same_parent, parent as parent
+from sage.structure.factorization_integer import IntegerFactorization as IntegerFactorization
+
+aurifeuillian: _cython_3_2_1.cython_function_or_method
+factor_aurifeuillian: _cython_3_2_1.cython_function_or_method
+factor_cunningham: _cython_3_2_1.cython_function_or_method
+factor_trial_division: _cython_3_2_1.cython_function_or_method

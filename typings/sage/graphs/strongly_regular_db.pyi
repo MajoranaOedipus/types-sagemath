@@ -1,0 +1,73 @@
+import _cython_3_2_1
+import sage.misc.cachefunc
+from sage.arith.misc import divisors as divisors, is_prime_power as is_prime_power, is_square as is_square
+from sage.categories.sets_cat import EmptySetError as EmptySetError
+from sage.coding.linear_code import LinearCode as LinearCode
+from sage.combinat.designs.bibd import balanced_incomplete_block_design as balanced_incomplete_block_design
+from sage.combinat.designs.orthogonal_arrays import orthogonal_array as orthogonal_array
+from sage.graphs.graph import Graph as Graph
+from sage.matrix.constructor import Matrix as Matrix
+from sage.misc.cachefunc import cached_function as cached_function
+from sage.misc.lazy_import import LazyImport as LazyImport
+from sage.misc.unknown import Unknown as Unknown
+from sage.rings.finite_rings.finite_field_constructor import GF as GF
+
+SRG_100_44_18_20: _cython_3_2_1.cython_function_or_method
+SRG_100_45_20_20: _cython_3_2_1.cython_function_or_method
+SRG_105_32_4_12: _cython_3_2_1.cython_function_or_method
+SRG_120_63_30_36: _cython_3_2_1.cython_function_or_method
+SRG_120_77_52_44: _cython_3_2_1.cython_function_or_method
+SRG_126_25_8_4: _cython_3_2_1.cython_function_or_method
+SRG_126_50_13_24: _cython_3_2_1.cython_function_or_method
+SRG_1288_792_476_504: _cython_3_2_1.cython_function_or_method
+SRG_144_39_6_12: _cython_3_2_1.cython_function_or_method
+SRG_175_72_20_36: _cython_3_2_1.cython_function_or_method
+SRG_176_105_68_54: _cython_3_2_1.cython_function_or_method
+SRG_176_49_12_14: _cython_3_2_1.cython_function_or_method
+SRG_176_90_38_54: _cython_3_2_1.cython_function_or_method
+SRG_196_91_42_42: _cython_3_2_1.cython_function_or_method
+SRG_210_99_48_45: _cython_3_2_1.cython_function_or_method
+SRG_220_84_38_28: _cython_3_2_1.cython_function_or_method
+SRG_243_110_37_60: _cython_3_2_1.cython_function_or_method
+SRG_253_140_87_65: _cython_3_2_1.cython_function_or_method
+SRG_276_140_58_84: _cython_3_2_1.cython_function_or_method
+SRG_280_117_44_52: _cython_3_2_1.cython_function_or_method
+SRG_280_135_70_60: _cython_3_2_1.cython_function_or_method
+SRG_416_100_36_20: _cython_3_2_1.cython_function_or_method
+SRG_560_208_72_80: _cython_3_2_1.cython_function_or_method
+SRG_630_85_20_10: _cython_3_2_1.cython_function_or_method
+SRG_from_RSHCD: _cython_3_2_1.cython_function_or_method
+apparently_feasible_parameters: _cython_3_2_1.cython_function_or_method
+eigenmatrix: _cython_3_2_1.cython_function_or_method
+is_GQqmqp: sage.misc.cachefunc.CachedFunction
+is_NO_F2: sage.misc.cachefunc.CachedFunction
+is_NO_F3: sage.misc.cachefunc.CachedFunction
+is_NOodd: sage.misc.cachefunc.CachedFunction
+is_NOperp_F5: sage.misc.cachefunc.CachedFunction
+is_NU: sage.misc.cachefunc.CachedFunction
+is_RSHCD: _cython_3_2_1.cython_function_or_method
+is_affine_polar: sage.misc.cachefunc.CachedFunction
+is_complete_multipartite: sage.misc.cachefunc.CachedFunction
+is_cossidente_penttila: sage.misc.cachefunc.CachedFunction
+is_goethals_seidel: sage.misc.cachefunc.CachedFunction
+is_haemers: sage.misc.cachefunc.CachedFunction
+is_johnson: sage.misc.cachefunc.CachedFunction
+is_mathon_PC_srg: sage.misc.cachefunc.CachedFunction
+is_muzychuk_S6: sage.misc.cachefunc.CachedFunction
+is_nowhere0_twoweight: _cython_3_2_1.cython_function_or_method
+is_orthogonal_array_block_graph: sage.misc.cachefunc.CachedFunction
+is_orthogonal_polar: sage.misc.cachefunc.CachedFunction
+is_paley: sage.misc.cachefunc.CachedFunction
+is_polhill: sage.misc.cachefunc.CachedFunction
+is_steiner: sage.misc.cachefunc.CachedFunction
+is_switch_OA_srg: _cython_3_2_1.cython_function_or_method
+is_switch_skewhad: _cython_3_2_1.cython_function_or_method
+is_taylor_twograph_srg: sage.misc.cachefunc.CachedFunction
+is_twograph_descendant_of_srg: sage.misc.cachefunc.CachedFunction
+is_unitary_dual_polar: sage.misc.cachefunc.CachedFunction
+is_unitary_polar: sage.misc.cachefunc.CachedFunction
+latin_squares_graph_parameters: _cython_3_2_1.cython_function_or_method
+strongly_regular_from_two_intersection_set: _cython_3_2_1.cython_function_or_method
+strongly_regular_from_two_weight_code: _cython_3_2_1.cython_function_or_method
+strongly_regular_graph: _cython_3_2_1.cython_function_or_method
+strongly_regular_graph_lazy: _cython_3_2_1.cython_function_or_method
