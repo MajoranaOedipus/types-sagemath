@@ -438,3 +438,13 @@ class ComplexIntervalField_class(sage.rings.abc.ComplexIntervalField):
             sage: CIF((0.025, 2))
             0.025000000000000002? + 2*I
         """
+
+
+from sage.categories.category import JoinCategory
+class ComplexIntervalField_class_with_category(
+    ComplexIntervalField_class, 
+    JoinCategory.parent_class
+):
+    ... #TODO: check mro of CIF to decides exactly which classes to inherit from
+
+CIF = ComplexIntervalField_class_with_category(53)

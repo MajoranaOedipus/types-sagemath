@@ -4391,3 +4391,21 @@ def get_AA_golden_ratio():
         sage: AA(golden_ratio)  # indirect doctest                                      # needs sage.symbolic
         1.618033988749895?
     """
+
+RR_1_10 = RR(1) / 10
+QQ_0 = QQ.zero()
+QQ_1 = QQ.one()
+QQ_1_2 = QQ((1, 2))
+QQ_1_4 = QQ((1, 4))
+
+AA_0 = AA.zero()
+
+QQbar_I_nf = GaussianField()
+QQbar_I_generator = AlgebraicGenerator(QQbar_I_nf, ANRoot(AAPoly.gen()**2 + 1, CIF(0, 1)))
+QQbar_I = AlgebraicNumber(ANExtensionElement(QQbar_I_generator, QQbar_I_nf.gen()))
+
+AA_hash_offset = AA(~ZZ(123456789))
+
+QQbar_hash_offset = AlgebraicNumber(ANExtensionElement(QQbar_I_generator, ~ZZ(123456789) + QQbar_I_nf.gen() / ZZ(987654321)))
+
+ZZX_x = ZZ['x'].gen()

@@ -461,6 +461,181 @@ def symbolic_sum(expression, *args, **kwds):
         sage: sum([[1], [2]], start=[])
         [1, 2]
     """
+
+sum = symbolic_sum
+"""
+    Return the symbolic sum `\\sum_{v = a}^b expression` with respect
+    to the variable `v` with endpoints `a` and `b`.
+
+    INPUT:
+
+    - ``expression`` -- a symbolic expression
+
+    - ``v`` -- a variable or variable name
+
+    - ``a`` -- lower endpoint of the sum
+
+    - ``b`` -- upper endpoint of the sum
+
+    - ``algorithm`` -- (default: ``'maxima'``)  one of
+
+      - ``'maxima'`` -- use Maxima (the default)
+
+      - ``'maple'`` -- (optional) use Maple
+
+      - ``'mathematica'`` -- (optional) use Mathematica
+
+      - ``'giac'`` -- (optional) use Giac
+
+      - ``'sympy'`` -- use SymPy
+
+    EXAMPLES::
+
+        sage: k, n = var('k,n')                                                         # needs sage.symbolic
+        sage: sum(k, k, 1, n).factor()                                                  # needs sage.symbolic
+        1/2*(n + 1)*n
+
+    ::
+
+        sage: sum(1/k^4, k, 1, oo)                                                      # needs sage.symbolic
+        1/90*pi^4
+
+    ::
+
+        sage: sum(1/k^5, k, 1, oo)                                                      # needs sage.symbolic
+        zeta(5)
+
+    .. WARNING::
+
+        This function only works with symbolic expressions. To sum any
+        other objects like list elements or function return values,
+        please use python summation, see
+        http://docs.python.org/library/functions.html#sum
+
+        In particular, this does not work::
+
+            sage: n = var('n')                                                          # needs sage.symbolic
+            sage: mylist = [1,2,3,4,5]
+            sage: sum(mylist[n], n, 0, 3)                                               # needs sage.symbolic
+            Traceback (most recent call last):
+            ...
+            TypeError: unable to convert n to an integer
+
+        Use python ``sum()`` instead::
+
+            sage: sum(mylist[n] for n in range(4))
+            10
+
+        Also, only a limited number of functions are recognized in symbolic sums::
+
+            sage: sum(valuation(n, 2), n, 1, 5)                                         # needs sage.symbolic
+            Traceback (most recent call last):
+            ...
+            TypeError: unable to convert n to an integer
+
+        Again, use python ``sum()``::
+
+            sage: sum(valuation(n + 1, 2) for n in range(5))
+            3
+
+        (now back to the Sage ``sum`` examples)
+
+    A well known binomial identity::
+
+        sage: sum(binomial(n, k), k, 0, n)                                              # needs sage.symbolic
+        2^n
+
+    The binomial theorem::
+
+        sage: x, y = var('x, y')                                                        # needs sage.symbolic
+        sage: sum(binomial(n, k) * x^k * y^(n-k), k, 0, n)                              # needs sage.symbolic
+        (x + y)^n
+
+    ::
+
+        sage: sum(k * binomial(n, k), k, 1, n)                                          # needs sage.symbolic
+        2^(n - 1)*n
+
+    ::
+
+        sage: sum((-1)^k * binomial(n, k), k, 0, n)                                     # needs sage.symbolic
+        0
+
+    ::
+
+        sage: sum(2^(-k)/(k*(k+1)), k, 1, oo)                                           # needs sage.symbolic
+        -log(2) + 1
+
+    Another binomial identity (:issue:`7952`)::
+
+        sage: t, k, i = var('t,k,i')                                                    # needs sage.symbolic
+        sage: sum(binomial(i + t, t), i, 0, k)                                          # needs sage.symbolic
+        binomial(k + t + 1, t + 1)
+
+    Summing a hypergeometric term::
+
+        sage: sum(binomial(n, k) * factorial(k) / factorial(n+1+k), k, 0, n)            # needs sage.symbolic
+        1/2*sqrt(pi)/factorial(n + 1/2)
+
+    We check a well known identity::
+
+        sage: bool(sum(k^3, k, 1, n) == sum(k, k, 1, n)^2)                              # needs sage.symbolic
+        True
+
+    A geometric sum::
+
+        sage: a, q = var('a, q')                                                        # needs sage.symbolic
+        sage: sum(a*q^k, k, 0, n)                                                       # needs sage.symbolic
+        (a*q^(n + 1) - a)/(q - 1)
+
+    The geometric series::
+
+        sage: assume(abs(q) < 1)                                                        # needs sage.symbolic
+        sage: sum(a * q^k, k, 0, oo)                                                    # needs sage.symbolic
+        -a/(q - 1)
+
+    A divergent geometric series.  Don't forget
+    to forget your assumptions::
+
+        sage: forget()                                                                  # needs sage.symbolic
+        sage: assume(q > 1)                                                             # needs sage.symbolic
+        sage: sum(a * q^k, k, 0, oo)                                                    # needs sage.symbolic
+        Traceback (most recent call last):
+        ...
+        ValueError: Sum is divergent.
+
+    This summation only Mathematica can perform::
+
+        sage: sum(1/(1+k^2), k, -oo, oo, algorithm='mathematica')       # optional - mathematica, needs sage.symbolic
+        pi*coth(pi)
+
+    Use Maple as a backend for summation::
+
+        sage: sum(binomial(n, k) * x^k, k, 0, n, algorithm='maple')     # optional - maple, needs sage.symbolic
+        (x + 1)^n
+
+    Python ints should work as limits of summation (:issue:`9393`)::
+
+        sage: sum(x, x, 1r, 5r)                                                         # needs sage.symbolic
+        15
+
+    .. NOTE::
+
+       #. Sage can currently only understand a subset of the output of Maxima, Maple and
+          Mathematica, so even if the chosen backend can perform the summation the
+          result might not be convertible into a Sage expression.
+
+    TESTS:
+
+    Check that :issue:`34007` is fixed::
+
+        sage: sum([1, 2], start=1)
+        4
+        sage: sum([[1], [2]], start=[])
+        [1, 2]
+    """
+
+
 def symbolic_prod(expression, *args, **kwds):
     """
     Return the symbolic product `\\prod_{v = a}^b expression` with respect
@@ -507,6 +682,54 @@ def symbolic_prod(expression, *args, **kwds):
         sage: product(f(i), i, 1, n).log().log_expand()
         sum(log(f(i)), i, 1, n)
     """
+
+product = symbolic_prod
+"""
+    Return the symbolic product `\\prod_{v = a}^b expression` with respect
+    to the variable `v` with endpoints `a` and `b`.
+
+    INPUT:
+
+    - ``expression`` -- a symbolic expression
+
+    - ``v`` -- a variable or variable name
+
+    - ``a`` -- lower endpoint of the product
+
+    - ``b`` -- upper endpoint of the prduct
+
+    - ``algorithm`` -- (default: ``'maxima'``)  one of
+
+      - ``'maxima'`` -- use Maxima (the default)
+
+      - ``'giac'`` -- (optional) use Giac
+
+      - ``'sympy'`` -- use SymPy
+
+    - ``hold`` -- boolean (default: ``False``); if ``True`` don't evaluate
+
+    EXAMPLES::
+
+        sage: # needs sage.symbolic
+        sage: i, k, n = var('i,k,n')
+        sage: product(k, k, 1, n)
+        factorial(n)
+        sage: product(x + i*(i+1)/2, i, 1, 4)
+        x^4 + 20*x^3 + 127*x^2 + 288*x + 180
+        sage: product(i^2, i, 1, 7)
+        25401600
+        sage: f = function('f')
+        sage: product(f(i), i, 1, 7)
+        f(7)*f(6)*f(5)*f(4)*f(3)*f(2)*f(1)
+        sage: product(f(i), i, 1, n)
+        product(f(i), i, 1, n)
+        sage: assume(k>0)
+        sage: product(integrate(x^k, x, 0, 1), k, 1, n)
+        1/factorial(n + 1)
+        sage: product(f(i), i, 1, n).log().log_expand()
+        sum(log(f(i)), i, 1, n)
+    """
+
 def integral(x, *args, **kwds):
     """
     Return an indefinite or definite integral of an object ``x``.

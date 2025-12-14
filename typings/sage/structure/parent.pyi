@@ -8,7 +8,7 @@ from sage.structure.category_object import CategoryObject as CategoryObject
 from sage.structure.coerce_exceptions import CoercionException as CoercionException
 from sage.structure.dynamic_class import dynamic_class as dynamic_class
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
-from typing import Any, ClassVar, overload
+from typing import Any, ClassVar, Self, overload
 
 is_Parent: _cython_3_2_1.cython_function_or_method
 
@@ -1310,7 +1310,7 @@ class Parent(sage.structure.category_object.CategoryObject):
             [      0    -462]'''
     def __bool__(self) -> bool:
         """True if self else False"""
-    def __call__(self, x=..., *args, **kwds) -> Any:
+    def __call__(self, x=..., *args, **kwds) -> Self: # TODO: eg for RR, Self is RealField_class, but returns RealField
         '''Parent.__call__(self, x=0, *args, **kwds)
 
         File: /build/sagemath/src/sage/src/sage/structure/parent.pyx (starting at line 842)

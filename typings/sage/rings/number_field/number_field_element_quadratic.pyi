@@ -5604,3 +5604,29 @@ class Z_to_quadratic_field_element(sage.categories.morphism.Morphism):
                     sage: psi == loads(dumps(psi)) # todo: comparison not implemented
                     True
         """
+
+I: NumberFieldElement_quadratic
+r"""File: /build/sagemath/src/sage/src/sage/rings/number_field/number_field_element_quadratic.pyx (starting at line 2532)
+
+    An element of `\QQ[i]`.
+
+    Some methods of this class behave slightly differently than the
+    corresponding methods of general elements of quadratic number fields,
+    especially with regard to conversions to parents that can represent complex
+    numbers in rectangular form.
+
+    In addition, this class provides some convenience methods similar to methods
+    of symbolic expressions to make the behavior of ``a + I*b`` with rational
+    ``a``, ``b`` closer to that when ``a``, ``b`` are expressions.
+
+    EXAMPLES::
+
+        sage: type(I)
+        <class 'sage.rings.number_field.number_field_element_quadratic.NumberFieldElement_gaussian'>
+
+        sage: mi = QuadraticField(-1, embedding=CC(0,-1)).gen()
+        sage: type(mi)
+        <class 'sage.rings.number_field.number_field_element_quadratic.NumberFieldElement_gaussian'>
+        sage: CC(mi)
+        -1.00000000000000*I
+"""

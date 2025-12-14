@@ -1,3 +1,4 @@
+from numbers import Complex, Number
 import _cython_3_2_1
 import sage as sage
 import sage.categories.morphism
@@ -23,7 +24,7 @@ pari_is_prime: None
 pari_is_prime_power: None
 set_integer_from_gen: None
 
-class Integer(sage.structure.element.EuclideanDomainElement):
+class Integer(sage.structure.element.EuclideanDomainElement, Number):
     '''Integer(x=None, base=0)
 
     File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 404)

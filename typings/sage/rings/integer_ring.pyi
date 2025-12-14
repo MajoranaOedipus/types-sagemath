@@ -12,7 +12,23 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-IntegerRing: _cython_3_2_1.cython_function_or_method
+def IntegerRing() -> IntegerRing_class:
+    """IntegerRing()
+
+File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1599)
+
+Return the integer ring.
+
+EXAMPLES::
+
+    sage: IntegerRing()
+    Integer Ring
+    sage: ZZ==IntegerRing()
+    True
+
+"""
+
+
 arith: None
 crt_basis: _cython_3_2_1.cython_function_or_method
 is_IntegerRing: _cython_3_2_1.cython_function_or_method

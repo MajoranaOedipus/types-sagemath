@@ -11,7 +11,71 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-RealField: _cython_3_2_1.cython_function_or_method
+def RealField(
+        prec: int = 53, sci_notL: int = 0, rnd: str = 'RNDN'
+) -> RealField_class:
+    """
+    RealField(prec, sci_not, rnd):
+
+    INPUT:
+
+    - ``prec`` -- integer (default: 53); precision ``prec`` is
+      the number of bits used to represent the mantissa of a
+      floating-point number. The precision can be any integer between
+      :func:`mpfr_prec_min()` and :func:`mpfr_prec_max()`. In the current
+      implementation, :func:`mpfr_prec_min()` is equal to 2.
+
+    - ``sci_not`` -- boolean (default: ``False``); if ``True``, always display
+      using scientific notation. If ``False``, display using scientific
+      notation only for very large or very small numbers.
+
+    - ``rnd`` -- string; the rounding mode:
+
+      - ``'RNDN'`` -- (default) round to nearest (ties go to the even
+        number): Knuth says this is the best choice to prevent "floating
+        point drift"
+      - ``'RNDD'`` -- round towards minus infinity
+      - ``'RNDZ'`` -- round towards zero
+      - ``'RNDU'`` -- round towards plus infinity
+      - ``'RNDA'`` -- round away from zero
+      - ``'RNDF'`` -- faithful rounding (currently experimental; not
+        guaranteed correct for every operation)
+      - for specialized applications, the rounding mode can also be
+        given as an integer value of type ``mpfr_rnd_t``. However, the
+        exact values are unspecified.
+
+    EXAMPLES::
+
+        sage: RealField(10)
+        Real Field with 10 bits of precision
+        sage: RealField()
+        Real Field with 53 bits of precision
+        sage: RealField(100000)
+        Real Field with 100000 bits of precision
+
+    Here we show the effect of rounding::
+
+        sage: R17d = RealField(17,rnd='RNDD')
+        sage: a = R17d(1)/R17d(3); a.exact_rational()
+        87381/262144
+        sage: R17u = RealField(17,rnd='RNDU')
+        sage: a = R17u(1)/R17u(3); a.exact_rational()
+        43691/131072
+
+    .. NOTE::
+
+       The default precision is 53, since according to the MPFR
+       manual: 'mpfr should be able to exactly reproduce all
+       computations with double-precision machine floating-point
+       numbers (double type in C), except the default exponent range
+       is much wider and subnormal numbers are not implemented.'
+
+    .. SEEALSO::
+
+        - :mod:`sage.rings.real_mpfr`
+        - :class:`sage.rings.real_arb.RealBallField` (real numbers with rigorous
+          error bounds)
+    """
 __pyx_capi__: dict
 create_RealNumber: _cython_3_2_1.cython_function_or_method
 is_RealNumber: _cython_3_2_1.cython_function_or_method
@@ -19110,5 +19174,5 @@ class int_toRR(sage.categories.map.Map):
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
 
-RR: RealField_class = RealField_class(53)
+RR: RealField_class = RealField(53)
 RR_min_prec: RealField_class = RealField_class(1)

@@ -174,7 +174,7 @@ class UnsignedInfinityRing_class(Singleton, Parent):
             True
         """
 
-UnsignedInfinityRing: Incomplete
+UnsignedInfinityRing: UnsignedInfinityRing_class
 
 class LessThanInfinity(_uniq, RingElement):
     def __init__(self, parent=...) -> None:
@@ -225,8 +225,8 @@ class UnsignedInfinity(_uniq, AnInfinity, InfinityElement):
             2147483646          # 32-bit
         """
 
-unsigned_infinity: Incomplete
-less_than_infinity: Incomplete
+unsigned_infinity: UnsignedInfinity
+less_than_infinity: LessThanInfinity
 
 def is_Infinite(x) -> bool:
     """
@@ -473,10 +473,10 @@ class PlusInfinity(_uniq, AnInfinity, InfinityElement):
             +Infinity
         """
 
-InfinityRing: Incomplete
-infinity: Incomplete
+InfinityRing: InfinityRing_class
+infinity: PlusInfinity
 Infinity = infinity
-minus_infinity: Incomplete
+minus_infinity: MinusInfinity
 
 def check_comparison(ring) -> None:
     """

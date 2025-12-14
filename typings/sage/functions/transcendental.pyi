@@ -120,7 +120,235 @@ class Function_zeta(GinacFunction):
             zeta(3)
         """
 
-zeta: Incomplete
+zeta: Function_zeta
+r"""Riemann zeta function at s with s a real or complex number.
+
+INPUT:
+
+- ``s`` -- real or complex number
+
+If s is a real number, the computation is done using the MPFR
+library. When the input is not real, the computation is done using
+the PARI C library.
+
+EXAMPLES::
+
+    sage: RR = RealField(200)                                                   # needs sage.rings.real_mpfr
+    sage: zeta(RR(2))                                                           # needs sage.rings.real_mpfr
+    1.6449340668482264364724151666460251892189499012067984377356
+
+    sage: # needs sage.symbolic
+    sage: zeta(x)
+    zeta(x)
+    sage: zeta(2)
+    1/6*pi^2
+    sage: zeta(2.)
+    1.64493406684823
+    sage: zeta(I)
+    zeta(I)
+    sage: zeta(I).n()
+    0.00330022368532410 - 0.418155449141322*I
+    sage: zeta(sqrt(2))
+    zeta(sqrt(2))
+    sage: zeta(sqrt(2)).n()  # rel tol 1e-10
+    3.02073767948603
+
+It is possible to use the ``hold`` argument to prevent
+automatic evaluation::
+
+    sage: zeta(2, hold=True)                                                    # needs sage.symbolic
+    zeta(2)
+
+To then evaluate again, we currently must use Maxima via
+:meth:`sage.symbolic.expression.Expression.simplify`::
+
+    sage: a = zeta(2, hold=True); a.simplify()                                  # needs sage.symbolic
+    1/6*pi^2
+
+The Laurent expansion of `\zeta(s)` at `s=1` is
+implemented by means of the
+:wikipedia:`Stieltjes constants <Stieltjes_constants>`::
+
+    sage: s = SR('s')                                                           # needs sage.symbolic
+    sage: zeta(s).series(s==1, 2)                                               # needs sage.symbolic
+    1*(s - 1)^(-1) + euler_gamma + (-stieltjes(1))*(s - 1) + Order((s - 1)^2)
+
+Generally, the Stieltjes constants occur in the Laurent
+expansion of `\zeta`-type singularities::
+
+    sage: zeta(2*s/(s+1)).series(s==1, 2)                                       # needs sage.symbolic
+    2*(s - 1)^(-1) + (euler_gamma + 1) + (-1/2*stieltjes(1))*(s - 1) + Order((s - 1)^2)
+
+
+TESTS::
+
+    sage: # needs sage.symbolic
+    sage: latex(zeta(x))
+    \zeta(x)
+    sage: a = loads(dumps(zeta(x)))
+    sage: a.operator() == zeta
+    True
+    sage: zeta(x)._sympy_()                                                     # needs sympy
+    zeta(x)
+
+    sage: zeta(1)                                                               # needs sage.symbolic
+    Infinity
+    sage: zeta(x).subs(x=1)                                                     # needs sage.symbolic
+    Infinity
+
+Check that :issue:`19799` is resolved::
+
+    sage: zeta(pi)                                                              # needs sage.symbolic
+    zeta(pi)
+    sage: zeta(pi).n()  # rel tol 1e-10                                         # needs sage.symbolic
+    1.17624173838258
+
+Check that :issue:`20082` is fixed::
+
+    sage: zeta(x).series(x==pi, 2)                                              # needs sage.symbolic
+    (zeta(pi)) + (zetaderiv(1, pi))*(-pi + x) + Order((pi - x)^2)
+    sage: (zeta(x) * 1/(1 - exp(-x))).residue(x==2*pi*I)                        # needs sage.symbolic
+    zeta(2*I*pi)
+
+Check that :issue:`20102` is fixed::
+
+    sage: (zeta(x)^2).series(x==1, 1)                                           # needs sage.symbolic
+    1*(x - 1)^(-2) + (2*euler_gamma)*(x - 1)^(-1)
+    + (euler_gamma^2 - 2*stieltjes(1)) + Order(x - 1)
+    sage: (zeta(x)^4).residue(x==1)                                             # needs sage.symbolic
+    4/3*euler_gamma*(3*euler_gamma^2 - 2*stieltjes(1))
+    - 28/3*euler_gamma*stieltjes(1) + 2*stieltjes(2)
+
+Check that the right infinities are returned (:issue:`19439`)::
+
+    sage: zeta(1.0)                                                             # needs sage.symbolic
+    +infinity
+    sage: zeta(SR(1.0))                                                         # needs sage.symbolic
+    Infinity
+
+Fixed conversion::
+
+    sage: zeta(3)._maple_init_()                                                # needs sage.symbolic
+    'Zeta(3)'
+    sage: zeta(3)._maple_().sage()      # optional - maple                      # needs sage.symbolic
+    zeta(3)
+
+"""
+
+ζ = zeta
+r"""Riemann zeta function at s with s a real or complex number.
+
+INPUT:
+
+- ``s`` -- real or complex number
+
+If s is a real number, the computation is done using the MPFR
+library. When the input is not real, the computation is done using
+the PARI C library.
+
+EXAMPLES::
+
+    sage: RR = RealField(200)                                                   # needs sage.rings.real_mpfr
+    sage: zeta(RR(2))                                                           # needs sage.rings.real_mpfr
+    1.6449340668482264364724151666460251892189499012067984377356
+
+    sage: # needs sage.symbolic
+    sage: zeta(x)
+    zeta(x)
+    sage: zeta(2)
+    1/6*pi^2
+    sage: zeta(2.)
+    1.64493406684823
+    sage: zeta(I)
+    zeta(I)
+    sage: zeta(I).n()
+    0.00330022368532410 - 0.418155449141322*I
+    sage: zeta(sqrt(2))
+    zeta(sqrt(2))
+    sage: zeta(sqrt(2)).n()  # rel tol 1e-10
+    3.02073767948603
+
+It is possible to use the ``hold`` argument to prevent
+automatic evaluation::
+
+    sage: zeta(2, hold=True)                                                    # needs sage.symbolic
+    zeta(2)
+
+To then evaluate again, we currently must use Maxima via
+:meth:`sage.symbolic.expression.Expression.simplify`::
+
+    sage: a = zeta(2, hold=True); a.simplify()                                  # needs sage.symbolic
+    1/6*pi^2
+
+The Laurent expansion of `\zeta(s)` at `s=1` is
+implemented by means of the
+:wikipedia:`Stieltjes constants <Stieltjes_constants>`::
+
+    sage: s = SR('s')                                                           # needs sage.symbolic
+    sage: zeta(s).series(s==1, 2)                                               # needs sage.symbolic
+    1*(s - 1)^(-1) + euler_gamma + (-stieltjes(1))*(s - 1) + Order((s - 1)^2)
+
+Generally, the Stieltjes constants occur in the Laurent
+expansion of `\zeta`-type singularities::
+
+    sage: zeta(2*s/(s+1)).series(s==1, 2)                                       # needs sage.symbolic
+    2*(s - 1)^(-1) + (euler_gamma + 1) + (-1/2*stieltjes(1))*(s - 1) + Order((s - 1)^2)
+
+
+TESTS::
+
+    sage: # needs sage.symbolic
+    sage: latex(zeta(x))
+    \zeta(x)
+    sage: a = loads(dumps(zeta(x)))
+    sage: a.operator() == zeta
+    True
+    sage: zeta(x)._sympy_()                                                     # needs sympy
+    zeta(x)
+
+    sage: zeta(1)                                                               # needs sage.symbolic
+    Infinity
+    sage: zeta(x).subs(x=1)                                                     # needs sage.symbolic
+    Infinity
+
+Check that :issue:`19799` is resolved::
+
+    sage: zeta(pi)                                                              # needs sage.symbolic
+    zeta(pi)
+    sage: zeta(pi).n()  # rel tol 1e-10                                         # needs sage.symbolic
+    1.17624173838258
+
+Check that :issue:`20082` is fixed::
+
+    sage: zeta(x).series(x==pi, 2)                                              # needs sage.symbolic
+    (zeta(pi)) + (zetaderiv(1, pi))*(-pi + x) + Order((pi - x)^2)
+    sage: (zeta(x) * 1/(1 - exp(-x))).residue(x==2*pi*I)                        # needs sage.symbolic
+    zeta(2*I*pi)
+
+Check that :issue:`20102` is fixed::
+
+    sage: (zeta(x)^2).series(x==1, 1)                                           # needs sage.symbolic
+    1*(x - 1)^(-2) + (2*euler_gamma)*(x - 1)^(-1)
+    + (euler_gamma^2 - 2*stieltjes(1)) + Order(x - 1)
+    sage: (zeta(x)^4).residue(x==1)                                             # needs sage.symbolic
+    4/3*euler_gamma*(3*euler_gamma^2 - 2*stieltjes(1))
+    - 28/3*euler_gamma*stieltjes(1) + 2*stieltjes(2)
+
+Check that the right infinities are returned (:issue:`19439`)::
+
+    sage: zeta(1.0)                                                             # needs sage.symbolic
+    +infinity
+    sage: zeta(SR(1.0))                                                         # needs sage.symbolic
+    Infinity
+
+Fixed conversion::
+
+    sage: zeta(3)._maple_init_()                                                # needs sage.symbolic
+    'Zeta(3)'
+    sage: zeta(3)._maple_().sage()      # optional - maple                      # needs sage.symbolic
+    zeta(3)
+
+"""
 
 class Function_stieltjes(GinacFunction):
     def __init__(self) -> None:
@@ -172,7 +400,7 @@ class Function_stieltjes(GinacFunction):
             euler_gamma
         """
 
-stieltjes: Incomplete
+stieltjes: Function_stieltjes
 
 class Function_HurwitzZeta(BuiltinFunction):
     def __init__(self) -> None:
@@ -185,7 +413,7 @@ class Function_HurwitzZeta(BuiltinFunction):
             zeta(x, 2)
         """
 
-hurwitz_zeta_func: Incomplete
+hurwitz_zeta_func: Function_HurwitzZeta
 
 def hurwitz_zeta(s, x, **kwargs):
     """
@@ -271,7 +499,7 @@ class Function_zetaderiv(GinacFunction):
             zetaderiv([1.500000000 +/- 1.01e-10], 1)
         """
 
-zetaderiv: Incomplete
+zetaderiv: Function_zetaderiv
 
 def zeta_symmetric(s):
     """
@@ -439,4 +667,4 @@ class DickmanRho(BuiltinFunction):
             4.32938809066403e-3464
         '''
 
-dickman_rho: Incomplete
+dickman_rho: DickmanRho

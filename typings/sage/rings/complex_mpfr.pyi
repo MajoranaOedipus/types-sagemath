@@ -2,10 +2,12 @@ import _cython_3_2_1
 import sage as sage
 import sage.categories.map
 import sage.rings.abc
-import sage.rings.infinity as infinity
+import sage.rings.infinity asRealField: _cython_3_2_1.cython_function_or_method
+ infinity
 import sage.structure.element
 from _typeshed import Incomplete
 from sage.categories.category import CDF as CDF, ZZ as ZZ
+from sage.categories.category import JoinCategory
 from sage.rings.number_field.number_field_element_quadratic import NumberFieldElement_quadratic as NumberFieldElement_quadratic
 from sage.rings.qqbar import AA as AA, QQbar as QQbar
 from sage.rings.real_lazy import CLF as CLF, RLF as RLF
@@ -13,7 +15,33 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-ComplexField: _cython_3_2_1.cython_function_or_method
+def ComplexField(prec=53, names=None) -> ComplexField_class: 
+    r"""ComplexField(prec=53, names=None)
+
+File: /build/sagemath/src/sage/src/sage/rings/complex_mpfr.pyx (starting at line 165)
+
+Return the complex field with real and imaginary parts having prec
+*bits* of precision.
+
+EXAMPLES::
+
+    sage: ComplexField()
+    Complex Field with 53 bits of precision
+    sage: ComplexField(100)
+    Complex Field with 100 bits of precision
+    sage: ComplexField(100).base_ring()
+    Real Field with 100 bits of precision
+    sage: i = ComplexField(200).gen()
+    sage: i^2
+    -1.0000000000000000000000000000000000000000000000000000000000
+
+.. SEEALSO::
+
+    - :class:`~sage.rings.complex_mpfr.ComplexField_class`
+    - :class:`~sage.rings.real_arb.ComplexBallField` (complex numbers with
+      rigorous error bounds)
+"""
+    ...
 cache: dict
 cmp_abs: _cython_3_2_1.cython_function_or_method
 create_ComplexNumber: _cython_3_2_1.cython_function_or_method
@@ -104,7 +132,7 @@ class ComplexField_class(sage.rings.abc.ComplexField):
               rigorous error bounds)
             - :mod:`~sage.rings.real_mpfr`
     """
-    def __init__(self, prec=...) -> Any:
+    def __init__(self, prec=...):
         """ComplexField_class.__init__(self, prec=53)
 
         File: /build/sagemath/src/sage/src/sage/rings/complex_mpfr.pyx (starting at line 280)
@@ -3777,3 +3805,10 @@ class RRtoCC(sage.categories.map.Map):
                       From: Real Field with 53 bits of precision
                       To:   Complex Field with 53 bits of precision
         """
+
+class ComplexField_class_with_category(ComplexField_class, JoinCategory.parent_class):
+    ...
+    # TODO: check mro of CC to decides exactly which classes to inherit from
+
+
+CC = ComplexField_class_with_category(53)

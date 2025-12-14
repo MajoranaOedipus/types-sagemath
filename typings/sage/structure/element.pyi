@@ -1,6 +1,7 @@
 import _cython_3_2_1
 import sage.structure.coerce
 import sage.structure.sage_object
+from sage.structure.parent import Parent
 from sage.arith.numerical_approx import digits_to_bits as digits_to_bits
 from sage.misc.decorators import sage_wraps as sage_wraps
 from sage.misc.lazy_format import LazyFormat as LazyFormat
@@ -10,11 +11,39 @@ from typing import Any, ClassVar, overload
 
 __pyx_capi__: dict
 bin_op: _cython_3_2_1.cython_function_or_method
-canonical_coercion: _cython_3_2_1.cython_function_or_method
+def canonical_coercion(x, y) -> tuple:
+    """``canonical_coercion(x,y)`` is what is called before doing an
+arithmetic operation between ``x`` and ``y``.  It returns a pair ``(z,w)``
+such that ``z`` is got from ``x`` and ``w`` from ``y`` via canonical coercion and
+the parents of ``z`` and ``w`` are identical.
+
+EXAMPLES::
+
+    sage: A = Matrix([[0, 1], [1, 0]])                                              # needs sage.modules
+    sage: canonical_coercion(A, 1)                                                  # needs sage.modules
+    (
+    [0 1]  [1 0]
+    [1 0], [0 1]
+    )
+"""
+
 coerce_binop: _cython_3_2_1.cython_function_or_method
 coercion_model: sage.structure.coerce.CoercionModel
 coercion_traceback: _cython_3_2_1.cython_function_or_method
-get_coercion_model: _cython_3_2_1.cython_function_or_method
+def get_coercion_model() -> sage.structure.coerce.CoercionModel: 
+    """
+    Return the global coercion model.
+
+    EXAMPLES::
+
+       sage: import sage.structure.element as e
+       sage: cm = e.get_coercion_model()
+       sage: cm
+       <sage.structure.coerce.CoercionModel object at ...>
+       sage: cm is coercion_model
+       True
+    """
+    ...
 have_same_parent: _cython_3_2_1.cython_function_or_method
 is_AdditiveGroupElement: _cython_3_2_1.cython_function_or_method
 is_AlgebraElement: _cython_3_2_1.cython_function_or_method
@@ -34,7 +63,64 @@ is_PrincipalIdealDomainElement: _cython_3_2_1.cython_function_or_method
 is_RingElement: _cython_3_2_1.cython_function_or_method
 is_Vector: _cython_3_2_1.cython_function_or_method
 make_element: _cython_3_2_1.cython_function_or_method
-parent: _cython_3_2_1.cython_function_or_method
+
+@overload
+def parent(x: Element) -> Parent:
+    ...
+@overload
+def parent[T](x: T) -> type[T]:
+    """
+    Return the parent of the element ``x``.
+
+    Usually, this means the mathematical object of which ``x`` is an
+    element.
+
+    INPUT:
+
+    - ``x`` -- an element
+
+    OUTPUT:
+
+    - If ``x`` is a Sage :class:`Element`, return ``x.parent()``.
+
+    - Otherwise, return ``type(x)``.
+
+    .. SEEALSO::
+
+        `Parents, Conversion and Coercion <http://doc.sagemath.org/html/en/tutorial/tour_coercion.html>`_
+        Section in the Sage Tutorial
+
+    EXAMPLES::
+
+        sage: a = 42
+        sage: parent(a)
+        Integer Ring
+        sage: b = 42/1
+        sage: parent(b)
+        Rational Field
+        sage: c = 42.0
+        sage: parent(c)                                                                 # needs sage.rings.real_mpfr
+        Real Field with 53 bits of precision
+
+    Some more complicated examples::
+
+        sage: x = Partition([3,2,1,1,1])                                                # needs sage.combinat
+        sage: parent(x)                                                                 # needs sage.combinat
+        Partitions
+        sage: v = vector(RDF, [1,2,3])                                                  # needs sage.modules
+        sage: parent(v)                                                                 # needs sage.modules
+        Vector space of dimension 3 over Real Double Field
+
+    The following are not considered to be elements, so the type is
+    returned::
+
+        sage: d = int(42)  # Python int
+        sage: parent(d)
+        <... 'int'>
+        sage: L = list(range(10))
+        sage: parent(L)
+        <... 'list'>
+    """
 
 class AdditiveGroupElement(ModuleElement):
     """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2602)

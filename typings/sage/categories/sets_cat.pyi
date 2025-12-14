@@ -2037,4 +2037,14 @@ class Sets(Category_singleton):
                     The subset algebra of {1, 2, 3} over Rational Field
                 """
 
-cartesian_product: Incomplete
+cartesian_product: CartesianProductFunctor
+"""
+The Cartesian product functorial construction
+
+See :class:`CartesianProductFunctor` for more information
+
+EXAMPLES::
+
+    sage: cartesian_product
+    The cartesian_product functorial construction
+"""

@@ -8,5 +8,3 @@ from time import sleep as sleep
 
 true: bool
 false: bool
-Integer = int
-RealNumber = float

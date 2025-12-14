@@ -2,6 +2,7 @@ from _typeshed import Incomplete
 from sage.categories.covariant_functorial_construction import CovariantConstructionCategory as CovariantConstructionCategory, CovariantFunctorialConstruction as CovariantFunctorialConstruction
 from sage.categories.pushout import MultivariateConstructionFunctor as MultivariateConstructionFunctor
 from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.categories.sets_cat import cartesian_product as cartesian_product
 from typing import Self
 
 native_python_containers: Incomplete

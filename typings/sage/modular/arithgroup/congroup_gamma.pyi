@@ -1,3 +1,6 @@
+r"""
+Congruence subgroup `\Gamma(N)`
+"""
 from .congroup_generic import CongruenceSubgroup as CongruenceSubgroup
 from .congroup_sl2z import SL2Z as SL2Z
 from sage.arith.misc import gcd as gcd

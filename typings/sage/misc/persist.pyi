@@ -15,7 +15,196 @@ load_sage_object: _cython_3_2_1.cython_function_or_method
 loads: _cython_3_2_1.cython_function_or_method
 make_None: _cython_3_2_1.cython_function_or_method
 picklejar: _cython_3_2_1.cython_function_or_method
-register_unpickle_override: _cython_3_2_1.cython_function_or_method
+
+def register_unpickle_override(module, name, callable, call_name=None):
+    """register_unpickle_override(module, name, callable, call_name=None)
+
+File: /build/sagemath/src/sage/src/sage/misc/persist.pyx (starting at line 349)
+
+Python pickles include the module and class name of classes.
+This means that rearranging the Sage source can invalidate old
+pickles.  To keep the old pickles working, you can call
+register_unpickle_override with an old module name and class name,
+and the Python callable (function, class with __call__ method, etc.)
+to use for unpickling.  (If this callable is a value in some module,
+you can specify the module name and class name, for the benefit of
+:func:`~sage.misc.explain_pickle.explain_pickle` when called with ``in_current_sage=True``).)
+
+EXAMPLES:
+
+Imagine that there used to be an ``old_integer`` module and old
+pickles essentially trying to do the following::
+
+    sage: unpickle_global('sage.rings.old_integer', 'OldInteger')
+    Traceback (most recent call last):
+    ...
+    ImportError: cannot import OldInteger from sage.rings.old_integer, call register_unpickle_override('sage.rings.old_integer', 'OldInteger', ...) to fix this
+
+After following the advice from the error message, unpickling
+works::
+
+    sage: from sage.misc.persist import register_unpickle_override
+    sage: register_unpickle_override('sage.rings.old_integer', 'OldInteger', Integer)
+    sage: unpickle_global('sage.rings.old_integer', 'OldInteger')
+    <... 'sage.rings.integer.Integer'>
+
+In many cases, unpickling problems for old pickles can be resolved with a
+simple call to ``register_unpickle_override``, as in the example above and
+in many of the ``sage`` source files.  However, if the underlying data
+structure has changed significantly then unpickling may fail and it
+will be necessary to explicitly implement unpickling methods for the
+associated objects. The python pickle protocol is described in detail on the
+web and, in particular, in the `python pickling documentation`_. For example, the
+following excerpt from this documentation shows that the unpickling of
+classes is controlled by their :meth:`__setstate__` method.
+
+::
+
+    object.__setstate__(state)
+
+        Upon unpickling, if the class also defines the method :meth:`__setstate__`, it is
+        called with the unpickled state. If there is no :meth:`__setstate__` method,
+        the pickled state must be a dictionary and its items are assigned to the new
+        instance's dictionary. If a class defines both :meth:`__getstate__` and
+        :meth:`__setstate__`, the state object needn't be a dictionary and these methods
+        can do what they want.
+
+.. _python pickling documentation: https://docs.python.org/library/pickle.html#pickle-protocol
+
+By implementing a :meth:`__setstate__` method for a class it should be
+possible to fix any unpickling problems for the class. As an example of what
+needs to be done, we show how to unpickle a :class:`CombinatorialObject`
+object using a class which also inherits from
+:class:`~sage.structure.element.Element`. This exact problem often arises
+when refactoring old code into the element framework. First we create a
+pickle to play with::
+
+    sage: from sage.structure.element import Element
+    sage: class SourPickle(CombinatorialObject): pass
+    sage: class SweetPickle(CombinatorialObject, Element): pass
+    sage: import __main__
+    sage: __main__.SourPickle = SourPickle
+    sage: __main__.SweetPickle = SweetPickle  # a hack to allow us to pickle command line classes
+    sage: gherkin = dumps(SourPickle([1, 2, 3]))
+
+Using :func:`register_unpickle_override` we try to sweeten our pickle, but
+we are unable to eat it::
+
+    sage: from sage.misc.persist import register_unpickle_override
+    sage: register_unpickle_override('__main__', 'SourPickle', SweetPickle)
+    sage: loads(gherkin)
+    Traceback (most recent call last):
+    ...
+    KeyError: 0
+
+The problem is that the ``SweetPickle`` has inherited a
+:meth:`~sage.structure.element.Element.__setstate__` method from
+:class:`~sage.structure.element.Element` which is not compatible with
+unpickling for :class:`CombinatorialObject`. We can fix this by explicitly
+defining a new :meth:`__setstate__` method::
+
+    sage: class SweeterPickle(CombinatorialObject, Element):
+    ....:     def __setstate__(self, state):
+    ....:         # a pickle from CombinatorialObject is just its instance
+    ....:         # dictionary
+    ....:         if isinstance(state, dict):
+    ....:             # this is a fudge: we need an appropriate parent here
+    ....:             self._set_parent(Tableaux())
+    ....:             self.__dict__ = state
+    ....:         else:
+    ....:             P, D = state
+    ....:             if P is not None:
+    ....:                 self._set_parent(P)
+    ....:             self.__dict__ = D
+    sage: __main__.SweeterPickle = SweeterPickle
+    sage: register_unpickle_override('__main__', 'SourPickle', SweeterPickle)
+    sage: loads(gherkin)                                                            # needs sage.combinat
+    [1, 2, 3]
+    sage: loads(dumps(SweeterPickle([1, 2, 3])))  # check that pickles work for SweeterPickle
+    [1, 2, 3]
+
+The ``state`` passed to :meth:`__setstate__` will usually be something like
+the instance dictionary of the pickled object, however, with some older
+classes such as :class:`CombinatorialObject` it will be a tuple. In general,
+the ``state`` can be any python object.  ``Sage`` provides a special tool,
+:func:`~sage.misc.explain_pickle.explain_pickle`, which can help in figuring
+out the contents of an old pickle. Here is a second example.
+
+::
+
+    sage: class A():
+    ....:    def __init__(self, value):
+    ....:        self.original_attribute = value
+    ....:    def __repr__(self):
+    ....:        return 'A(%s)' % self.original_attribute
+    sage: class B():
+    ....:    def __init__(self, value):
+    ....:        self.new_attribute = value
+    ....:    def __setstate__(self, state):
+    ....:        try:
+    ....:            self.new_attribute = state['new_attribute']
+    ....:        except KeyError:      # an old pickle
+    ....:            self.new_attribute = state['original_attribute']
+    ....:    def __repr__(self):
+    ....:        return 'B(%s)' % self.new_attribute
+    sage: import __main__
+    sage: # a hack to allow us to pickle command line classes
+    sage: __main__.A = A
+    sage: __main__.B = B
+    sage: A(10)
+    A(10)
+    sage: loads(dumps(A(10)))
+    A(10)
+    sage: sage.misc.explain_pickle.explain_pickle(dumps(A(10)))
+    pg_A = unpickle_global('__main__', 'A')
+    si = unpickle_newobj(pg_A, ())
+    pg_make_integer = unpickle_global('sage.rings.integer', 'make_integer')
+    unpickle_build(si, {'original_attribute':pg_make_integer('a')})
+    si
+    sage: from sage.misc.persist import register_unpickle_override
+    sage: register_unpickle_override('__main__', 'A', B)
+    sage: loads(dumps(A(10)))
+    B(10)
+    sage: loads(dumps(B(10)))
+    B(10)
+
+Pickling for python classes and extension classes, such as cython, is
+different -- again this is discussed in the `python pickling
+documentation`_. For the unpickling of extension classes you need to write
+a :meth:`__reduce__` method which typically returns a tuple ``(f,
+args,...)`` such that ``f(*args)`` returns (a copy of) the original object.
+The following code snippet is the
+:meth:`~sage.rings.integer.Integer.__reduce__` method from
+:class:`sage.rings.integer.Integer`.
+
+.. code-block:: cython
+
+    def __reduce__(self):
+        'Including the documentation properly causes a doc-test failure so we include it as a comment:'
+        #* '''
+        #* This is used when pickling integers.
+        #*
+        #* EXAMPLES::
+        #*
+        #*     sage: n = 5
+        #*     sage: t = n.__reduce__(); t
+        #*     (<built-in function make_integer>, ('5',))
+        #*     sage: t[0](*t[1])
+        #*     5
+        #*     sage: loads(dumps(n)) == n
+        #*     True
+        #* '''
+        # This single line below took me HOURS to figure out.
+        # It is the *trick* needed to pickle Cython extension types.
+        # The trick is that you must put a pure Python function
+        # as the first argument, and that function must return
+        # the result of unpickling with the argument in the second
+        # tuple as input. All kinds of problems happen
+        # if we don't do this.
+        return sage.rings.integer.make_integer, (self.str(32),)
+"""
+    ...
+
 save: _cython_3_2_1.cython_function_or_method
 unpickle_all: _cython_3_2_1.cython_function_or_method
 unpickle_global: _cython_3_2_1.cython_function_or_method

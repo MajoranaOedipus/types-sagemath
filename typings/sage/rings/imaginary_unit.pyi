@@ -1,4 +1,4 @@
 from _typeshed import Incomplete
-from sage.rings.number_field.number_field import GaussianField as GaussianField
+from sage.rings.number_field.number_field_element_quadratic import NumberFieldElement_gaussian as NumberFieldElement_gaussian
 
-I: Incomplete
+I: NumberFieldElement_gaussian
