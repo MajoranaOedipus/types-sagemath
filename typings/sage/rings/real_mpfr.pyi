@@ -10,6 +10,7 @@ from sage.libs.pari.convert_sage_real_mpfr import new_gen_from_real_mpfr_element
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
+from numbers import Real
 
 def RealField(
         prec: int = 53, sci_notL: int = 0, rnd: str = 'RNDN'
@@ -211,7 +212,7 @@ class RealField_class(sage.rings.abc.RealField):
                     sage: RealField(10).is_finite()
                     False
         '''
-    @overload
+
     def algebraic_closure(self) -> Any:
         """RealField_class.algebraic_closure(self)
 
@@ -230,65 +231,7 @@ class RealField_class(sage.rings.abc.RealField):
             Complex Field with 100 bits of precision
             sage: RealField(100).algebraic_closure()
             Complex Field with 100 bits of precision"""
-    @overload
-    def algebraic_closure(self) -> Any:
-        """RealField_class.algebraic_closure(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 881)
-
-        Return the algebraic closure of ``self``, i.e., the complex field with
-        the same precision.
-
-        EXAMPLES::
-
-            sage: RR.algebraic_closure()
-            Complex Field with 53 bits of precision
-            sage: RR.algebraic_closure() is CC
-            True
-            sage: RealField(100,rnd='RNDD').algebraic_closure()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).algebraic_closure()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def algebraic_closure(self) -> Any:
-        """RealField_class.algebraic_closure(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 881)
-
-        Return the algebraic closure of ``self``, i.e., the complex field with
-        the same precision.
-
-        EXAMPLES::
-
-            sage: RR.algebraic_closure()
-            Complex Field with 53 bits of precision
-            sage: RR.algebraic_closure() is CC
-            True
-            sage: RealField(100,rnd='RNDD').algebraic_closure()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).algebraic_closure()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def algebraic_closure(self) -> Any:
-        """RealField_class.algebraic_closure(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 881)
-
-        Return the algebraic closure of ``self``, i.e., the complex field with
-        the same precision.
-
-        EXAMPLES::
-
-            sage: RR.algebraic_closure()
-            Complex Field with 53 bits of precision
-            sage: RR.algebraic_closure() is CC
-            True
-            sage: RealField(100,rnd='RNDD').algebraic_closure()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).algebraic_closure()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def algebraic_closure(self) -> Any:
         """RealField_class.algebraic_closure(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 881)
@@ -317,7 +260,6 @@ class RealField_class(sage.rings.abc.RealField):
 
             sage: RealField(100).catalan_constant()
             0.91596559417721901505460351493"""
-    @overload
     def characteristic(self) -> Any:
         """RealField_class.characteristic(self)
 
@@ -329,8 +271,6 @@ class RealField_class(sage.rings.abc.RealField):
 
             sage: RealField(10).characteristic()
             0"""
-    @overload
-    def characteristic(self) -> Any:
         """RealField_class.characteristic(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 965)
@@ -341,7 +281,7 @@ class RealField_class(sage.rings.abc.RealField):
 
             sage: RealField(10).characteristic()
             0"""
-    @overload
+
     def complex_field(self) -> Any:
         """RealField_class.complex_field(self)
 
@@ -359,62 +299,7 @@ class RealField_class(sage.rings.abc.RealField):
             Complex Field with 100 bits of precision
             sage: RealField(100).complex_field()
             Complex Field with 100 bits of precision"""
-    @overload
-    def complex_field(self) -> Any:
-        """RealField_class.complex_field(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 863)
-
-        Return complex field of the same precision.
-
-        EXAMPLES::
-
-            sage: RR.complex_field()
-            Complex Field with 53 bits of precision
-            sage: RR.complex_field() is CC
-            True
-            sage: RealField(100,rnd='RNDD').complex_field()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).complex_field()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def complex_field(self) -> Any:
-        """RealField_class.complex_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 863)
-
-        Return complex field of the same precision.
-
-        EXAMPLES::
-
-            sage: RR.complex_field()
-            Complex Field with 53 bits of precision
-            sage: RR.complex_field() is CC
-            True
-            sage: RealField(100,rnd='RNDD').complex_field()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).complex_field()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def complex_field(self) -> Any:
-        """RealField_class.complex_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 863)
-
-        Return complex field of the same precision.
-
-        EXAMPLES::
-
-            sage: RR.complex_field()
-            Complex Field with 53 bits of precision
-            sage: RR.complex_field() is CC
-            True
-            sage: RealField(100,rnd='RNDD').complex_field()
-            Complex Field with 100 bits of precision
-            sage: RealField(100).complex_field()
-            Complex Field with 100 bits of precision"""
-    @overload
-    def complex_field(self) -> Any:
         """RealField_class.complex_field(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 863)
@@ -494,7 +379,6 @@ class RealField_class(sage.rings.abc.RealField):
             Traceback (most recent call last):
             ...
             IndexError: self has only one generator"""
-    @overload
     def gens(self) -> tuple:
         """RealField_class.gens(self) -> tuple
 
@@ -506,19 +390,6 @@ class RealField_class(sage.rings.abc.RealField):
 
             sage: RR.gens()
             (1.00000000000000,)"""
-    @overload
-    def gens(self) -> Any:
-        """RealField_class.gens(self) -> tuple
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 910)
-
-        Return a tuple of generators.
-
-        EXAMPLES::
-
-            sage: RR.gens()
-            (1.00000000000000,)"""
-    @overload
     def is_exact(self) -> bool:
         """RealField_class.is_exact(self) -> bool
 
@@ -533,23 +404,6 @@ class RealField_class(sage.rings.abc.RealField):
             False
             sage: RealField(100).is_exact()
             False"""
-    @overload
-    def is_exact(self) -> Any:
-        """RealField_class.is_exact(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 638)
-
-        Return ``False``, since a real field (represented using finite
-        precision) is not exact.
-
-        EXAMPLES::
-
-            sage: RR.is_exact()
-            False
-            sage: RealField(100).is_exact()
-            False"""
-    @overload
-    def is_exact(self) -> Any:
         """RealField_class.is_exact(self) -> bool
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 638)
@@ -578,7 +432,7 @@ class RealField_class(sage.rings.abc.RealField):
             0.69314718055994530941723212146
             sage: R(2).log()
             0.69314718055994530941723212146"""
-    @overload
+
     def name(self) -> Any:
         """RealField_class.name(self)
 
@@ -593,37 +447,7 @@ class RealField_class(sage.rings.abc.RealField):
             'RealField53_0'
             sage: RealField(100,rnd='RNDU').name()
             'RealField100_2'"""
-    @overload
-    def name(self) -> Any:
-        """RealField_class.name(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 976)
-
-        Return the name of ``self``, which encodes the precision and
-        rounding convention.
-
-        EXAMPLES::
-
-            sage: RR.name()
-            'RealField53_0'
-            sage: RealField(100,rnd='RNDU').name()
-            'RealField100_2'"""
-    @overload
-    def name(self) -> Any:
-        """RealField_class.name(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 976)
-
-        Return the name of ``self``, which encodes the precision and
-        rounding convention.
-
-        EXAMPLES::
-
-            sage: RR.name()
-            'RealField53_0'
-            sage: RealField(100,rnd='RNDU').name()
-            'RealField100_2'"""
-    @overload
+    
     def ngens(self) -> Any:
         """RealField_class.ngens(self)
 
@@ -635,8 +459,6 @@ class RealField_class(sage.rings.abc.RealField):
 
             sage: RR.ngens()
             1"""
-    @overload
-    def ngens(self) -> Any:
         """RealField_class.ngens(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 899)
@@ -677,7 +499,6 @@ class RealField_class(sage.rings.abc.RealField):
             53
             sage: RealField(20).precision()
             20"""
-    @overload
     def precision(self) -> Any:
         """RealField_class.precision(self)
 
@@ -691,35 +512,6 @@ class RealField_class(sage.rings.abc.RealField):
             53
             sage: RealField(20).precision()
             20"""
-    @overload
-    def precision(self) -> Any:
-        """RealField_class.precision(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1004)
-
-        Return the precision of ``self``.
-
-        EXAMPLES::
-
-            sage: RR.precision()
-            53
-            sage: RealField(20).precision()
-            20"""
-    @overload
-    def precision(self) -> Any:
-        """RealField_class.precision(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1004)
-
-        Return the precision of ``self``.
-
-        EXAMPLES::
-
-            sage: RR.precision()
-            53
-            sage: RealField(20).precision()
-            20"""
-    @overload
     def random_element(self, min=..., max=..., distribution=...) -> Any:
         """RealField_class.random_element(self, min=-1, max=1, distribution=None)
 
@@ -759,8 +551,6 @@ class RealField_class(sage.rings.abc.RealField):
             Real Field with 10 bits of precision
             sage: RR.random_element().parent()
             Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
         """RealField_class.random_element(self, min=-1, max=1, distribution=None)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
@@ -799,287 +589,6 @@ class RealField_class(sage.rings.abc.RealField):
             Real Field with 10 bits of precision
             sage: RR.random_element().parent()
             Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
-    def random_element(self) -> Any:
-        """RealField_class.random_element(self, min=-1, max=1, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1143)
-
-        Return a uniformly distributed random number between ``min`` and
-        ``max`` (default -1 to 1).
-
-        .. WARNING::
-
-            The argument ``distribution`` is ignored---the random number
-            is from the uniform distribution.
-
-        EXAMPLES::
-
-            sage: r = RealField(100).random_element(-5, 10)
-            sage: r.parent() is RealField(100)
-            True
-            sage: -5 <= r <= 10
-            True
-
-        TESTS::
-
-            sage: RealField(31).random_element().parent()
-            Real Field with 31 bits of precision
-            sage: RealField(32).random_element().parent()
-            Real Field with 32 bits of precision
-            sage: RealField(33).random_element().parent()
-            Real Field with 33 bits of precision
-            sage: RealField(63).random_element().parent()
-            Real Field with 63 bits of precision
-            sage: RealField(64).random_element().parent()
-            Real Field with 64 bits of precision
-            sage: RealField(65).random_element().parent()
-            Real Field with 65 bits of precision
-            sage: RealField(10).random_element().parent()
-            Real Field with 10 bits of precision
-            sage: RR.random_element().parent()
-            Real Field with 53 bits of precision"""
-    @overload
     def rounding_mode(self) -> Any:
         """RealField_class.rounding_mode(self)
 
@@ -1097,62 +606,7 @@ class RealField_class(sage.rings.abc.RealField):
             'RNDU'
             sage: RealField(20,rnd='RNDD').rounding_mode()
             'RNDD'"""
-    @overload
-    def rounding_mode(self) -> Any:
-        """RealField_class.rounding_mode(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1214)
-
-        Return the rounding mode.
-
-        EXAMPLES::
-
-            sage: RR.rounding_mode()
-            'RNDN'
-            sage: RealField(20,rnd='RNDZ').rounding_mode()
-            'RNDZ'
-            sage: RealField(20,rnd='RNDU').rounding_mode()
-            'RNDU'
-            sage: RealField(20,rnd='RNDD').rounding_mode()
-            'RNDD'"""
-    @overload
-    def rounding_mode(self) -> Any:
-        """RealField_class.rounding_mode(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1214)
-
-        Return the rounding mode.
-
-        EXAMPLES::
-
-            sage: RR.rounding_mode()
-            'RNDN'
-            sage: RealField(20,rnd='RNDZ').rounding_mode()
-            'RNDZ'
-            sage: RealField(20,rnd='RNDU').rounding_mode()
-            'RNDU'
-            sage: RealField(20,rnd='RNDD').rounding_mode()
-            'RNDD'"""
-    @overload
-    def rounding_mode(self) -> Any:
-        """RealField_class.rounding_mode(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1214)
-
-        Return the rounding mode.
-
-        EXAMPLES::
-
-            sage: RR.rounding_mode()
-            'RNDN'
-            sage: RealField(20,rnd='RNDZ').rounding_mode()
-            'RNDZ'
-            sage: RealField(20,rnd='RNDU').rounding_mode()
-            'RNDU'
-            sage: RealField(20,rnd='RNDD').rounding_mode()
-            'RNDD'"""
-    @overload
-    def rounding_mode(self) -> Any:
+   
         """RealField_class.rounding_mode(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1214)
@@ -1202,8 +656,7 @@ class RealField_class(sage.rings.abc.RealField):
             True
             sage: R(0.2512)
             2.5120e-1"""
-    @overload
-    def scientific_notation(self) -> Any:
+
         """RealField_class.scientific_notation(self, status=None)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1231)
@@ -1268,8 +721,6 @@ class RealField_class(sage.rings.abc.RealField):
             True
             sage: R(0.2512)
             2.5120e-1"""
-    @overload
-    def scientific_notation(self) -> Any:
         """RealField_class.scientific_notation(self, status=None)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1231)
@@ -1334,8 +785,7 @@ class RealField_class(sage.rings.abc.RealField):
             True
             sage: R(0.2512)
             2.5120e-1"""
-    @overload
-    def scientific_notation(self) -> Any:
+
         """RealField_class.scientific_notation(self, status=None)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1231)
@@ -1460,7 +910,8 @@ class RealField_class(sage.rings.abc.RealField):
             sage: R = RealField(sci_not=1, prec=200, rnd='RNDU')
             sage: loads(dumps(R)) == R
             True"""
-
+    def __call__(self, x) -> RealNumber:
+        ...
 class RealLiteral(RealNumber):
     """RealLiteral(RealField_class parent, x=0, int base=10)
 
@@ -1591,7 +1042,7 @@ class RealLiteral(RealNumber):
             sage: RealField(300)(-(-1.2))
             1.20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"""
 
-class RealNumber(sage.structure.element.RingElement):
+class RealNumber(sage.structure.element.RingElement, Real):
     """RealNumber(parent, x=0, int base=10)
 
     File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1344)

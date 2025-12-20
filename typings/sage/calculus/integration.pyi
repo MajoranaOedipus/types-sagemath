@@ -16,7 +16,7 @@ def numerical_integral(
     eps_abs=1e-06,
     eps_rel=1e-06,
     rule=6
-): 
+) -> tuple[float, float]: 
     """numerical_integral(func, a, b=None, algorithm='qag', max_points=87, params=None, eps_abs=1e-6, eps_rel=1e-6, rule=6)
 
 File: /build/sagemath/src/sage/src/sage/calculus/integration.pyx (starting at line 74)

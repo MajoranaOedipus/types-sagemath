@@ -1,3 +1,276 @@
+r"""
+Elements
+
+AUTHORS:
+
+- David Harvey (2006-10-16): changed CommutativeAlgebraElement to
+  derive from CommutativeRingElement instead of AlgebraElement
+
+- David Harvey (2006-10-29): implementation and documentation of new
+  arithmetic architecture
+
+- William Stein (2006-11): arithmetic architecture -- pushing it
+  through to completion.
+
+- Gonzalo Tornaria (2007-06): recursive base extend for coercion --
+  lots of tests
+
+- Robert Bradshaw (2007-2010): arithmetic operators and coercion
+
+- Maarten Derickx (2010-07): added architecture for is_square and sqrt
+
+- Jeroen Demeyer (2016-08): moved all coercion to the base class
+  :class:`Element`, see :issue:`20767`
+
+The Abstract Element Class Hierarchy
+====================================
+
+This is the abstract class hierarchy, i.e., these are all
+abstract base classes.
+
+::
+
+    SageObject
+        Element
+            ModuleElement
+                RingElement
+                    CommutativeRingElement
+                        IntegralDomainElement
+                            DedekindDomainElement
+                                PrincipalIdealDomainElement
+                                    EuclideanDomainElement
+                        FieldElement
+                        CommutativeAlgebraElement
+                        Expression
+                    AlgebraElement
+                        Matrix
+                    InfinityElement
+                AdditiveGroupElement
+                Vector
+
+            MonoidElement
+                MultiplicativeGroupElement
+        ElementWithCachedMethod
+
+
+How to Define a New Element Class
+=================================
+
+Elements typically define a method ``_new_c``, e.g.,
+
+.. code-block:: cython
+
+    cdef _new_c(self, defining data):
+        cdef FreeModuleElement_generic_dense x
+        x = FreeModuleElement_generic_dense.__new__(FreeModuleElement_generic_dense)
+        x._parent = self._parent
+        x._entries = v
+
+that creates a new sibling very quickly from defining data
+with assumed properties.
+
+.. _element_arithmetic:
+
+Arithmetic for Elements
+-----------------------
+
+Sage has a special system for handling arithmetic operations on Sage
+elements (that is instances of :class:`Element`), in particular to
+manage uniformly mixed arithmetic operations using the :mod:`coercion
+model <sage.structure.coerce>`. We describe here the rules that must
+be followed by both arithmetic implementers and callers.
+
+A quick summary for the impatient
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To implement addition for any :class:`Element` subclass, override the
+``def _add_(self, other)`` method instead of the usual Python
+``__add__`` :python:`special method <reference/datamodel.html#special-method-names>`.
+Within ``_add_(self, other)``, you may assume that ``self`` and
+``other`` have the same parent.
+
+If the implementation is generic across all elements in a given
+category `C`, then this method can be put in ``C.ElementMethods``.
+
+When writing *Cython* code, ``_add_`` should be a cpdef method:
+``cpdef _add_(self, other)``.
+
+When doing arithmetic with two elements having different parents,
+the :mod:`coercion model <sage.structure.coerce>` is responsible for
+"coercing" them to a common parent and performing arithmetic on the
+coerced elements.
+
+Arithmetic in more detail
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The aims of this system are to provide (1) an efficient calling protocol
+from both Python and Cython, (2) uniform coercion semantics across Sage,
+(3) ease of use, (4) readability of code.
+
+We will take addition as an example; all other operators are similar.
+There are two relevant functions, with differing names
+(single vs. double underscores).
+
+-  **def Element.__add__(left, right)**
+
+   This function is called by Python or Cython when the binary "+"
+   operator is encountered. It assumes that at least one of its
+   arguments is an :class:`Element`.
+
+   It has a fast pathway to deal with the most common case where both
+   arguments have the same parent. Otherwise, it uses the coercion
+   model to work out how to make them have the same parent. The
+   coercion model then adds the coerced elements (technically, it calls
+   ``operator.add``). Note that the result of coercion is not required
+   to be a Sage :class:`Element`, it could be a plain Python type.
+
+   Note that, although this function is declared as ``def``, it doesn't
+   have the usual overheads associated with Python functions (either
+   for the caller or for ``__add__`` itself). This is because Python
+   has optimised calling protocols for such special functions.
+
+-  **def Element._add_(self, other)**
+
+   This is the function that you should override to implement addition
+   in a subclass of :class:`Element`.
+
+   The two arguments to this function are guaranteed to have the **same
+   parent**, but not necessarily the same Python type.
+
+   When implementing ``_add_`` in a Cython extension type, use
+   ``cpdef _add_`` instead of ``def _add_``.
+
+   In Cython code, if you want to add two elements and you know that
+   their parents are identical, you are encouraged to call this
+   function directly, instead of using ``x + y``. This only works if
+   Cython knows that the left argument is an ``Element``. You can
+   always cast explicitly: ``(<Element>x)._add_(y)`` to force this.
+   In plain Python, ``x + y`` is always the fastest way to add two
+   elements because the special method ``__add__`` is optimized
+   unlike the normal method ``_add_``.
+
+The difference in the names of the arguments (``left, right``
+versus ``self, other``) is intentional: ``self`` is guaranteed to be an
+instance of the class in which the method is defined. In Cython, we know
+that at least one of ``left`` or ``right`` is an instance of the class
+but we do not know a priori which one.
+
+Powering is a special case: first of all, the 3-argument version of
+``pow()`` is not supported. Second, the coercion model checks whether
+the exponent looks like an integer. If so, the function ``_pow_int``
+is called. If the exponent is not an integer, the arguments are coerced
+to a common parent and ``_pow_`` is called. So, if your type only
+supports powering to an integer exponent, you should implement only
+``_pow_int``. If you want to support arbitrary powering, implement both
+``_pow_`` and ``_pow_int``.
+
+For addition, multiplication and powering (not for other operators),
+there is a fast path for operations with a C ``long``. For example,
+implement ``cdef _add_long(self, long n)`` with optimized code for
+``self + n``. The addition and multiplication are assumed to be
+commutative, so they are also called for ``n + self`` or ``n * self``.
+From Cython code, you can also call ``_add_long`` or ``_mul_long``
+directly. This is strictly an optimization: there is a default
+implementation falling back to the generic arithmetic function.
+
+Examples
+^^^^^^^^
+
+We need some :class:`Parent` to work with::
+
+    sage: from sage.structure.parent import Parent
+    sage: class ExampleParent(Parent):
+    ....:     def __init__(self, name, **kwds):
+    ....:         Parent.__init__(self, **kwds)
+    ....:         self.rename(name)
+
+We start with a very basic example of a Python class implementing
+``_add_``::
+
+    sage: from sage.structure.element import Element
+    sage: class MyElement(Element):
+    ....:     def _add_(self, other):
+    ....:         return 42
+    sage: p = ExampleParent("Some parent")
+    sage: x = MyElement(p)
+    sage: x + x
+    42
+
+When two different parents are involved, this no longer works since
+there is no coercion::
+
+    sage: q = ExampleParent("Other parent")
+    sage: y = MyElement(q)
+    sage: x + y
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +: 'Some parent' and 'Other parent'
+
+If ``_add_`` is not defined, an error message is raised, referring to
+the parents::
+
+    sage: x = Element(p)
+    sage: x._add_(x)
+    Traceback (most recent call last):
+    ...
+    AttributeError: 'sage.structure.element.Element' object has no attribute '_add_'...
+    sage: x + x
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +: 'Some parent' and 'Some parent'
+    sage: y = Element(q)
+    sage: x + y
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +: 'Some parent' and 'Other parent'
+
+We can also implement arithmetic generically in categories::
+
+    sage: class MyCategory(Category):
+    ....:     def super_categories(self):
+    ....:         return [Sets()]
+    ....:     class ElementMethods:
+    ....:         def _add_(self, other):
+    ....:             return 42
+    sage: p = ExampleParent("Parent in my category", category=MyCategory())
+    sage: x = Element(p)
+    sage: x + x
+    42
+
+Implementation details
+^^^^^^^^^^^^^^^^^^^^^^
+
+Implementing the above features actually takes a bit of magic. Casual
+callers and implementers can safely ignore it, but here are the
+details for the curious.
+
+To achieve fast arithmetic, it is critical to have a fast path in Cython
+to call the ``_add_`` method of a Cython object. So we would like
+to declare ``_add_`` as a ``cpdef`` method of class :class:`Element`.
+Remember however that the abstract classes coming
+from categories come after :class:`Element` in the method resolution
+order (or fake method resolution order in case of a Cython
+class). Hence any generic implementation of ``_add_`` in such an
+abstract class would in principle be shadowed by ``Element._add_``.
+This is worked around by defining ``Element._add_`` as a ``cdef``
+instead of a ``cpdef`` method. Concrete implementations in subclasses
+should be ``cpdef`` or ``def`` methods.
+
+Let us now see what happens upon evaluating ``x + y`` when ``x`` and ``y``
+are instances of a class that does not implement ``_add_`` but where
+``_add_`` is implemented in the category.
+First, ``x.__add__(y)`` is called, where ``__add__`` is implemented
+in :class:`Element`.
+Assuming that ``x`` and ``y`` have the same parent, a Cython call to
+``x._add_(y)`` will be done.
+The latter is implemented to trigger a Python level call to ``x._add_(y)``
+which will succeed as desired.
+
+In case that Python code calls ``x._add_(y)`` directly,
+``Element._add_`` will be invisible, and the method lookup will
+continue down the MRO and find the ``_add_`` method in the category.
+"""
+
 import _cython_3_2_1
 import sage.structure.coerce
 import sage.structure.sage_object
@@ -7,7 +280,7 @@ from sage.misc.decorators import sage_wraps as sage_wraps
 from sage.misc.lazy_format import LazyFormat as LazyFormat
 from sage.misc.superseded import deprecation as deprecation
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, overload
+from typing import Any, ClassVar, TypeVar, overload
 
 __pyx_capi__: dict
 bin_op: _cython_3_2_1.cython_function_or_method
@@ -65,7 +338,7 @@ is_Vector: _cython_3_2_1.cython_function_or_method
 make_element: _cython_3_2_1.cython_function_or_method
 
 @overload
-def parent(x: Element) -> Parent:
+def parent(x: Element) -> Parent:   # pyright: ignore[reportOverlappingOverload] # 
     ...
 @overload
 def parent[T](x: T) -> type[T]:
@@ -122,12 +395,12 @@ def parent[T](x: T) -> type[T]:
         <... 'list'>
     """
 
+
 class AdditiveGroupElement(ModuleElement):
     """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2602)
 
         Generic element of an additive group.
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
@@ -3932,7 +4205,11 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for -: 'sage.structure.element.Element' and 'NoneType'"""
+    @overload
     def __truediv__(self, left, right) -> Any:
+        ...
+    @overload
+    def __truediv__(self, right) -> Any:
         """Element.__truediv__(left, right)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1671)

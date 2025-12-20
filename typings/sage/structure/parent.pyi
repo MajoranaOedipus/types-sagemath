@@ -1310,7 +1310,7 @@ class Parent(sage.structure.category_object.CategoryObject):
             [      0    -462]'''
     def __bool__(self) -> bool:
         """True if self else False"""
-    def __call__(self, x=..., *args, **kwds) -> Self: # TODO: eg for RR, Self is RealField_class, but returns RealField
+    def __call__(self, x=..., *args, **kwds): # TODO: eg for RR, Self is RealField_class, but returns RealField
         '''Parent.__call__(self, x=0, *args, **kwds)
 
         File: /build/sagemath/src/sage/src/sage/structure/parent.pyx (starting at line 842)
