@@ -1,6 +1,60 @@
+r"""
+Random Numbers with Python API
+
+AUTHORS:
+    -- Carl Witty (2008-03): new file
+
+This module has the same functions as the Python standard module
+\module{random}, but uses the current \sage random number state from
+\module{sage.misc.randstate} (so that it can be controlled by the same
+global random number seeds).
+
+The functions here are less efficient than the functions in \module{random},
+because they look up the current random number state on each call.
+
+If you are going to be creating many random numbers in a row, it is
+better to use the functions in \module{sage.misc.randstate} directly.
+
+Here is an example:
+
+(The imports on the next two lines are not necessary, since
+\function{randrange} and \function{current_randstate} are both available
+by default at the \code{sage:} prompt; but you would need them
+to run these examples inside a module.) ::
+
+    sage: from sage.misc.prandom import randrange
+    sage: from sage.misc.randstate import current_randstate
+    sage: def test1():
+    ....:    return sum([randrange(100) for i in range(100)])
+    sage: def test2():
+    ....:    randrange = current_randstate().python_random().randrange
+    ....:    return sum([randrange(100) for i in range(100)])
+
+Test2 will be slightly faster than test1, but they give the same answer::
+
+    sage: with seed(0): test1()
+    5169
+    sage: with seed(0): test2()
+    5169
+    sage: with seed(1): test1()
+    5097
+    sage: with seed(1): test2()
+    5097
+    sage: timeit('test1()') # random
+    625 loops, best of 3: 590 us per loop
+    sage: timeit('test2()') # random
+    625 loops, best of 3: 460 us per loop
+
+The docstrings for the functions in this file are mostly copied from
+Python's \file{random.py}, so those docstrings are "Copyright (c)
+2001, 2002, 2003, 2004, 2005, 2006, 2007 Python Software Foundation;
+All Rights Reserved" and are available under the terms of the
+Python Software Foundation License Version 2.
+"""
+from typing import Sequence
 from sage.misc.randstate import current_randstate as current_randstate
 
-def getrandbits(k):
+def getrandbits(k: int) -> int:
     """
     getrandbits(k) -> x.  Generates a long int with k random bits.
 
@@ -13,7 +67,7 @@ def getrandbits(k):
         sage: getrandbits(4) in range(2^4)
         True
     """
-def randrange(start, stop=None, step: int = 1):
+def randrange(start: int, stop: int | None = None, step: int = 1) -> int:
     """
     Choose a random item from range(start, stop[, step]).
 
@@ -42,7 +96,7 @@ def randrange(start, stop=None, step: int = 1):
         sage: -100 <= randrange(-100, 10) < 10
         True
     """
-def randint(a, b):
+def randint(a: int, b: int) -> int:
     """
     Return random integer in range [a, b], including both end points.
 
@@ -55,7 +109,7 @@ def randint(a, b):
         sage: -100 <= randint(-100, 10) <= 10
         True
     """
-def choice(seq):
+def choice[T](seq: Sequence[T]) -> T:
     """
     Choose a random element from a non-empty sequence.
 
@@ -66,7 +120,7 @@ def choice(seq):
         sage: all(t in primes(10, 100) for t in s)                                      # needs sage.libs.pari
         True
     """
-def shuffle(x):
+def shuffle(x: list) -> None:
     """
     x, random=random.random -> shuffle list x in place; return None.
 
@@ -77,7 +131,7 @@ def shuffle(x):
 
         sage: shuffle([1 .. 10])
     """
-def sample(population, k):
+def sample[T](population: Sequence[T], k: int) -> list[T]:
     '''
     Choose k unique random elements from a population sequence.
 
@@ -114,7 +168,7 @@ def sample(population, k):
         sage: all(t in range(2^30) for t in s)
         True
     '''
-def random():
+def random() -> float:
     """
     Get the next random number in the range [0.0, 1.0).
 
@@ -125,7 +179,7 @@ def random():
         sage: all(0.0 <= s <= 1.0 for s in sample)
         True
     """
-def uniform(a, b):
+def uniform(a: float, b: float) -> float:
     """
     Get a random number in the range [a, b).
 
@@ -143,7 +197,7 @@ def uniform(a, b):
         sage: bool(e <= s <= pi)                                                        # needs sage.symbolic
         True
     """
-def betavariate(alpha, beta):
+def betavariate(alpha: float, beta: float) -> float:
     """
     Beta distribution.
 
@@ -162,7 +216,7 @@ def betavariate(alpha, beta):
         sage: 0.0 <= s <= 1.0
         True
     """
-def expovariate(lambd):
+def expovariate(lambd: float) -> float:
     '''
     Exponential distribution.
 
@@ -187,7 +241,7 @@ def expovariate(lambd):
         sage: all(s >= 0.0 for s in sample)
         True
     '''
-def gammavariate(alpha, beta):
+def gammavariate(alpha: float, beta: float) -> float:
     """
     Gamma distribution.  (Not the gamma function.)
 
@@ -204,7 +258,7 @@ def gammavariate(alpha, beta):
         sage: sample > 0
         True
     """
-def gauss(mu, sigma):
+def gauss(mu: float, sigma: float) -> float:
     """
     Gaussian distribution.
 
@@ -221,7 +275,7 @@ def gauss(mu, sigma):
        sage: [gauss(1000, 10) for i in range(3)]  # random
        [998.7590700045661, 996.1087338511692, 1010.1256817458031]
     """
-def lognormvariate(mu, sigma):
+def lognormvariate(mu: float, sigma: float) -> float:
     """
     Log normal distribution.
 
@@ -234,7 +288,7 @@ def lognormvariate(mu, sigma):
         sage: [lognormvariate(100, 10) for i in range(3)]  # random
         [2.9410355688290246e+37, 2.2257548162070125e+38, 4.142299451717446e+43]
     """
-def normalvariate(mu, sigma):
+def normalvariate(mu: float, sigma: float) -> float:
     """
     Normal distribution.
 
@@ -249,7 +303,7 @@ def normalvariate(mu, sigma):
        sage: [normalvariate(1000, 10) for i in range(3)]  # random
        [1008.5303090383741, 989.8624892644895, 985.7728921150242]
     """
-def vonmisesvariate(mu, kappa):
+def vonmisesvariate(mu: float, kappa: float) -> float:
     """
     Circular data distribution.
 
@@ -265,7 +319,7 @@ def vonmisesvariate(mu, kappa):
         sage: all(s >= 0.0 for s in sample)
         True
     """
-def paretovariate(alpha):
+def paretovariate(alpha: float) -> float:
     """
     Pareto distribution.  alpha is the shape parameter.
 
@@ -276,7 +330,7 @@ def paretovariate(alpha):
         sage: all(s >= 1.0 for s in sample)
         True
     """
-def weibullvariate(alpha, beta):
+def weibullvariate(alpha: float, beta: float) -> float:
     """
     Weibull distribution.
 

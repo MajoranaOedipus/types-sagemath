@@ -1,10 +1,12 @@
+from typing import Iterable, Any
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.structure.element import Element as Element
 from sage.structure.richcmp import richcmp as richcmp, richcmp_method as richcmp_method, richcmp_not_equal as richcmp_not_equal
 from sage.structure.sage_object import SageObject as SageObject
 from sage.structure.sequence import Sequence as Sequence
 
-class Factorization(SageObject):
+@richcmp_method
+class Factorization[T](SageObject):
     """
     A formal factorization of an object.
 
@@ -26,7 +28,8 @@ class Factorization(SageObject):
         ...
         TypeError: no conversion of this rational to integer
     """
-    def __init__(self, x, unit=None, cr: bool = False, sort: bool = True, simplify: bool = True) -> None:
+    def __init__(self, x: Iterable[tuple[T, int]], # [(p, e)], e is passed to Integer
+                 unit=1, cr: bool = False, sort: bool = True, simplify: bool = True) -> None:
         """
         Create a :class:`Factorization` object.
 
@@ -105,7 +108,7 @@ class Factorization(SageObject):
             (Ambient free module of rank 2 over the principal ideal domain Integer Ring)^5 *
             (Ambient free module of rank 3 over the principal ideal domain Integer Ring)^2
         """
-    def __getitem__(self, i):
+    def __getitem__(self, i: int) -> tuple[T, int]:
         """
         Return `i`-th factor of ``self``.
 

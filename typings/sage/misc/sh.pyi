@@ -1,4 +1,4 @@
-from _typeshed import Incomplete
+from typing import Literal
 
 class Sh:
     """
@@ -9,7 +9,7 @@ class Sh:
     temporary) directory where the Sage worksheet process is
     executing.
     """
-    def eval(self, code, globals=None, locals=None):
+    def eval(self, code: str, globals=None, locals=None) -> Literal[""]:
         '''
         This is difficult to test because the output goes to the
         screen rather than being captured by the doctest program, so
@@ -19,4 +19,4 @@ class Sh:
             sage: sh.eval(\'\'\'echo "Hello there"\\nif [ $? -eq 0 ]; then\\necho "good"\\nfi\'\'\') # random output
         '''
 
-sh: Incomplete
+sh: Sh
