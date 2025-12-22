@@ -1,3 +1,17 @@
+r"""
+Trivial valuations
+
+AUTHORS:
+
+- Julian Rüth (2016-10-14): initial version
+
+EXAMPLES::
+
+    sage: v = valuations.TrivialValuation(QQ); v
+    Trivial valuation on Rational Field
+    sage: v(1)
+    0
+"""
 from .valuation import DiscretePseudoValuation as DiscretePseudoValuation, DiscreteValuation as DiscreteValuation, InfiniteDiscretePseudoValuation as InfiniteDiscretePseudoValuation
 from .valuation_space import DiscretePseudoValuationSpace as DiscretePseudoValuationSpace
 from _typeshed import Incomplete
@@ -227,5 +241,5 @@ class TrivialDiscreteValuation(TrivialDiscretePseudoValuation_base, DiscreteValu
             [Trivial valuation on Rational Field]
         """
 
-TrivialValuation: Incomplete
-TrivialPseudoValuation: Incomplete
+TrivialValuation: TrivialValuationFactory
+TrivialPseudoValuation: TrivialValuationFactory

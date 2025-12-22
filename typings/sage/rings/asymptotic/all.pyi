@@ -1,1 +1,2 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.rings.asymptotic.asymptotic_ring import AsymptoticRing as AsymptoticRing
+from sage.rings.asymptotic.asymptotic_expansion_generators import asymptotic_expansions as asymptotic_expansions

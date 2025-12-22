@@ -1,4 +1,47 @@
-from _typeshed import Incomplete
+r"""
+`p`-adic Valuations on Number Fields and Their Subrings and Completions
+
+EXAMPLES::
+
+    sage: ZZ.valuation(2)
+    2-adic valuation
+    sage: QQ.valuation(3)
+    3-adic valuation
+    sage: CyclotomicField(5).valuation(5)                                               # needs sage.rings.number_field
+    5-adic valuation
+    sage: GaussianIntegers().valuation(7)                                               # needs sage.rings.number_field
+    7-adic valuation
+    sage: Zp(11).valuation()
+    11-adic valuation
+
+These valuations can then, e.g., be used to compute approximate factorizations
+in the completion of a ring::
+
+    sage: v = ZZ.valuation(2)
+    sage: R.<x> = ZZ[]
+    sage: f = x^5 + x^4 + x^3 + x^2 + x - 1
+    sage: v.montes_factorization(f, required_precision=20)                              # needs sage.geometry.polyhedron
+    (x + 676027) * (x^4 + 372550*x^3 + 464863*x^2 + 385052*x + 297869)
+
+They can also be called on elements, although it is usually shorter to use ``.valuation()``::
+
+    sage: v(24)
+    3
+    sage: 24.valuation(2)
+    3
+    sage: 24.valuation(v.uniformizer())
+    3
+
+AUTHORS:
+
+- Julian Rüth (2013-03-16): initial version
+
+REFERENCES:
+
+The theory used here was originally developed in [Mac1936I]_ and [Mac1936II]_. An
+overview can also be found in Chapter 4 of [Rüt2014]_.
+"""
+
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.rings.infinity import infinity as infinity
 from sage.rings.valuation.mapped_valuation import FiniteExtensionFromLimitValuation as FiniteExtensionFromLimitValuation
@@ -180,7 +223,7 @@ class PadicValuationFactory(UniqueFactory):
             5-adic valuation
         """
 
-pAdicValuation: Incomplete
+pAdicValuation: PadicValuationFactory
 
 class pAdicValuation_base(DiscreteValuation):
     """

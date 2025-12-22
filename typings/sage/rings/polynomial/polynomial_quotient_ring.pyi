@@ -1,5 +1,30 @@
+"""
+Quotients of Univariate Polynomial Rings
+
+EXAMPLES::
+
+    sage: R.<x> = QQ[]
+    sage: S = R.quotient(x**3 - 3*x + 1, 'alpha')
+    sage: S.gen()**2 in S
+    True
+    sage: x in S
+    True
+    sage: S.gen() in R
+    False
+    sage: 1 in S
+    True
+
+TESTS::
+
+    sage: # needs sage.libs.flint
+    sage: Pol.<y> = CBF[]
+    sage: Quo.<y> = Pol.quotient(y^3)
+    sage: CBF.zero()*y
+    0
+    sage: ((x - 1)/(x + 1))(1 + y)
+    -0.2500000000000000*y^2 + 0.5000000000000000*y
+"""
 from . import polynomial_element as polynomial_element
-from _typeshed import Incomplete
 from sage.arith.misc import crt as crt
 from sage.categories.commutative_algebras import CommutativeAlgebras as CommutativeAlgebras
 from sage.categories.commutative_rings import CommutativeRings as CommutativeRings
@@ -176,7 +201,7 @@ class PolynomialQuotientRingFactory(UniqueFactory):
             Univariate Quotient Polynomial Ring in xbar over Rational Field with modulus x^2 - 1
         """
 
-PolynomialQuotientRing: Incomplete
+PolynomialQuotientRing: PolynomialQuotientRingFactory
 
 def is_PolynomialQuotientRing(x): ...
 

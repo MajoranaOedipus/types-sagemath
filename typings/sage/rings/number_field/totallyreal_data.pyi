@@ -1,16 +1,64 @@
 import _cython_3_2_1
 from sage.arith.misc import binomial as binomial, gcd as gcd
 from sage.categories.category import ZZ as ZZ
+from sage.rings.integer import Integer
 from sage.rings.polynomial.polynomial_ring import ZZx as ZZx
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing as PolynomialRing
 from sage.rings.real_mpfr import RealField as RealField
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
-from typing import Any, ClassVar, overload
+from typing import Any, ClassVar, overload, SupportsInt
+
+type Int = int | Integer | SupportsInt
 
 __pyx_capi__: dict
 easy_is_irreducible_py: _cython_3_2_1.cython_function_or_method
-hermite_constant: _cython_3_2_1.cython_function_or_method
-i: int
+
+
+def hermite_constant(n: Int) -> float:
+    r"""
+    Return the `n`-th Hermite constant.
+
+    The `n`-th Hermite constant (typically denoted `\gamma_n`), is defined
+    to be
+
+    .. MATH::
+
+        \max_L \min_{0 \neq x \in L} ||x||^2
+
+    where `L` runs over all lattices of dimension `n` and determinant `1`.
+
+    For `n \leq 8` it returns the exact value of `\gamma_n`, and for
+    `n > 9` it returns an upper bound on `\gamma_n`.
+
+    INPUT:
+
+    - ``n`` -- integer
+
+    OUTPUT:
+
+    (an upper bound for) the Hermite constant `\gamma_n`
+
+    EXAMPLES::
+
+        sage: hermite_constant(1) # trivial one-dimensional lattice
+        1.0
+        sage: hermite_constant(2) # Eisenstein lattice
+        1.1547005383792515
+        sage: 2/sqrt(3.)
+        1.15470053837925
+        sage: hermite_constant(8) # E_8
+        2.0
+
+    .. NOTE::
+
+        The upper bounds used can be found in [CS1999]_ and [CE2003]_.
+
+    AUTHORS:
+
+    - John Voight (2007-09-03)
+    """
+    ...
+
 int_has_small_square_divisor: _cython_3_2_1.cython_function_or_method
 lagrange_degree_3: _cython_3_2_1.cython_function_or_method
 primessq_py: list
@@ -93,25 +141,8 @@ class tr_data:
             [-3, -1, 1]
             sage: T.increment()
             [-25, 0, 1]"""
-    @overload
-    def printa(self) -> Any:
-        """tr_data.printa(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/number_field/totallyreal_data.pyx (starting at line 903)
-
-        Print relevant data for ``self``.
-
-        EXAMPLES::
-
-            sage: T = sage.rings.number_field.totallyreal_data.tr_data(3,2^10)
-            sage: T.printa()
-            k = 1
-            a = [0, 0, -1, 1]
-            amax = [0, 0, 0, 1]
-            beta =  [...]
-            gnk =  [...]"""
-    @overload
-    def printa(self) -> Any:
+    
+    def printa(self) -> None:
         """tr_data.printa(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/number_field/totallyreal_data.pyx (starting at line 903)

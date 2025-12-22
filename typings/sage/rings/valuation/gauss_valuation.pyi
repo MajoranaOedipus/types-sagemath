@@ -55,7 +55,7 @@ class GaussValuationFactory(UniqueFactory):
             Gauss valuation induced by 2-adic valuation
         """
 
-GaussValuation: Incomplete
+GaussValuation: GaussValuationFactory
 
 class GaussValuation_generic(NonFinalInductiveValuation):
     """

@@ -1,6 +1,6 @@
 from .finite_field_givaro import FiniteField_givaro as FiniteField_givaro
 from .finite_field_ntl_gf2e import FiniteField_ntl_gf2e as FiniteField_ntl_gf2e
-from _typeshed import Incomplete
+from typing import Literal
 from sage.rings.finite_rings.finite_field_base import is_FiniteField as is_FiniteField
 from sage.rings.integer import Integer as Integer
 from sage.rings.polynomial.polynomial_element import Polynomial as Polynomial
@@ -416,9 +416,9 @@ class FiniteFieldFactory(UniqueFactory):
             sage: k.<a> = GF(3^60, impl='pari')
         """
 
-GF: Incomplete
+GF: FiniteFieldFactory
 
-FiniteField: Incomplete
+FiniteField: FiniteFieldFactory
 
 def is_PrimeFiniteField(x):
     """
@@ -441,4 +441,4 @@ def is_PrimeFiniteField(x):
         True
     """
 
-zech_log_bound: Incomplete
+zech_log_bound: Literal[65536] 

@@ -1,4 +1,6 @@
-from _typeshed import Incomplete
+r"""
+Non Negative Integer Semiring
+"""
 from sage.categories.infinite_enumerated_sets import InfiniteEnumeratedSets as InfiniteEnumeratedSets
 from sage.categories.semirings import Semirings as Semirings
 from sage.sets.family import Family as Family
@@ -70,4 +72,4 @@ class NonNegativeIntegerSemiring(NonNegativeIntegers):
             Family (0, 1)
         """
 
-NN: Incomplete
+NN: NonNegativeIntegerSemiring

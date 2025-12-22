@@ -1,4 +1,145 @@
-from _typeshed import Incomplete
+r"""
+Discrete valuations on function fields
+
+AUTHORS:
+
+- Julian Rüth (2016-10-16): initial version
+
+EXAMPLES:
+
+We can create classical valuations that correspond to finite and infinite
+places on a rational function field::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: v = K.valuation(1); v
+    (x - 1)-adic valuation
+    sage: v = K.valuation(x^2 + 1); v
+    (x^2 + 1)-adic valuation
+    sage: v = K.valuation(1/x); v
+    Valuation at the infinite place
+
+Note that we can also specify valuations which do not correspond to a place of
+the function field::
+
+    sage: R.<x> = QQ[]
+    sage: w = valuations.GaussValuation(R, QQ.valuation(2))
+    sage: v = K.valuation(w); v
+    2-adic valuation
+
+Valuations on a rational function field can then be extended to finite
+extensions::
+
+    sage: v = K.valuation(x - 1); v
+    (x - 1)-adic valuation
+    sage: R.<y> = K[]
+    sage: L.<y> = K.extension(y^2 - x)                                                  # needs sage.rings.function_field
+    sage: w = v.extensions(L); w                                                        # needs sage.rings.function_field
+    [[ (x - 1)-adic valuation, v(y + 1) = 1 ]-adic valuation,
+     [ (x - 1)-adic valuation, v(y - 1) = 1 ]-adic valuation]
+
+TESTS:
+
+Run test suite for classical places over rational function fields::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: v = K.valuation(1)
+    sage: TestSuite(v).run(max_runs=100) # long time
+
+    sage: v = K.valuation(x^2 + 1)
+    sage: TestSuite(v).run(max_runs=100) # long time
+
+    sage: v = K.valuation(1/x)
+    sage: TestSuite(v).run(max_runs=100) # long time
+
+Run test suite over classical places of finite extensions::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: v = K.valuation(x - 1)
+    sage: R.<y> = K[]
+    sage: L.<y> = K.extension(y^2 - x)                                                  # needs sage.rings.function_field
+    sage: ws = v.extensions(L)                                                          # needs sage.rings.function_field
+    sage: for w in ws: TestSuite(w).run(max_runs=100)   # long time                     # needs sage.rings.function_field
+
+Run test suite for valuations that do not correspond to a classical place::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: R.<x> = QQ[]
+    sage: v = GaussValuation(R, QQ.valuation(2))
+    sage: w = K.valuation(v)
+    sage: TestSuite(w).run() # long time
+
+Run test suite for a non-classical valuation that does not correspond to an
+affinoid contained in the unit disk::
+
+    sage: w = K.valuation((w, K.hom(K.gen()/2), K.hom(2*K.gen()))); w
+    2-adic valuation (in Rational function field in x over Rational Field after x |--> 1/2*x)
+    sage: TestSuite(w).run() # long time
+
+Run test suite for some other classical places over large ground fields::
+
+    sage: K.<t> = FunctionField(GF(3))
+    sage: M.<x> = FunctionField(K)
+    sage: v = M.valuation(x^3 - t)
+    sage: TestSuite(v).run(max_runs=10)         # long time
+
+Run test suite for extensions over the infinite place::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: v = K.valuation(1/x)
+    sage: R.<y> = K[]
+    sage: L.<y> = K.extension(y^2 - 1/(x^2 + 1))                                        # needs sage.rings.function_field
+    sage: w = v.extensions(L)                                                           # needs sage.rings.function_field
+    sage: TestSuite(w).run()                    # long time                             # needs sage.rings.function_field
+
+Run test suite for a valuation with `v(1/x) > 0` which does not come from a
+classical valuation of the infinite place::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: R.<x> = QQ[]
+    sage: w = GaussValuation(R, QQ.valuation(2)).augmentation(x, 1)
+    sage: w = K.valuation(w)
+    sage: v = K.valuation((w, K.hom([~K.gen()]), K.hom([~K.gen()])))
+    sage: TestSuite(v).run() # long time
+
+Run test suite for extensions which come from the splitting in the base field::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: v = K.valuation(x^2 + 1)
+    sage: L.<x> = FunctionField(GaussianIntegers().fraction_field())
+    sage: ws = v.extensions(L)                                                          # needs sage.rings.function_field
+    sage: for w in ws: TestSuite(w).run(max_runs=100)   # long time                     # needs sage.rings.function_field
+
+Run test suite for a finite place with residual degree and ramification::
+
+    sage: K.<t> = FunctionField(GF(3))
+    sage: L.<x> = FunctionField(K)
+    sage: v = L.valuation(x^6 - t)
+    sage: TestSuite(v).run(max_runs=10) # long time
+
+Run test suite for a valuation which is backed by limit valuation::
+
+    sage: K.<x> = FunctionField(QQ)
+    sage: R.<y> = K[]
+    sage: L.<y> = K.extension(y^2 - (x^2 + x + 1))
+    sage: v = K.valuation(x - 1)
+    sage: w = v.extension(L)                                                            # needs sage.rings.function_field
+    sage: TestSuite(w).run()                    # long time                             # needs sage.rings.function_field
+
+Run test suite for a valuation which sends an element to `-\infty`::
+
+    sage: R.<x> = QQ[]
+    sage: v = GaussValuation(QQ['x'], QQ.valuation(2)).augmentation(x, infinity)
+    sage: K.<x> = FunctionField(QQ)
+    sage: w = K.valuation(v)
+    sage: TestSuite(w).run() # long time
+
+REFERENCES:
+
+An overview of some computational tools relating to valuations on function
+fields can be found in Section 4.6 of [Rüt2014]_. Most of this was originally
+developed for number fields in [Mac1936I]_ and [Mac1936II]_.
+"""
+
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.rings.rational_field import QQ as QQ
 from sage.rings.valuation.mapped_valuation import FiniteExtensionFromLimitValuation as FiniteExtensionFromLimitValuation, MappedValuation_base as MappedValuation_base
@@ -116,7 +257,7 @@ class FunctionFieldValuationFactory(UniqueFactory):
             2-adic valuation
         """
 
-FunctionFieldValuation: Incomplete
+FunctionFieldValuation: FunctionFieldValuationFactory
 
 class FunctionFieldValuation_base(DiscretePseudoValuation):
     """

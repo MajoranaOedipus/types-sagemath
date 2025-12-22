@@ -13,13 +13,64 @@ from sage.structure.element import coerce_binop as coerce_binop, have_same_paren
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-IntegerMod: _cython_3_2_1.cython_function_or_method
-Mod: _cython_3_2_1.cython_function_or_method
+def IntegerMod(parent, value):
+    """
+    Create an integer modulo `n` with the given parent.
+
+    This is mainly for internal use.
+
+    EXAMPLES::
+
+        sage: from sage.rings.finite_rings.integer_mod import IntegerMod
+        sage: R = IntegerModRing(100)
+        sage: type(R._pyx_order.table)
+        <class 'list'>
+        sage: IntegerMod(R, 42)
+        42
+        sage: IntegerMod(R, 142)
+        42
+        sage: IntegerMod(R, 10^100 + 42)
+        42
+        sage: IntegerMod(R, -9158)
+        42
+    """
+    ...
+
+def Mod(n, m, parent=None):
+    r"""
+    Return the equivalence class of `n` modulo `m` as
+    an element of `\ZZ/m\ZZ`.
+
+    EXAMPLES::
+
+        sage: x = Mod(12345678, 32098203845329048)
+        sage: x
+        12345678
+        sage: x^100
+        1017322209155072
+
+    You can also use the lowercase version::
+
+        sage: mod(12,5)
+        2
+
+    Illustrates that :issue:`5971` is fixed. Consider `n` modulo `m` when
+    `m = 0`. Then `\ZZ/0\ZZ` is isomorphic to `\ZZ` so `n` modulo `0`
+    is equivalent to `n` for any integer value of `n`::
+
+        sage: Mod(10, 0)
+        10
+        sage: a = randint(-100, 100)
+        sage: Mod(a, 0) == a
+        True
+    """
+mod = Mod
+
 __pyx_capi__: dict
 is_IntegerMod: _cython_3_2_1.cython_function_or_method
 lucas: _cython_3_2_1.cython_function_or_method
 lucas_q1: _cython_3_2_1.cython_function_or_method
-mod: _cython_3_2_1.cython_function_or_method
+
 pari: cypari2.pari_instance.Pari
 square_root_mod_prime: _cython_3_2_1.cython_function_or_method
 square_root_mod_prime_power: _cython_3_2_1.cython_function_or_method

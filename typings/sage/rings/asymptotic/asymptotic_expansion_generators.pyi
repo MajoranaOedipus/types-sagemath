@@ -1,4 +1,72 @@
-from _typeshed import Incomplete
+r"""
+Common Asymptotic Expansions
+
+Asymptotic expansions in SageMath can be built through the
+``asymptotic_expansions`` object. It contains generators for common
+asymptotic expressions. For example,
+::
+
+    sage: asymptotic_expansions.Stirling('n', precision=5)
+    sqrt(2)*sqrt(pi)*e^(n*log(n))*(e^n)^(-1)*n^(1/2) +
+    1/12*sqrt(2)*sqrt(pi)*e^(n*log(n))*(e^n)^(-1)*n^(-1/2) +
+    1/288*sqrt(2)*sqrt(pi)*e^(n*log(n))*(e^n)^(-1)*n^(-3/2) +
+    O(e^(n*log(n))*(e^n)^(-1)*n^(-5/2))
+
+generates the first 5 summands of Stirling's approximation formula for
+factorials.
+
+To construct an asymptotic expression manually, you can use the class
+:class:`~sage.rings.asymptotic.asymptotic_ring.AsymptoticRing`. See
+:doc:`asymptotic ring <asymptotic_ring>` for more details and a lot of
+examples.
+
+
+**Asymptotic Expansions**
+
+.. list-table::
+   :class: contentstable
+   :widths: 4 12
+   :header-rows: 0
+
+   * - :meth:`~AsymptoticExpansionGenerators.HarmonicNumber`
+     - harmonic numbers
+
+   * - :meth:`~AsymptoticExpansionGenerators.Stirling`
+     - Stirling's approximation formula for factorials
+
+   * - :meth:`~AsymptoticExpansionGenerators.log_Stirling`
+     - the logarithm of Stirling's approximation formula for factorials
+
+   * - :meth:`~AsymptoticExpansionGenerators.Binomial_kn_over_n`
+     - an asymptotic expansion of the binomial coefficient
+
+   * - :meth:`~AsymptoticExpansionGenerators.SingularityAnalysis`
+     - an asymptotic expansion obtained by singularity analysis
+
+   * - :meth:`~AsymptoticExpansionGenerators.ImplicitExpansion`
+     - the singular expansion of a function `y(z)` satisfying `y(z) = z \Phi(y(z))`
+
+   * - :meth:`~AsymptoticExpansionGenerators.ImplicitExpansionPeriodicPart`
+     - the singular expansion of the periodic part of a function `y(z)` satisfying `y(z) = z\Phi(y(z))`
+
+   * - :meth:`~AsymptoticExpansionGenerators.InverseFunctionAnalysis`
+     - coefficient growth of a function `y(z)` defined implicitly by `y(z) = z \Phi(y(z))`
+
+
+AUTHORS:
+
+- Daniel Krenn (2015)
+- Clemens Heuberger (2016)
+- Benjamin Hackl (2016)
+
+ACKNOWLEDGEMENT:
+
+- Benjamin Hackl, Clemens Heuberger and Daniel Krenn are supported by the
+  Austrian Science Fund (FWF): P 24644-N26.
+
+Classes and Methods
+===================
+"""
 from sage.misc.defaults import series_precision as series_precision
 from sage.misc.superseded import experimental as experimental
 from sage.structure.sage_object import SageObject as SageObject
@@ -906,4 +974,10 @@ class AsymptoticExpansionGenerators(SageObject):
             1/sqrt(pi)*4^n*n^(-3/2) - 9/8/sqrt(pi)*4^n*n^(-5/2) + O(4^n*n^(-3))
         """
 
-asymptotic_expansions: Incomplete
+asymptotic_expansions: AsymptoticExpansionGenerators
+r"""
+A collection of several common asymptotic expansions.
+
+This is an instance of :class:`AsymptoticExpansionGenerators` whose documentation
+provides more details.
+"""

@@ -1,4 +1,28 @@
-from _typeshed import Incomplete
+r"""
+Factories to construct function fields
+
+This module provides factories to construct function fields. These factories
+are only for internal use.
+
+EXAMPLES::
+
+    sage: K.<x> = FunctionField(QQ); K
+    Rational function field in x over Rational Field
+    sage: L.<x> = FunctionField(QQ); L
+    Rational function field in x over Rational Field
+    sage: K is L
+    True
+
+AUTHORS:
+
+- William Stein (2010): initial version
+
+- Maarten Derickx (2011-09-11): added ``FunctionField_polymod_Constructor``,
+  use ``@cached_function``
+
+- Julian Rueth (2011-09-14): replaced ``@cached_function`` with
+  ``UniqueFactory``
+"""
 from sage.structure.factory import UniqueFactory as UniqueFactory
 
 class FunctionFieldFactory(UniqueFactory):
@@ -59,7 +83,7 @@ class FunctionFieldFactory(UniqueFactory):
             True
         """
 
-FunctionField: Incomplete
+FunctionField: FunctionFieldFactory
 
 class FunctionFieldExtensionFactory(UniqueFactory):
     """
@@ -131,4 +155,4 @@ class FunctionFieldExtensionFactory(UniqueFactory):
             True
         """
 
-FunctionFieldExtension: Incomplete
+FunctionFieldExtension: FunctionFieldExtensionFactory

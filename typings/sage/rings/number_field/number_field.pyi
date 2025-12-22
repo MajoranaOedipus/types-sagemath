@@ -905,8 +905,8 @@ class CyclotomicFieldFactory(UniqueFactory):
             Universal Cyclotomic Field
         """
 
-CyclotomicField: Incomplete
-is_NumberField: Incomplete
+CyclotomicField: CyclotomicFieldFactory
+is_NumberField = number_field_base.is_NumberField
 
 class NumberField_generic(WithEqualityById, number_field_base.NumberField):
     """

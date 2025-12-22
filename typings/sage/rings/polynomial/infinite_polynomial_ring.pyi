@@ -1,4 +1,247 @@
-from _typeshed import Incomplete
+r"""
+Infinite Polynomial Rings
+
+By Infinite Polynomial Rings, we mean polynomial rings in a countably
+infinite number of variables. The implementation consists of a wrapper
+around the current *finite* polynomial rings in Sage.
+
+AUTHORS:
+
+- Simon King <simon.king@nuigalway.ie>
+- Mike Hansen <mhansen@gmail.com>
+
+An Infinite Polynomial Ring has finitely many generators `x_\ast,
+y_\ast,...` and infinitely many variables of the form `x_0, x_1, x_2,
+..., y_0, y_1, y_2,...,...`.  We refer to the natural number `n` as
+the *index* of the variable `x_n`.
+
+INPUT:
+
+- ``R`` -- the base ring; it has to be a commutative ring, and in some
+  applications it must even be a field
+- ``names`` -- a finite list of generator names; generator names must be alpha-numeric
+- ``order`` -- (optional) string; the default order is ``'lex'`` (lexicographic).
+  ``'deglex'`` is degree lexicographic, and ``'degrevlex'`` (degree reverse
+  lexicographic) is possible but discouraged.
+
+Each generator ``x`` produces an infinite sequence of variables
+``x[1], x[2], ...`` which are printed on screen as ``x_1, x_2, ...``
+and are latex typeset as `x_{1}, x_{2}`.  Then, the Infinite
+Polynomial Ring is formed by polynomials in these variables.
+
+By default, the monomials are ordered lexicographically. Alternatively,
+degree (reverse) lexicographic ordering is possible as well. However, we
+do not guarantee that the computation of Groebner bases will terminate
+in this case.
+
+In either case, the variables of a Infinite Polynomial Ring X are ordered
+according to the following rule:
+
+  ``X.gen(i)[m] > X.gen(j)[n]`` if and only if ``i<j or (i==j and m>n)``
+
+We provide a 'dense' and a 'sparse' implementation. In the dense
+implementation, the Infinite Polynomial Ring carries a finite
+polynomial ring that comprises *all* variables up to the maximal index
+that has been used so far. This is potentially a very big ring and may
+also comprise many variables that are not used.
+
+In the sparse implementation, we try to keep the underlying finite
+polynomial rings small, using only those variables that are really
+needed. By default, we use the dense implementation, since it usually
+is much faster.
+
+EXAMPLES::
+
+    sage: X.<x,y> = InfinitePolynomialRing(ZZ, implementation='sparse')
+    sage: A.<alpha,beta> = InfinitePolynomialRing(QQ, order='deglex')
+
+    sage: f = x[5] + 2; f
+    x_5 + 2
+    sage: g = 3*y[1]; g
+    3*y_1
+
+It has some advantages to have an underlying ring that is not
+univariate.  Hence, we always have at least two variables::
+
+    sage: g._p.parent()
+    Multivariate Polynomial Ring in y_1, y_0 over Integer Ring
+
+    sage: f2 = alpha[5] + 2; f2
+    alpha_5 + 2
+    sage: g2 = 3*beta[1]; g2
+    3*beta_1
+    sage: A.polynomial_ring()
+    Multivariate Polynomial Ring in alpha_5, alpha_4, alpha_3, alpha_2, alpha_1, alpha_0,
+     beta_5, beta_4, beta_3, beta_2, beta_1, beta_0 over Rational Field
+
+Of course, we provide the usual polynomial arithmetic::
+
+    sage: f + g
+    x_5 + 3*y_1 + 2
+    sage: p = x[10]^2*(f+g); p
+    x_10^2*x_5 + 3*x_10^2*y_1 + 2*x_10^2
+    sage: p2 = alpha[10]^2*(f2+g2); p2
+    alpha_10^2*alpha_5 + 3*alpha_10^2*beta_1 + 2*alpha_10^2
+
+There is a permutation action on the variables, by permuting positive
+variable indices::
+
+    sage: P = Permutation(((10,1)))
+    sage: p^P
+    x_5*x_1^2 + 3*x_1^2*y_10 + 2*x_1^2
+    sage: p2^P
+    alpha_5*alpha_1^2 + 3*alpha_1^2*beta_10 + 2*alpha_1^2
+
+Note that `x_0^P = x_0`, since the permutations only change *positive*
+variable indices.
+
+We also implemented ideals of Infinite Polynomial Rings. Here, it is
+thoroughly assumed that the ideals are set-wise invariant under the
+permutation action. We therefore refer to these ideals as *Symmetric
+Ideals*. Symmetric Ideals are finitely generated modulo addition,
+multiplication by ring elements and permutation of variables. If the
+base ring is a field, one can compute Symmetric Groebner Bases::
+
+    sage: J = A * (alpha[1]*beta[2])
+    sage: J.groebner_basis()                                                            # needs sage.combinat sage.libs.singular
+    [alpha_1*beta_2, alpha_2*beta_1]
+
+For more details, see :class:`~sage.rings.polynomial.symmetric_ideal.SymmetricIdeal`.
+
+Infinite Polynomial Rings can have any commutative base ring. If the
+base ring of an Infinite Polynomial Ring is a (classical or infinite)
+Polynomial Ring, then our implementation tries to merge everything
+into *one* ring. The basic requirement is that the monomial orders
+match. In the case of two Infinite Polynomial Rings, the
+implementations must match. Moreover, name conflicts should be
+avoided. An overlap is only accepted if the order of variables can be
+uniquely inferred, as in the following example::
+
+    sage: A.<a,b,c> = InfinitePolynomialRing(ZZ)
+    sage: B.<b,c,d> = InfinitePolynomialRing(A)
+    sage: B
+    Infinite polynomial ring in a, b, c, d over Integer Ring
+
+This is also allowed if finite polynomial rings are involved::
+
+    sage: A.<a_3,a_1,b_1,c_2,c_0> = ZZ[]
+    sage: B.<b,c,d> = InfinitePolynomialRing(A, order='degrevlex')
+    sage: B
+    Infinite polynomial ring in b, c, d over
+     Multivariate Polynomial Ring in a_3, a_1 over Integer Ring
+
+It is no problem if one generator of the Infinite Polynomial Ring is
+called ``x`` and one variable of the base ring is also called
+``x``. This is since no *variable* of the Infinite Polynomial Ring
+will be called ``x``. However, a problem arises if the underlying
+classical Polynomial Ring has a variable ``x_1``, since this can be
+confused with a variable of the Infinite Polynomial Ring. In this
+case, an error will be raised::
+
+    sage: X.<x,y_1> = ZZ[]
+    sage: Y.<x,z> = InfinitePolynomialRing(X)
+
+Note that ``X`` is not merged into ``Y``; this is since the monomial
+order of ``X`` is 'degrevlex', but of ``Y`` is 'lex'.
+::
+
+    sage: Y
+    Infinite polynomial ring in x, z over
+     Multivariate Polynomial Ring in x, y_1 over Integer Ring
+
+The variable ``x`` of ``X`` can still be interpreted in ``Y``,
+although the first generator of ``Y`` is called ``x`` as well::
+
+    sage: x
+    x_*
+    sage: X('x')
+    x
+    sage: Y(X('x'))
+    x
+    sage: Y('x')
+    x
+
+But there is only merging if the resulting monomial order is uniquely
+determined. This is not the case in the following examples, and thus
+an error is raised::
+
+    sage: X.<y_1,x> = ZZ[]
+    sage: Y.<y,z> = InfinitePolynomialRing(X)
+    Traceback (most recent call last):
+    ...
+    CoercionException: Overlapping variables (('y', 'z'),['y_1']) are incompatible
+    sage: Y.<z,y> = InfinitePolynomialRing(X)
+    Traceback (most recent call last):
+    ...
+    CoercionException: Overlapping variables (('z', 'y'),['y_1']) are incompatible
+    sage: X.<x_3,y_1,y_2> = PolynomialRing(ZZ, order='lex')
+    sage: # y_1 and y_2 would be in opposite order in an Infinite Polynomial Ring
+    sage: Y.<y> = InfinitePolynomialRing(X)
+    Traceback (most recent call last):
+    ...
+    CoercionException: Overlapping variables (('y',),['y_1', 'y_2']) are incompatible
+
+
+If the type of monomial orderings (e.g., 'degrevlex' versus 'lex') or
+if the implementations do not match, there is no simplified
+construction available::
+
+    sage: X.<x,y> = InfinitePolynomialRing(ZZ)
+    sage: Y.<z> = InfinitePolynomialRing(X, order='degrevlex')
+    sage: Y
+    Infinite polynomial ring in z over Infinite polynomial ring in x, y over Integer Ring
+    sage: Y.<z> = InfinitePolynomialRing(X, implementation='sparse')
+    sage: Y
+    Infinite polynomial ring in z over Infinite polynomial ring in x, y over Integer Ring
+
+TESTS:
+
+Infinite Polynomial Rings are part of Sage's coercion system. Hence,
+we can do arithmetic, so that the result lives in a ring into which
+all constituents coerce.
+::
+
+    sage: R.<a,b> = InfinitePolynomialRing(ZZ)
+    sage: X.<x> = InfinitePolynomialRing(R)
+    sage: x[2]/2+(5/3)*a[3]*x[4] + 1
+    5/3*a_3*x_4 + 1/2*x_2 + 1
+
+    sage: R.<a,b> = InfinitePolynomialRing(ZZ, implementation='sparse')
+    sage: X.<x> = InfinitePolynomialRing(R)
+    sage: x[2]/2+(5/3)*a[3]*x[4] + 1
+    5/3*a_3*x_4 + 1/2*x_2 + 1
+
+    sage: R.<a,b> = InfinitePolynomialRing(ZZ, implementation='sparse')
+    sage: X.<x> = InfinitePolynomialRing(R, implementation='sparse')
+    sage: x[2]/2+(5/3)*a[3]*x[4] + 1
+    5/3*a_3*x_4 + 1/2*x_2 + 1
+
+    sage: R.<a,b> = InfinitePolynomialRing(ZZ)
+    sage: X.<x> = InfinitePolynomialRing(R, implementation='sparse')
+    sage: x[2]/2+(5/3)*a[3]*x[4] + 1
+    5/3*a_3*x_4 + 1/2*x_2 + 1
+
+Check that :issue:`22514` is fixed::
+
+    sage: R.<x> = InfinitePolynomialRing(ZZ)
+    sage: a = R(3)
+    sage: a.is_constant()
+    True
+    sage: a.constant_coefficient()
+    3
+    sage: a.degree()
+    0
+    sage: b = R("2")
+    sage: b.parent() is R
+    True
+    sage: S.<y> = ZZ[]
+    sage: Q.<z> = InfinitePolynomialRing(S)
+    sage: a = Q(1+y)
+    sage: a.is_constant()
+    True
+    sage: a.constant_coefficient()
+    y + 1
+"""
 from sage.categories.pushout import InfinitePolynomialFunctor as InfinitePolynomialFunctor
 from sage.categories.rings import Rings as Rings
 from sage.misc.cachefunc import cached_method as cached_method
@@ -77,7 +320,7 @@ class InfinitePolynomialRingFactory(UniqueFactory):
             Infinite polynomial ring in x3 over Integer Ring
         """
 
-InfinitePolynomialRing: Incomplete
+InfinitePolynomialRing: InfinitePolynomialRingFactory
 
 class InfiniteGenDict:
     """

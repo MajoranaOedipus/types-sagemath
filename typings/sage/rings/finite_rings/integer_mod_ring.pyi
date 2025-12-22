@@ -1,3 +1,55 @@
+r"""
+Ring `\ZZ/n\ZZ` of integers modulo `n`
+
+EXAMPLES::
+
+    sage: R = Integers(97)
+    sage: a = R(5)
+    sage: a**100000000000000000000000000000000000000000000000000000000000000
+    61
+
+This example illustrates the relation between
+`\ZZ/p\ZZ` and `\GF{p}`. In
+particular, there is a canonical map to `\GF{p}`, but not in
+the other direction.
+
+::
+
+    sage: r = Integers(7)
+    sage: s = GF(7)
+    sage: r.has_coerce_map_from(s)
+    False
+    sage: s.has_coerce_map_from(r)
+    True
+    sage: s(1) + r(1)
+    2
+    sage: parent(s(1) + r(1))
+    Finite Field of size 7
+    sage: parent(r(1) + s(1))
+    Finite Field of size 7
+
+We list the elements of `\ZZ/3\ZZ`::
+
+    sage: R = Integers(3)
+    sage: list(R)
+    [0, 1, 2]
+
+AUTHORS:
+
+- William Stein (initial code)
+
+- David Joyner (2005-12-22): most examples
+
+- Robert Bradshaw (2006-08-24): convert to SageX (Cython)
+
+- William Stein (2007-04-29): square_roots_of_one
+
+- Simon King (2011-04-21): allow to prescribe a category
+
+- Simon King (2013-09): Only allow to prescribe the category of fields
+
+- Kyle Hofmann (2024-02): New implementation of root-finding
+"""
 import sage.rings.abc
 import sage.rings.quotient_ring as quotient_ring
 from _typeshed import Incomplete
@@ -150,11 +202,11 @@ class IntegerModFactory(UniqueFactory):
             sage: TestSuite(R).run() # indirect doctest
         """
 
-Zmod: Incomplete
+Zmod: IntegerModFactory
 
-Integers: Incomplete
+Integers: IntegerModFactory
 
-IntegerModRing: Incomplete
+IntegerModRing: IntegerModFactory
 default_category: Incomplete
 ZZ: Incomplete
 

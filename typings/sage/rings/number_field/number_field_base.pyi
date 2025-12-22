@@ -1,8 +1,41 @@
-import _cython_3_2_1
-import sage.rings.ring
-from typing import Any, ClassVar, overload
+"""
+Base class of number fields
 
-is_NumberField: _cython_3_2_1.cython_function_or_method
+AUTHORS:
+
+- William Stein (2007-09-04): initial version
+"""
+import sage.rings.ring
+from typing import Any, overload, TypeGuard
+
+def is_NumberField(x: object) -> TypeGuard[NumberField]:
+    """
+    Return ``True`` if ``x`` is of number field type.
+
+    This function is deprecated.
+
+    EXAMPLES::
+
+        sage: from sage.rings.number_field.number_field_base import is_NumberField
+        sage: x = polygen(ZZ)
+        sage: is_NumberField(NumberField(x^2 + 1, 'a'))
+        doctest:...: DeprecationWarning: the function is_NumberField is deprecated; use
+        isinstance(x, sage.rings.number_field.number_field_base.NumberField) instead
+        See https://github.com/sagemath/sage/issues/35283 for details.
+        True
+        sage: is_NumberField(QuadraticField(-97, 'theta'))
+        True
+        sage: is_NumberField(CyclotomicField(97))
+        True
+
+    Note that the rational numbers ``QQ`` are a number field.::
+
+        sage: is_NumberField(QQ)
+        True
+        sage: is_NumberField(ZZ)
+        False
+    """
+    ...
 
 class NumberField(sage.rings.ring.Field):
     """File: /build/sagemath/src/sage/src/sage/rings/number_field/number_field_base.pyx (starting at line 49)
@@ -23,7 +56,6 @@ class NumberField(sage.rings.ring.Field):
             sage: K.order()
             +Infinity
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""

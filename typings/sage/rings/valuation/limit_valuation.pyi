@@ -1,3 +1,77 @@
+r"""
+Valuations which are defined as limits of valuations.
+
+The discrete valuation of a complete field extends uniquely to a finite field
+extension. This is not the case anymore for fields which are not complete with
+respect to their discrete valuation. In this case, the extensions essentially
+correspond to the factors of the defining polynomial of the extension over the
+completion. However, these factors only exist over the completion and this
+makes it difficult to write down such valuations with a representation of
+finite length.
+
+More specifically, let `v` be a discrete valuation on `K` and let `L=K[x]/(G)`
+a finite extension thereof. An extension of `v` to `L` can be represented as a
+discrete pseudo-valuation `w'` on `K[x]` which sends `G` to infinity.
+However, such `w'` might not be described by an :mod:`augmented valuation <sage.rings.valuation.augmented_valuation>`
+over a :mod:`Gauss valuation <sage.rings.valuation.gauss_valuation>` anymore. Instead, we may need to write is as a
+limit of augmented valuations.
+
+The classes in this module provide the means of writing down such limits and
+resulting valuations on quotients.
+
+AUTHORS:
+
+- Julian Rüth (2016-10-19): initial version
+
+EXAMPLES:
+
+In this function field, the unique place of ``K`` which corresponds to the zero
+point has two extensions to ``L``. The valuations corresponding to these
+extensions can only be approximated::
+
+    sage: # needs sage.rings.function_field
+    sage: K.<x> = FunctionField(QQ)
+    sage: R.<y> = K[]
+    sage: L.<y> = K.extension(y^2 - x)
+    sage: v = K.valuation(1)
+    sage: w = v.extensions(L); w
+    [[ (x - 1)-adic valuation, v(y + 1) = 1 ]-adic valuation,
+     [ (x - 1)-adic valuation, v(y - 1) = 1 ]-adic valuation]
+
+The same phenomenon can be observed for valuations on number fields::
+
+    sage: # needs sage.rings.number_field
+    sage: K = QQ
+    sage: R.<t> = K[]
+    sage: L.<t> = K.extension(t^2 + 1)
+    sage: v = QQ.valuation(5)
+    sage: w = v.extensions(L); w
+    [[ 5-adic valuation, v(t + 2) = 1 ]-adic valuation,
+     [ 5-adic valuation, v(t + 3) = 1 ]-adic valuation]
+
+.. NOTE::
+
+    We often rely on approximations of valuations even if we could represent the
+    valuation without using a limit. This is done to improve performance as many
+    computations already can be done correctly with an approximation::
+
+        sage: # needs sage.rings.function_field
+        sage: K.<x> = FunctionField(QQ)
+        sage: R.<y> = K[]
+        sage: L.<y> = K.extension(y^2 - x)
+        sage: v = K.valuation(1/x)
+        sage: w = v.extension(L); w
+        Valuation at the infinite place
+        sage: w._base_valuation._base_valuation._improve_approximation()
+        sage: w._base_valuation._base_valuation._approximation
+        [ Gauss valuation induced by Valuation at the infinite place,
+            v(y) = 1/2, v(y^2 - 1/x) = +Infinity ]
+
+REFERENCES:
+
+Limits of inductive valuations are discussed in [Mac1936I]_ and [Mac1936II]_. An
+overview can also be found in Section 4.6 of [Rüt2014]_.
+"""
 from .valuation import DiscretePseudoValuation as DiscretePseudoValuation, InfiniteDiscretePseudoValuation as InfiniteDiscretePseudoValuation
 from _typeshed import Incomplete
 from sage.misc.abstract_method import abstract_method as abstract_method
@@ -57,7 +131,7 @@ class LimitValuationFactory(UniqueFactory):
             sage: w = valuations.LimitValuation(v, x^2 + 1)  # indirect doctest
         """
 
-LimitValuation: Incomplete
+LimitValuation: LimitValuationFactory
 
 class LimitValuation_generic(DiscretePseudoValuation):
     """

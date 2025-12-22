@@ -1,3 +1,7 @@
+"""
+Rings
+"""
+
 from sage.rings.finite_rings.all import *
 from sage.rings.number_field.all import *
 from sage.rings.function_field.all import *
@@ -7,7 +11,6 @@ from sage.rings.semirings.all import *
 from sage.rings.polynomial.all import *
 from sage.rings.invariants.all import *
 from sage.rings.asymptotic.all import *
-from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings import numbers_abc as numbers_abc
 from sage.rings.bernoulli_mod_p import bernoulli_mod_p as bernoulli_mod_p, bernoulli_mod_p_single as bernoulli_mod_p_single
 from sage.rings.big_oh import O as O
@@ -44,7 +47,7 @@ from sage.rings.real_double import RDF as RDF, RealDoubleElement as RealDoubleEl
 from sage.rings.real_lazy import CLF as CLF, ComplexLazyField as ComplexLazyField, RLF as RLF, RealLazyField as RealLazyField
 from sage.rings.real_mpfi import RIF as RIF, RealInterval as RealInterval, RealIntervalField as RealIntervalField
 from sage.rings.real_mpfr import RR as RR, RealField as RealField
-from sage.rings.ring import CommutativeRing as CommutativeRing, Field as Field, IntegralDomain as IntegralDomain, PrincipalIdealDomain as PrincipalIdealDomain, Ring as Ring
+from sage.rings.ring import CommutativeRing as CommutativeRing, Field as Field, IntegralDomain as IntegralDomain, PrincipalIdealDomain as PrincipalIdealDomain, Ring as Ring, DedekindDomain as DedekindDomain
 from sage.rings.tate_algebra import TateAlgebra as TateAlgebra
 from sage.rings.universal_cyclotomic_field import E as E, UniversalCyclotomicField as UniversalCyclotomicField
 from sage.structure.element import CommutativeAlgebraElement as CommutativeAlgebraElement, CommutativeRingElement as CommutativeRingElement, DedekindDomainElement as DedekindDomainElement, EuclideanDomainElement as EuclideanDomainElement, FieldElement as FieldElement, IntegralDomainElement as IntegralDomainElement, PrincipalIdealDomainElement as PrincipalIdealDomainElement, RingElement as RingElement
