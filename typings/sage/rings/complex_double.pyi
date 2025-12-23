@@ -1,3 +1,61 @@
+r"""
+Double precision floating point complex numbers
+
+Sage supports arithmetic using double-precision complex numbers. A
+double-precision complex number is a complex number ``x + I*y`` with
+`x`, `y` 64-bit (8 byte) floating point numbers (double precision).
+
+The field :class:`ComplexDoubleField` implements the field
+of all double-precision complex numbers. You can refer to this
+field by the shorthand ``CDF``. Elements of this field are of type
+:class:`ComplexDoubleElement`. If `x` and `y` are coercible to
+doubles, you can create a complex double element using
+``ComplexDoubleElement(x,y)``. You can coerce more
+general objects `z` to complex doubles by typing either
+``ComplexDoubleField(x)`` or ``CDF(x)``.
+
+EXAMPLES::
+
+    sage: ComplexDoubleField()
+    Complex Double Field
+    sage: CDF
+    Complex Double Field
+    sage: type(CDF.0)
+    <class 'sage.rings.complex_double.ComplexDoubleElement'>
+    sage: ComplexDoubleElement(sqrt(2), 3)                                              # needs sage.symbolic
+    1.4142135623730951 + 3.0*I
+    sage: parent(CDF(-2))
+    Complex Double Field
+
+::
+
+    sage: CC == CDF
+    False
+    sage: CDF is ComplexDoubleField()     # CDF is the shorthand
+    True
+    sage: CDF == ComplexDoubleField()
+    True
+
+The underlying arithmetic of complex numbers is implemented using
+functions and macros in :ref:`GSL <spkg_gsl>` (the GNU Scientific Library), and
+should be very fast. Also, all standard complex trig functions,
+log, exponents, etc., are implemented using GSL, and are also
+robust and fast. Several other special functions, e.g. eta, gamma,
+incomplete gamma, etc., are implemented using the :ref:`PARI <spkg_pari>`
+C library.
+
+AUTHORS:
+
+- William Stein (2006-09): first version
+
+- Travis Scrimshaw (2012-10-18): Added doctests to get full coverage
+
+- Jeroen Demeyer (2013-02-27): fixed all PARI calls (:issue:`14082`)
+
+- Vincent Klein (2017-11-15) : add __mpc__() to class ComplexDoubleElement.
+  ComplexDoubleElement constructor support and gmpy2.mpc parameter.
+"""
+
 import _cython_3_2_1
 import sage as sage
 import sage.categories.morphism
@@ -10,8 +68,18 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-ComplexDoubleField: _cython_3_2_1.cython_function_or_method
-__pyx_capi__: dict
+def ComplexDoubleField() -> ComplexDoubleField_class:
+    """
+    Return the field of double precision complex numbers.
+
+    EXAMPLES::
+
+        sage: ComplexDoubleField()
+        Complex Double Field
+        sage: ComplexDoubleField() is CDF
+        True
+    """
+
 complex_double_element_agm: None
 complex_double_element_dilog: None
 complex_double_element_eta: None

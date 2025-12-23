@@ -1,3 +1,37 @@
+r"""
+Ring `\ZZ` of Integers
+
+The :class:`IntegerRing_class` represents the ring `\ZZ` of (arbitrary
+precision) integers. Each integer is an instance of :class:`Integer`,
+which is defined in a Pyrex extension module that wraps GMP integers
+(the ``mpz_t`` type in GMP).
+
+::
+
+    sage: Z = IntegerRing(); Z
+    Integer Ring
+    sage: Z.characteristic()
+    0
+    sage: Z.is_field()
+    False
+
+There is a unique instance of the :class:`integer ring<IntegerRing_class>`.
+To create an :class:`Integer`, coerce either a Python int, long, or a string. Various
+other types will also coerce to the integers, when it makes sense.
+
+::
+
+    sage: a = Z(1234); a
+    1234
+    sage: b = Z(5678); b
+    5678
+    sage: type(a)
+    <class 'sage.rings.integer.Integer'>
+    sage: a + b
+    6912
+    sage: Z('94803849083985934859834583945394')
+    94803849083985934859834583945394
+"""
 import _cython_3_2_1
 import sage as sage
 import sage.rings.integer
@@ -10,7 +44,7 @@ from sage.misc.misc_c import prod as prod
 from sage.rings.number_field.number_field_element_base import NumberFieldElement_base as NumberFieldElement_base
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, overload
+from typing import Any, ClassVar, TypeGuard, overload
 
 def IntegerRing() -> IntegerRing_class:
     """IntegerRing()
@@ -28,10 +62,88 @@ EXAMPLES::
 
 """
 
+from typings_sagemath import Int
 
-arith: None
-crt_basis: _cython_3_2_1.cython_function_or_method
-is_IntegerRing: _cython_3_2_1.cython_function_or_method
+import sage.arith.all as arith
+def crt_basis(X: list[Int], xgcd=None):
+    r"""
+    Compute and return a Chinese Remainder Theorem basis for the list ``X``
+    of coprime integers.
+
+    INPUT:
+
+    - ``X`` -- list of Integers that are coprime in pairs
+
+    - ``xgcd`` -- an optional parameter which is ignored
+
+    OUTPUT:
+
+    - ``E`` -- list of Integers such that ``E[i] = 1`` (mod ``X[i]``) and
+      ``E[i] = 0`` (mod ``X[j]``) for all `j \neq i`
+
+    For this explanation, let ``E[i]`` be denoted by `E_i`.
+
+    The `E_i` have the property that if `A` is a list of objects, e.g.,
+    integers, vectors, matrices, etc., where `A_i` is understood modulo
+    `X_i`, then a CRT lift of `A` is simply
+
+    .. MATH::
+
+        \sum_i E_i A_i.
+
+    ALGORITHM: To compute `E_i`, compute integers `s` and `t` such that
+
+    .. MATH::
+
+        s X_i + t \prod_{i \neq j} X_j = 1. (\*)
+
+    Then
+
+    .. MATH::
+
+        E_i = t \prod_{i \neq j} X[j].
+
+    Notice that equation
+    (\*) implies that `E_i` is congruent to 1 modulo `X_i` and to 0
+    modulo the other `X_j` for `j \neq i`.
+
+    COMPLEXITY: We compute ``len(X)`` extended GCD's.
+
+    EXAMPLES::
+
+        sage: X = [11,20,31,51]
+        sage: E = crt_basis([11,20,31,51])
+        sage: E[0]%X[0], E[1]%X[0], E[2]%X[0], E[3]%X[0]
+        (1, 0, 0, 0)
+        sage: E[0]%X[1], E[1]%X[1], E[2]%X[1], E[3]%X[1]
+        (0, 1, 0, 0)
+        sage: E[0]%X[2], E[1]%X[2], E[2]%X[2], E[3]%X[2]
+        (0, 0, 1, 0)
+        sage: E[0]%X[3], E[1]%X[3], E[2]%X[3], E[3]%X[3]
+        (0, 0, 0, 1)
+    """
+    ...
+
+def is_IntegerRing(x) -> TypeGuard[IntegerRing_class]:
+    r"""
+    Internal function: return ``True`` iff ``x`` is the ring `\ZZ` of integers.
+
+    TESTS::
+
+        sage: from sage.rings.integer_ring import is_IntegerRing
+        sage: is_IntegerRing(ZZ)
+        doctest:warning...
+        DeprecationWarning: The function is_IntegerRing is deprecated;
+        use 'isinstance(..., IntegerRing_class)' instead.
+        See https://github.com/sagemath/sage/issues/38128 for details.
+        True
+        sage: is_IntegerRing(QQ)
+        False
+        sage: is_IntegerRing(parent(3))
+        True
+        sage: is_IntegerRing(parent(1/3))
+        False
+    """
 
 class IntegerRing_class(sage.rings.ring.CommutativeRing):
     '''IntegerRing_class()
@@ -227,7 +339,6 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
         sage: ZZ.cardinality()
         +Infinity'''
     _element_constructor_: ClassVar[type[sage.rings.integer.Integer]] = ...
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     def __init__(self) -> Any:
         """File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 308)
 

@@ -1042,7 +1042,7 @@ class RealLiteral(RealNumber):
             sage: RealField(300)(-(-1.2))
             1.20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"""
 
-class RealNumber(sage.structure.element.RingElement, Real):
+class RealNumber(sage.structure.element.RingElement):
     """RealNumber(parent, x=0, int base=10)
 
     File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 1344)
@@ -18593,7 +18593,7 @@ class RealNumber(sage.structure.element.RingElement, Real):
             See https://github.com/sagemath/sage/issues/15114 for details.
             1
             sage: import warnings; warnings.resetwarnings()"""
-    def __truediv__(self, left, right) -> Any:
+    def __truediv__(self, right) -> Any:
         """RealNumber.__truediv__(left, right)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_mpfr.pyx (starting at line 2460)

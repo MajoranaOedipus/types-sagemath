@@ -1,3 +1,138 @@
+r"""
+Arbitrary precision complex balls
+
+This is an incomplete interface to the `acb module of FLINT <https://flintlib.org/doc/acb.html>`_;
+it may be useful to refer to its documentation for more details.
+
+Parts of the documentation for this module are copied or adapted from Arb's
+(now FLINT's) own documentation, licenced at the time under the GNU General
+Public License version 2, or later.
+
+.. SEEALSO::
+
+    - :mod:`Real balls <sage.rings.real_arb>`
+    - :mod:`Complex interval field (using MPFI) <sage.rings.complex_interval_field>`
+    - :mod:`Complex intervals (using MPFI) <sage.rings.complex_interval>`
+
+Data Structure
+==============
+
+A :class:`ComplexBall` represents a complex number with error bounds. It wraps
+an object of type ``acb_t``, which  consists of a pair of real number balls
+representing the real and imaginary part with separate error bounds. (See the
+documentation of :mod:`sage.rings.real_arb` for more information.)
+
+A :class:`ComplexBall` thus represents a rectangle `[m_1-r_1, m_1+r_1] +
+[m_2-r_2, m_2+r_2] i` in the complex plane. This is used instead of a
+disk or square representation (consisting of a complex floating-point midpoint
+with a single radius), since it allows implementing many operations more
+conveniently by splitting into ball operations on the real and imaginary parts.
+It also allows tracking when complex numbers have an exact (for example exactly
+zero) real part and an inexact imaginary part, or vice versa.
+
+The parents of complex balls are instances of :class:`ComplexBallField`.
+The name ``CBF`` is bound to the complex ball field with the default precision
+of 53 bits::
+
+    sage: CBF is ComplexBallField() is ComplexBallField(53)
+    True
+
+Comparison
+==========
+
+.. WARNING::
+
+    In accordance with the semantics of FLINT/Arb, identical :class:`ComplexBall`
+    objects are understood to give permission for algebraic simplification.
+    This assumption is made to improve performance. For example, setting ``z =
+    x*x`` sets `z` to a ball enclosing the set `\{t^2 : t \in x\}` and not the
+    (generally larger) set `\{tu : t \in x, u \in x\}`.
+
+Two elements are equal if and only if they are exact and equal (in spite of the
+above warning, inexact balls are not considered equal to themselves)::
+
+    sage: a = CBF(1, 2)
+    sage: b = CBF(1, 2)
+    sage: a is b
+    False
+    sage: a == a
+    True
+    sage: a == b
+    True
+
+::
+
+    sage: a = CBF(1/3, 1/5)
+    sage: b = CBF(1/3, 1/5)
+    sage: a.is_exact()
+    False
+    sage: b.is_exact()
+    False
+    sage: a is b
+    False
+    sage: a == a
+    False
+    sage: a == b
+    False
+
+A ball is nonzero in the sense of usual comparison if and only if it does not
+contain zero::
+
+    sage: a = CBF(RIF(-0.5, 0.5))
+    sage: a != 0
+    False
+    sage: b = CBF(1/3, 1/5)
+    sage: b != 0
+    True
+
+However, ``bool(b)`` returns ``False`` for a ball ``b`` only if ``b`` is exactly
+zero::
+
+    sage: bool(a)
+    True
+    sage: bool(b)
+    True
+    sage: bool(CBF.zero())
+    False
+
+Coercion
+========
+
+Automatic coercions work as expected::
+
+    sage: # needs sage.symbolic
+    sage: bpol = 1/3*CBF(i) + AA(sqrt(2))
+    sage: bpol += polygen(RealBallField(20), 'x') + QQbar(i)
+    sage: bpol
+    x + [1.41421 +/- ...e-6] + [1.33333 +/- ...e-6]*I
+    sage: bpol.parent()
+    Univariate Polynomial Ring in x over Complex ball field with 20 bits of precision
+    sage: bpol/3
+    ([0.333333 +/- ...e-7])*x + [0.47140 +/- ...e-6] + [0.44444 +/- ...e-6]*I
+
+TESTS::
+
+    sage: polygen(CBF, 'x')^3
+    x^3
+
+::
+
+    sage: SR.coerce(CBF(0.42 + 3.33*I))                                                 # needs sage.symbolic
+    [0.4200000000000000 +/- ...e-17] + [3.330000000000000 +/- ...e-17]*I
+
+Check that :issue:`19839` is fixed::
+
+    sage: log(SR(CBF(0.42))).pyobject().parent()                                        # needs sage.symbolic
+    Complex ball field with 53 bits of precision
+
+:issue:`24621`::
+
+    sage: CBF(NumberField(polygen(QQ, 'y')^3 + 20, 'a', embedding=CC(1.35,2.35)).gen())
+    [1.35720880829745...] + [2.35075461245119...]*I
+
+Classes and Methods
+===================
+"""
 import sage as sage
 import sage.rings.abc
 import sage.structure.element
@@ -13,7 +148,17 @@ from sage.structure.unique_representation import UniqueRepresentation as UniqueR
 from typing import Any, ClassVar, overload
 
 CBF: ComplexBallField_with_category
-__pyx_capi__: dict
+from sage.categories.fields import Fields
+from sage.categories.sets_cat import Sets
+
+
+class ComplexBallField_with_category( # pyright: ignore[reportIncompatibleVariableOverride]
+    ComplexBallField, 
+    Fields.ParentMethods, 
+    Sets.ParentMethods, 
+    Sets.Infinite.ParentMethods
+):  # TODO: write Parent methods for all categories (and Element methods)
+    ...
 
 class ComplexBall(sage.structure.element.RingElement):
     """ComplexBall(parent, x=None, y=None)

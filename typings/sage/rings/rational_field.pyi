@@ -8,7 +8,7 @@ from sage.rings.rational import Rational as Rational
 from sage.structure.parent import Parent as Parent
 from sage.structure.sequence import Sequence as Sequence
 
-ZZ: Incomplete
+from sage.rings.integer_ring import ZZ as ZZ
 
 class RationalField(Singleton, number_field_base.NumberField):
     """
@@ -1007,7 +1007,7 @@ class RationalField(Singleton, number_field_base.NumberField):
             :meth:`IntegerRing_class.valuation() <sage.rings.integer_ring.IntegerRing_class.valuation>`
         """
 
-QQ: Incomplete
+QQ: RationalField
 Q = QQ
 
 def is_RationalField(x) -> bool:

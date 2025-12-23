@@ -1,3 +1,583 @@
+r"""
+Algebraic numbers
+
+This module implements the algebraic numbers (the complex
+numbers which are the zero of a polynomial in `\ZZ[x]`; in other
+words, the algebraic closure of `\QQ`, with an embedding into `\CC`).
+All computations are exact. We also include an implementation of the
+algebraic reals (the intersection of the algebraic numbers with
+`\RR`). The field of algebraic numbers `\QQbar` is available with
+abbreviation ``QQbar``; the field of algebraic reals has abbreviation
+``AA``.
+
+As with many other implementations of the algebraic numbers, we try
+hard to avoid computing a number field and working in the number
+field; instead, we use floating-point interval arithmetic whenever
+possible (basically whenever we need to prove non-equalities), and
+resort to symbolic computation only as needed (basically to prove
+equalities).
+
+Algebraic numbers exist in one of the following forms:
+
+- a rational number
+
+- the sum, difference, product, or quotient of algebraic numbers
+
+- the negation, inverse, absolute value, norm, real part,
+  imaginary part, or complex conjugate of an algebraic number
+
+- a particular root of a polynomial, given as a polynomial with
+  algebraic coefficients together with an isolating interval (given as
+  a ``RealIntervalFieldElement``) which encloses exactly one root, and
+  the multiplicity of the root
+
+- a polynomial in one generator, where the generator is an algebraic
+  number given as the root of an irreducible polynomial with integral
+  coefficients and the polynomial is given as a
+  ``NumberFieldElement``.
+
+An algebraic number can be coerced into ``ComplexIntervalField`` (or
+``RealIntervalField``, for algebraic reals); every algebraic number has a
+cached interval of the highest precision yet calculated.
+
+In most cases, computations that need to compare two algebraic numbers
+compute them with 128-bit precision intervals; if this does not suffice to
+prove that the numbers are different, then we fall back on exact
+computation.
+
+Note that division involves an implicit comparison of the divisor against
+zero, and may thus trigger exact computation.
+
+Also, using an algebraic number in the leading coefficient of
+a polynomial also involves an implicit comparison against zero, which
+again may trigger exact computation.
+
+Note that we work fairly hard to avoid computing new number fields;
+to help, we keep a lattice of already-computed number fields and
+their inclusions.
+
+EXAMPLES::
+
+    sage: sqrt(AA(2)) > 0
+    True
+    sage: (sqrt(5 + 2*sqrt(QQbar(6))) - sqrt(QQbar(3)))^2 == 2
+    True
+    sage: AA((sqrt(5 + 2*sqrt(6)) - sqrt(3))^2) == 2                                    # needs sage.symbolic
+    True
+
+For a monic cubic polynomial `x^3 + bx^2 + cx + d` with roots `s1`,
+`s2`, `s3`, the discriminant is defined as
+`(s1-s2)^2(s1-s3)^2(s2-s3)^2` and can be computed as `b^2c^2 - 4b^3d -
+4c^3 + 18bcd - 27d^2`. We can test that these definitions do give the
+same result::
+
+    sage: def disc1(b, c, d):
+    ....:     return b^2*c^2 - 4*b^3*d - 4*c^3 + 18*b*c*d - 27*d^2
+    sage: def disc2(s1, s2, s3):
+    ....:     return ((s1-s2)*(s1-s3)*(s2-s3))^2
+    sage: x = polygen(AA)
+    sage: p = x*(x-2)*(x-4)
+    sage: cp = AA.common_polynomial(p)
+    sage: d, c, b, _ = p.list()
+    sage: s1 = AA.polynomial_root(cp, RIF(-1, 1))
+    sage: s2 = AA.polynomial_root(cp, RIF(1, 3))
+    sage: s3 = AA.polynomial_root(cp, RIF(3, 5))
+    sage: disc1(b, c, d) == disc2(s1, s2, s3)
+    True
+    sage: p = p + 1
+    sage: cp = AA.common_polynomial(p)
+    sage: d, c, b, _ = p.list()
+    sage: s1 = AA.polynomial_root(cp, RIF(-1, 1))
+    sage: s2 = AA.polynomial_root(cp, RIF(1, 3))
+    sage: s3 = AA.polynomial_root(cp, RIF(3, 5))
+    sage: disc1(b, c, d) == disc2(s1, s2, s3)
+    True
+    sage: p = (x-sqrt(AA(2)))*(x-AA(2).nth_root(3))*(x-sqrt(AA(3)))
+    sage: cp = AA.common_polynomial(p)
+    sage: d, c, b, _ = p.list()
+    sage: s1 = AA.polynomial_root(cp, RIF(1.4, 1.5))
+    sage: s2 = AA.polynomial_root(cp, RIF(1.7, 1.8))
+    sage: s3 = AA.polynomial_root(cp, RIF(1.2, 1.3))
+    sage: disc1(b, c, d) == disc2(s1, s2, s3)
+    True
+
+We can convert from symbolic expressions::
+
+    sage: # needs sage.symbolic
+    sage: QQbar(sqrt(-5))
+    2.236067977499790?*I
+    sage: AA(sqrt(2) + sqrt(3))
+    3.146264369941973?
+    sage: QQbar(I)
+    I
+    sage: QQbar(I * golden_ratio)
+    1.618033988749895?*I
+    sage: AA(golden_ratio)^2 - AA(golden_ratio)
+    1
+    sage: QQbar((-8)^(1/3))
+    1.000000000000000? + 1.732050807568878?*I
+    sage: AA((-8)^(1/3))
+    -2
+    sage: QQbar((-4)^(1/4))
+    1 + 1*I
+    sage: AA((-4)^(1/4))
+    Traceback (most recent call last):
+    ...
+    ValueError: Cannot coerce algebraic number with nonzero imaginary part to algebraic real
+
+The coercion, however, goes in the other direction, since not all
+symbolic expressions are algebraic numbers::
+
+    sage: QQbar(sqrt(2)) + sqrt(3)                                                      # needs sage.symbolic
+    sqrt(3) + 1.414213562373095?
+    sage: QQbar(sqrt(2) + QQbar(sqrt(3)))                                               # needs sage.symbolic
+    3.146264369941973?
+
+Note the different behavior in taking roots: for ``AA`` we prefer real
+roots if they exist, but for ``QQbar`` we take the principal root::
+
+    sage: AA(-1)^(1/3)
+    -1
+    sage: QQbar(-1)^(1/3)
+    0.500000000000000? + 0.866025403784439?*I
+
+However, implicit coercion from `\QQ[I]` is only allowed when it is equipped
+with a complex embedding::
+
+    sage: i.parent()
+    Number Field in I with defining polynomial x^2 + 1 with I = 1*I
+    sage: QQbar(1) + i
+    I + 1
+
+    sage: K.<im> = QuadraticField(-1, embedding=None)
+    sage: QQbar(1) + im
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +: 'Algebraic Field' and
+    'Number Field in im with defining polynomial x^2 + 1'
+
+However, we can explicitly coerce from the abstract number field `\QQ[I]`.
+(Technically, this is not quite kosher, since we do not know whether the field
+generator is supposed to map to `+I` or `-I`. We assume that for any quadratic
+field with polynomial `x^2+1`, the generator maps to `+I`.)::
+
+    sage: pythag = QQbar(3/5 + 4*im/5); pythag
+    4/5*I + 3/5
+    sage: pythag.abs() == 1
+    True
+
+We can implicitly coerce from algebraic reals to algebraic numbers::
+
+    sage: a = QQbar(1); a, a.parent()
+    (1, Algebraic Field)
+    sage: b = AA(1); b, b.parent()
+    (1, Algebraic Real Field)
+    sage: c = a + b; c, c.parent()
+    (2, Algebraic Field)
+
+Some computation with radicals::
+
+    sage: phi = (1 + sqrt(AA(5))) / 2
+    sage: phi^2 == phi + 1
+    True
+    sage: tau = (1 - sqrt(AA(5))) / 2
+    sage: tau^2 == tau + 1
+    True
+    sage: phi + tau == 1
+    True
+    sage: tau < 0
+    True
+
+    sage: rt23 = sqrt(AA(2/3))
+    sage: rt35 = sqrt(AA(3/5))
+    sage: rt25 = sqrt(AA(2/5))
+    sage: rt23 * rt35 == rt25
+    True
+
+The Sage rings ``AA`` and ``QQbar`` can decide equalities between radical
+expressions (over the reals and complex numbers respectively)::
+
+    sage: a = AA((2/(3*sqrt(3)) + 10/27)^(1/3)                                          # needs sage.symbolic
+    ....:        - 2/(9*(2/(3*sqrt(3)) + 10/27)^(1/3)) + 1/3)
+    sage: a                                                                             # needs sage.symbolic
+    1.000000000000000?
+    sage: a == 1                                                                        # needs sage.symbolic
+    True
+
+Algebraic numbers which are known to be rational print as rationals;
+otherwise they print as intervals (with 53-bit precision)::
+
+    sage: AA(2)/3
+    2/3
+    sage: QQbar(5/7)
+    5/7
+    sage: QQbar(1/3 - 1/4*I)
+    -1/4*I + 1/3
+    sage: two = QQbar(4).nth_root(4)^2; two
+    2.000000000000000?
+    sage: two == 2; two
+    True
+    2
+    sage: phi
+    1.618033988749895?
+
+We can find the real and imaginary parts of an algebraic number (exactly)::
+
+    sage: r = QQbar.polynomial_root(x^5 - x - 1, CIF(RIF(0.1, 0.2), RIF(1.0, 1.1))); r
+    0.1812324444698754? + 1.083954101317711?*I
+    sage: r.real()
+    0.1812324444698754?
+    sage: r.imag()
+    1.083954101317711?
+    sage: r.minpoly()
+    x^5 - x - 1
+    sage: r.real().minpoly()
+    x^10 + 3/16*x^6 + 11/32*x^5 - 1/64*x^2 + 1/128*x - 1/1024
+    sage: r.imag().minpoly()  # long time (10s on sage.math, 2013)
+    x^20 - 5/8*x^16 - 95/256*x^12 - 625/1024*x^10 - 5/512*x^8 - 1875/8192*x^6 + 25/4096*x^4 - 625/32768*x^2 + 2869/1048576
+
+We can find the absolute value and norm of an algebraic number exactly.
+(Note that we define the norm as the product of a number and its
+complex conjugate; this is the algebraic definition of norm, if we
+view ``QQbar`` as ``AA[I]``.)::
+
+    sage: R.<x> = QQ[]
+    sage: r = (x^3 + 8).roots(QQbar, multiplicities=False)[2]; r
+    1.000000000000000? + 1.732050807568878?*I
+    sage: r.abs() == 2
+    True
+    sage: r.norm() == 4
+    True
+    sage: (r+QQbar(I)).norm().minpoly()
+    x^2 - 10*x + 13
+    sage: r = AA.polynomial_root(x^2 - x - 1, RIF(-1, 0)); r
+    -0.618033988749895?
+    sage: r.abs().minpoly()
+    x^2 + x - 1
+
+We can compute the multiplicative order of an algebraic number::
+
+    sage: QQbar(-1/2 + I*sqrt(3)/2).multiplicative_order()                              # needs sage.symbolic
+    3
+    sage: QQbar(-sqrt(3)/2 + I/2).multiplicative_order()                                # needs sage.symbolic
+    12
+    sage: (QQbar.zeta(23)**5).multiplicative_order()
+    23
+
+The paper "ARPREC: An Arbitrary Precision Computation Package" by
+Bailey, Yozo, Li and Thompson discusses this result. Evidently it is
+difficult to find, but we can easily verify it. ::
+
+    sage: alpha = QQbar.polynomial_root(x^10 + x^9 - x^7 - x^6
+    ....:                                - x^5 - x^4 - x^3 + x + 1, RIF(1, 1.2))
+    sage: lhs = alpha^630 - 1
+    sage: rhs_num = (alpha^315 - 1) * (alpha^210 - 1) * (alpha^126 - 1)^2 * (alpha^90 - 1) * (alpha^3 - 1)^3 * (alpha^2 - 1)^5 * (alpha - 1)^3
+    sage: rhs_den = (alpha^35 - 1) * (alpha^15 - 1)^2 * (alpha^14 - 1)^2 * (alpha^5 - 1)^6 * alpha^68
+    sage: rhs = rhs_num / rhs_den
+    sage: lhs
+    2.642040335819351?e44
+    sage: rhs
+    2.642040335819351?e44
+    sage: lhs - rhs
+    0.?e29
+    sage: lhs == rhs
+    True
+    sage: lhs - rhs
+    0
+    sage: lhs._exact_value()
+    -10648699402510886229334132989629606002223831*a^9 + 23174560249100286133718183712802529035435800*a^8 - 27259790692625442252605558473646959458901265*a^7 + 21416469499004652376912957054411004410158065*a^6 - 14543082864016871805545108986578337637140321*a^5 + 6458050008796664339372667222902512216589785*a^4 + 3052219053800078449122081871454923124998263*a^3 - 14238966128623353681821644902045640915516176*a^2 + 16749022728952328254673732618939204392161001*a - 9052854758155114957837247156588012516273410 where a^10 - a^9 + a^7 - a^6 + a^5 - a^4 + a^3 - a + 1 = 0 and a in -1.176280818259918?
+
+Given an algebraic number, we can produce a string that will reproduce
+that algebraic number if you type the string into Sage. We can see
+that until exact computation is triggered, an algebraic number keeps
+track of the computation steps used to produce that number::
+
+    sage: rt2 = AA(sqrt(2))
+    sage: rt3 = AA(sqrt(3))
+    sage: n = (rt2 + rt3)^5; n
+    308.3018001722975?
+    sage: sage_input(n)
+    R.<x> = AA[]
+    v1 = AA.polynomial_root(AA.common_polynomial(x^2 - 2), RIF(RR(1.4142135623730949), RR(1.4142135623730951))) + AA.polynomial_root(AA.common_polynomial(x^2 - 3), RIF(RR(1.7320508075688772), RR(1.7320508075688774)))
+    v2 = v1*v1
+    v2*v2*v1
+
+But once exact computation is triggered, the computation tree is discarded,
+and we get a way to produce the number directly::
+
+    sage: n == 109*rt2 + 89*rt3
+    True
+    sage: sage_input(n)
+    R.<y> = QQ[]
+    v = AA.polynomial_root(AA.common_polynomial(y^4 - 4*y^2 + 1), RIF(-RR(1.9318516525781366), -RR(1.9318516525781364)))
+    -109*v^3 + 89*v^2 + 327*v - 178
+
+We can also see that some computations (basically, those which are
+easy to perform exactly) are performed directly, instead of storing
+the computation tree::
+
+    sage: z3_3 = QQbar.zeta(3) * 3
+    sage: z4_4 = QQbar.zeta(4) * 4
+    sage: z5_5 = QQbar.zeta(5) * 5
+    sage: sage_input(z3_3 * z4_4 * z5_5)
+    R.<y> = QQ[]
+    3*QQbar.polynomial_root(AA.common_polynomial(y^2 + y + 1), CIF(RIF(-RR(0.50000000000000011), -RR(0.49999999999999994)), RIF(RR(0.8660254037844386), RR(0.86602540378443871))))*QQbar(4*I)*(5*QQbar.polynomial_root(AA.common_polynomial(y^4 + y^3 + y^2 + y + 1), CIF(RIF(RR(0.3090169943749474), RR(0.30901699437494745)), RIF(RR(0.95105651629515353), RR(0.95105651629515364)))))
+
+Note that the ``verify=True`` argument to ``sage_input`` will always trigger
+exact computation, so running ``sage_input`` twice in a row on the same number
+will actually give different answers. In the following, running ``sage_input``
+on ``n`` will also trigger exact computation on ``rt2``, as you can see by the
+fact that the third output is different than the first::
+
+    sage: # needs sage.symbolic
+    sage: rt2 = AA(sqrt(2))
+    sage: n = rt2^2
+    sage: sage_input(n, verify=True)
+    # Verified
+    R.<x> = AA[]
+    v = AA.polynomial_root(AA.common_polynomial(x^2 - 2), RIF(RR(1.4142135623730949), RR(1.4142135623730951)))
+    v*v
+    sage: sage_input(n, verify=True)
+    # Verified
+    AA(2)
+    sage: n = rt2^2
+    sage: sage_input(n, verify=True)
+    # Verified
+    AA(2)
+
+Just for fun, let's try ``sage_input`` on a very complicated expression. The
+output of this example changed with the rewriting of polynomial multiplication
+algorithms in :issue:`10255`::
+
+    sage: rt2 = sqrt(AA(2))
+    sage: rt3 = sqrt(QQbar(3))
+    sage: x = polygen(QQbar)
+    sage: nrt3 = AA.polynomial_root((x-rt2)*(x+rt3), RIF(-2, -1))
+    sage: one = AA.polynomial_root((x-rt2)*(x-rt3)*(x-nrt3)*(x-1-rt3-nrt3), RIF(0.9, 1.1))
+    sage: one
+    1.000000000000000?
+    sage: sage_input(one, verify=True)
+    # Verified
+    R1.<x> = QQbar[]
+    R2.<y> = QQ[]
+    v = AA.polynomial_root(AA.common_polynomial(y^4 - 4*y^2 + 1), RIF(-RR(1.9318516525781366), -RR(1.9318516525781364)))
+    AA.polynomial_root(AA.common_polynomial(x^4 + QQbar(v^3 - 3*v - 1)*x^3 + QQbar(-v^3 + 3*v - 3)*x^2 + QQbar(-3*v^3 + 9*v + 3)*x + QQbar(3*v^3 - 9*v)), RIF(RR(0.99999999999999989), RR(1.0000000000000002)))
+    sage: one
+    1
+
+We can pickle and unpickle algebraic fields (and they are globally unique)::
+
+    sage: loads(dumps(AlgebraicField())) is AlgebraicField()
+    True
+    sage: loads(dumps(AlgebraicRealField())) is AlgebraicRealField()
+    True
+
+We can pickle and unpickle algebraic numbers::
+
+    sage: loads(dumps(QQbar(10))) == QQbar(10)
+    True
+    sage: loads(dumps(QQbar(5/2))) == QQbar(5/2)
+    True
+    sage: loads(dumps(QQbar.zeta(5))) == QQbar.zeta(5)
+    True
+
+    sage: # needs sage.symbolic
+    sage: t = QQbar(sqrt(2)); type(t._descr)
+    <class 'sage.rings.qqbar.ANRoot'>
+    sage: loads(dumps(t)) == QQbar(sqrt(2))
+    True
+    sage: t.exactify(); type(t._descr)
+    <class 'sage.rings.qqbar.ANExtensionElement'>
+    sage: loads(dumps(t)) == QQbar(sqrt(2))
+    True
+    sage: t = ~QQbar(sqrt(2)); type(t._descr)
+    <class 'sage.rings.qqbar.ANUnaryExpr'>
+    sage: loads(dumps(t)) == 1/QQbar(sqrt(2))
+    True
+    sage: t = QQbar(sqrt(2)) + QQbar(sqrt(3)); type(t._descr)
+    <class 'sage.rings.qqbar.ANBinaryExpr'>
+    sage: loads(dumps(t)) == QQbar(sqrt(2)) + QQbar(sqrt(3))
+    True
+
+We can convert elements of ``QQbar`` and ``AA`` into the following
+types: ``float``, ``complex``, ``RDF``, ``CDF``, ``RR``, ``CC``,
+``RIF``, ``CIF``, ``ZZ``, and ``QQ``, with a few exceptions. (For the
+arbitrary-precision types, ``RR``, ``CC``, ``RIF``, and ``CIF``, it
+can convert into a field of arbitrary precision.)
+
+Converting from ``QQbar`` to a real type (``float``, ``RDF``, ``RR``,
+``RIF``, ``ZZ``, or ``QQ``) succeeds only if the ``QQbar`` is actually
+real (has an imaginary component of exactly zero). Converting from
+either ``AA`` or ``QQbar`` to ``ZZ`` or ``QQ`` succeeds only if the
+number actually is an integer or rational. If conversion fails, a
+:exc:`ValueError` will be raised.
+
+Here are examples of all of these conversions::
+
+    sage: # needs sage.symbolic
+    sage: all_vals = [AA(42), AA(22/7), AA(golden_ratio),
+    ....:             QQbar(-13), QQbar(89/55), QQbar(-sqrt(7)), QQbar.zeta(5)]
+    sage: def convert_test_all(ty):
+    ....:     def convert_test(v):
+    ....:         try:
+    ....:             return ty(v)
+    ....:         except (TypeError, ValueError):
+    ....:             return None
+    ....:     return [convert_test(_) for _ in all_vals]
+    sage: convert_test_all(float)
+    [42.0, 3.1428571428571432, 1.618033988749895, -13.0, 1.6181818181818182, -2.6457513110645907, None]
+    sage: convert_test_all(complex)
+    [(42+0j), (3.1428571428571432+0j), (1.618033988749895+0j), (-13+0j), (1.6181818181818182+0j), (-2.6457513110645907+0j), (0.30901699437494745+0.9510565162951536j)]
+    sage: convert_test_all(RDF)
+    [42.0, 3.1428571428571432, 1.618033988749895, -13.0, 1.6181818181818182, -2.6457513110645907, None]
+    sage: convert_test_all(CDF)
+    [42.0, 3.1428571428571432, 1.618033988749895, -13.0, 1.6181818181818182, -2.6457513110645907, 0.30901699437494745 + 0.9510565162951536*I]
+    sage: convert_test_all(RR)
+    [42.0000000000000, 3.14285714285714, 1.61803398874989, -13.0000000000000, 1.61818181818182, -2.64575131106459, None]
+    sage: convert_test_all(CC)
+    [42.0000000000000, 3.14285714285714, 1.61803398874989, -13.0000000000000, 1.61818181818182, -2.64575131106459, 0.309016994374947 + 0.951056516295154*I]
+    sage: convert_test_all(RIF)
+    [42, 3.142857142857143?, 1.618033988749895?, -13, 1.618181818181819?, -2.645751311064591?, None]
+    sage: convert_test_all(CIF)
+    [42, 3.142857142857143?, 1.618033988749895?, -13, 1.618181818181819?, -2.645751311064591?, 0.3090169943749474? + 0.9510565162951536?*I]
+    sage: convert_test_all(ZZ)
+    [42, None, None, -13, None, None, None]
+    sage: convert_test_all(QQ)
+    [42, 22/7, None, -13, 89/55, None, None]
+
+Compute the exact coordinates of a 34-gon (the formulas used are from
+Weisstein, Eric W. "Trigonometry Angles--Pi/17." and can be found at
+http://mathworld.wolfram.com/TrigonometryAnglesPi17.html)::
+
+    sage: rt17 = AA(17).sqrt()
+    sage: rt2 = AA(2).sqrt()
+    sage: eps = (17 + rt17).sqrt()
+    sage: epss = (17 - rt17).sqrt()
+    sage: delta = rt17 - 1
+    sage: alpha = (34 + 6*rt17 + rt2*delta*epss - 8*rt2*eps).sqrt()
+    sage: beta = 2*(17 + 3*rt17 - 2*rt2*eps - rt2*epss).sqrt()
+    sage: x = rt2*(15 + rt17 + rt2*(alpha + epss)).sqrt()/8
+    sage: y = rt2*(epss**2 - rt2*(alpha + epss)).sqrt()/8
+
+    sage: cx, cy = 1, 0
+    sage: for i in range(34):
+    ....:    cx, cy = x*cx-y*cy, x*cy+y*cx
+    sage: cx
+    1.000000000000000?
+    sage: cy
+    0.?e-15
+
+    sage: ax = polygen(AA)
+    sage: x2 = AA.polynomial_root(256*ax**8 - 128*ax**7 - 448*ax**6 + 192*ax**5
+    ....:                          + 240*ax**4 - 80*ax**3 - 40*ax**2 + 8*ax + 1,
+    ....:                         RIF(0.9829, 0.983))
+    sage: y2 = (1 - x2**2).sqrt()
+    sage: x - x2
+    0.?e-18
+    sage: y - y2
+    0.?e-17
+
+Ideally, in the above example we should be able to test ``x == x2`` and ``y ==
+y2`` but this is currently infinitely long.
+
+TESTS:
+
+Verify that :issue:`10981` is fixed::
+
+    sage: x = AA['x'].gen()
+    sage: P = 1/(1+x^4)
+    sage: P.partial_fraction_decomposition()
+    (0, [(-0.3535533905932738?*x + 1/2)/(x^2 - 1.414213562373095?*x + 1),
+         (0.3535533905932738?*x + 1/2)/(x^2 + 1.414213562373095?*x + 1)])
+
+Check that :issue:`22202` is fixed::
+
+    sage: R1.<x> = AA[]; R2.<s> = QQbar[]
+    sage: v = QQbar.polynomial_root(x^2 - x + 1, CIF(0.5, RIF(-0.87, -0.85)))
+    sage: a = QQbar.polynomial_root((-4*v + 2)*s + (v - 1/2), CIF(RIF(0.24, 0.26), RIF(0)))
+    sage: QQ(a)
+    1/4
+
+This example from :issue:`17896` should run in reasonable time, see also
+:issue:`15600`::
+
+    sage: x,y = polygens(QQ,"x,y")
+    sage: p1 = x^5 + 6*x^4 - 42*x^3 - 142*x^2 + 467*x + 422
+    sage: p2 = p1(x=(x-1)^2)
+    sage: p3 = p2(x=x*y).resultant(p2,x).univariate_polynomial()
+    sage: p4, = [f[0] for f in p3.factor() if f[0].degree() == 80]
+    sage: ival = CIF((0.77, 0.78), (-0.08, -0.07))
+    sage: z, = [r for r in p4.roots(QQbar, False) if r in ival]
+    sage: z.exactify()
+
+Check that :issue:`17895` is fixed. We check that ``polynomial_root``
+runs under 5 seconds (used to take ~40sec)::
+
+    sage: x,y = polygens(QQ,"x,y")
+    sage: p1 = x^5 + 6*x^4 - 42*x^3 - 142*x^2 + 467*x + 422
+    sage: p2 = p1(x=(x-1)^2)
+    sage: p3 = p2(x=x*y).resultant(p2,x).univariate_polynomial()
+    sage: p4, = [f[0] for f in p3.factor() if f[0].degree() == 80]
+    sage: ival = CIF((0.77, 0.78), (-0.08, -0.07))
+    sage: alarm(5.0)
+    sage: z2 = QQbar.polynomial_root(p4, ival)
+    sage: cancel_alarm()
+
+Check that :issue:`28530` is fixed::
+
+    sage: x = polygen(QQ)
+    sage: K.<a> = NumberField(x^2 - x - 6256320, embedding=-2500.763730596996)
+    sage: y = polygen(K)
+    sage: lc = (253699680440307500000000000000000000000000*y^13 +
+    ....: (-82964409970750000000000000000000000*a - 253907049983029389625000000000000000000000)*y^12 -
+    ....: 1269011504560040442911087500000000000000000*y^11 +
+    ....: (414989843657644100408750000000000000*a + 1270048771674262724340059170625000000000000)*y^10 +
+    ....: 2539049473271641600616704837811000000000000*y^9 +
+    ....: (-830315359762894607374452813100000000*a - 2541124846513368955687837282617343450000000)*y^8 -
+    ....: 2540076196857756969319550626460768394380000*y^7 +
+    ....: (830651117050319162421733536395645998*a + 2542152409324824242066023749434989311552001)*y^6 +
+    ....: 1270551589939213408433336739488536788760000*y^5 +
+    ....: (-415493479588780904355108633491291996*a - 1271590115891445566303772333517948273104002)*y^4 -
+    ....: 254213042233365096819403450838768394380000*y^3 +
+    ....: (83132288614462248899077910195645998*a + 254420831388756945210526696075302411552001)*y^2)
+    sage: lc = lc.change_ring(QQbar)
+    sage: lc.roots(CIF)
+    [(-1.000505492239?, 2),
+     (-1.000000000000?, 2),
+     (-0.999999999662605?, 1),
+     (0, 2),
+     (1.000000000000?, 2),
+     (1.000505492239?, 2),
+     (0.999999587? + 0.?e-11*I, 1),
+     (0.999999999? + 0.?e-11*I, 1)]
+
+Check that issue:`37927` is fixed::
+
+    sage: y = polygen(QQ, 'y')
+    sage: v1 = QQbar.polynomial_root(y**2 + 1, CIF(0, -1))
+    sage: v2 = -QQbar(2).sqrt()
+    sage: M = matrix(QQbar, [[0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    ....:              [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    ....:              [-4, 2*v1, 1, 64, -32*v1, -16, 8*v1, 4, -2*v1, -1],
+    ....:              [4*v1, 1, 0, -192*v1, -80, 32*v1, 12, -4*v1, -1, 0],
+    ....:               [2, 0, 0, -480, 160*v1, 48, -12*v1, -2, 0, 0],
+    ....:               [-4, 2*I, 1, 64, -32*I, -16, 8*I, 4, -2*I, -1],
+    ....:               [4*I, 1, 0, -192*I, -80, 32*I, 12, -4*I, -1, 0],
+    ....:               [2, 0, 0, -480, 160*I, 48, -12*I, -2, 0, 0],
+    ....:               [0, 0, 0, 8, 4*v2, 4, 2*v2, 2, v2, 1],
+    ....:               [0, 0, 0, 24*v2, 20, 8*v2, 6, 2*v2, 1, 0],
+    ....:               [0, 0, 0, 8, 4*v2, 4, 2*v2, 2, -v2, 1],
+    ....:               [0, 0, 0, 24*v2, 20, 8*v2, 6, 2*v2, 1, 0],
+    ....:               [0, 0, 0, -4096, -1024*I, 256, 64*I, -16, -4*I, 1],
+    ....:               [0, 0, 0, -4096, 1024*I, 256, -64*I, -16, 4*I, 1]])
+    sage: M.right_kernel_matrix()
+    [   1.000000000000000? + 0.?e-16*I                                 0                                 0 -0.00925925925925926? + 0.?e-19*I               0.?e-35 + 0.?e-18*I -0.11111111111111111? + 0.?e-18*I               0.?e-34 + 0.?e-17*I   0.5555555555555555? + 0.?e-16*I                                 0  -0.5925925925925926? + 0.?e-17*I]
+
+AUTHOR:
+
+- Carl Witty (2007-01-27): initial version
+- Carl Witty (2007-10-29): massive rewrite to support complex as well as real numbers
+"""
 import sage
 import sage.rings.abc
 from _typeshed import Incomplete
@@ -26,6 +606,14 @@ from sage.structure.coerce import parent_is_numerical as parent_is_numerical, pa
 from sage.structure.global_options import GlobalOptions as GlobalOptions
 from sage.structure.richcmp import op_EQ as op_EQ, op_GT as op_GT, op_NE as op_NE, rich_to_bool as rich_to_bool, richcmp as richcmp, richcmp_method as richcmp_method, richcmp_not_equal as richcmp_not_equal
 from sage.structure.sage_object import SageObject as SageObject
+
+from sage.rings.polynomial.polynomial_ring import PolynomialRing_field # with_category
+from sage.rings.polynomial.polynomial_rational_flint import Polynomial_rational_flint
+from sage.rings.polynomial.multi_polynomial_libsingular import MPolynomialRing_libsingular
+from sage.rings.polynomial.polynomial_integer_dense_flint import Polynomial_integer_dense_flint
+from sage.rings.real_mpfr import RealNumber as RealNumber
+from sage.rings.rational import Rational
+from sage.rings.number_field.number_field import NumberField_quadratic # with_category
 
 class AlgebraicField_common(sage.rings.abc.AlgebraicField_common):
     """
@@ -414,7 +1002,7 @@ def is_AlgebraicRealField(F):
         [True, False, False, False, False]
     '''
 
-AA: Incomplete
+AA: AlgebraicRealField
 
 class AlgebraicField(Singleton, AlgebraicField_common, sage.rings.abc.AlgebraicField):
     """
@@ -726,7 +1314,7 @@ def is_AlgebraicField(F):
         [False, True, False, False, False]
     '''
 
-QQbar: Incomplete
+QQbar: AlgebraicField
 
 def prec_seq() -> Generator[Incomplete]:
     """
@@ -1371,13 +1959,13 @@ def number_field_elements_from_algebraics(numbers, minimal: bool = False, same_f
            Defn: zeta6 |--> 0.500000000000000? + 0.866025403784439?*I)
     """
 
-QQx: Incomplete
-QQx_x: Incomplete
-QQy: Incomplete
-QQy_y: Incomplete
-QQxy: Incomplete
-QQxy_x: Incomplete
-QQxy_y: Incomplete
+QQx: PolynomialRing_field = QQ['x']
+QQx_x: Polynomial_rational_flint = QQx.gen()
+QQy: PolynomialRing_field = QQ['y']
+QQy_y: Polynomial_rational_flint = QQy.gen()
+QQxy: MPolynomialRing_libsingular = QQ['x', 'y']
+QQxy_x: MPolynomialRing_libsingular = QQxy.gen(0)
+QQxy_y: MPolynomialRing_libsingular = QQxy.gen(1)
 
 def cmp_elements_with_same_minpoly(a, b, p):
     """
@@ -3431,8 +4019,8 @@ def is_AlgebraicNumber(x):
         False
     '''
 
-QQbarPoly: Incomplete
-AAPoly: Incomplete
+QQbarPoly: PolynomialRing_field
+AAPoly: PolynomialRing_field
 
 class AlgebraicPolynomialTracker(SageObject):
     """
@@ -4378,8 +4966,8 @@ def an_binop_element(a, b, op):
         (40.53909377268655?, <class 'sage.rings.qqbar.ANExtensionElement'>)
     """
 
-qq_generator: Incomplete
-AA_golden_ratio: Incomplete
+qq_generator: AlgebraicGenerator
+AA_golden_ratio: AlgebraicReal
 
 def get_AA_golden_ratio():
     """
@@ -4392,20 +4980,20 @@ def get_AA_golden_ratio():
         1.618033988749895?
     """
 
-RR_1_10 = RR(1) / 10
-QQ_0 = QQ.zero()
-QQ_1 = QQ.one()
-QQ_1_2 = QQ((1, 2))
-QQ_1_4 = QQ((1, 4))
+RR_1_10: RealNumber = RR(1) / 10
+QQ_0: Rational = QQ.zero()
+QQ_1: Rational = QQ.one()
+QQ_1_2: Rational = QQ((1, 2))
+QQ_1_4: Rational = QQ((1, 4))
 
-AA_0 = AA.zero()
+AA_0: AlgebraicReal = AA.zero()
 
-QQbar_I_nf = GaussianField()
+QQbar_I_nf: NumberField_quadratic = GaussianField()
 QQbar_I_generator = AlgebraicGenerator(QQbar_I_nf, ANRoot(AAPoly.gen()**2 + 1, CIF(0, 1)))
 QQbar_I = AlgebraicNumber(ANExtensionElement(QQbar_I_generator, QQbar_I_nf.gen()))
 
-AA_hash_offset = AA(~ZZ(123456789))
+AA_hash_offset: AlgebraicReal = AA(~ZZ(123456789))
 
-QQbar_hash_offset = AlgebraicNumber(ANExtensionElement(QQbar_I_generator, ~ZZ(123456789) + QQbar_I_nf.gen() / ZZ(987654321)))
+QQbar_hash_offset: AlgebraicNumber = AlgebraicNumber(ANExtensionElement(QQbar_I_generator, ~ZZ(123456789) + QQbar_I_nf.gen() / ZZ(987654321)))
 
-ZZX_x = ZZ['x'].gen()
+ZZX_x: Polynomial_integer_dense_flint = ZZ['x'].gen()

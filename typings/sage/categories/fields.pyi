@@ -1,4 +1,5 @@
 from _typeshed import Incomplete
+
 from sage.categories.category_singleton import Category_contains_method_by_parent_class as Category_contains_method_by_parent_class
 from sage.categories.category_with_axiom import CategoryWithAxiom as CategoryWithAxiom
 from sage.categories.division_rings import DivisionRings as DivisionRings
@@ -7,6 +8,12 @@ from sage.categories.noetherian_rings import NoetherianRings as NoetherianRings
 from sage.misc.lazy_attribute import lazy_class_attribute as lazy_class_attribute
 from sage.misc.lazy_import import LazyImport as LazyImport
 from sage.structure.element import coerce_binop as coerce_binop
+
+from typing import Literal, Self, overload, Annotated
+from sage.rings.ring import Field
+from sage.structure.element import FieldElement
+from sage.rings.morphism import RingHomomorphism
+from sage.rings.integer import Integer
 
 class Fields(CategoryWithAxiom):
     """
@@ -108,7 +115,7 @@ class Fields(CategoryWithAxiom):
         '''
     Finite: Incomplete
     class ParentMethods:
-        def krull_dimension(self):
+        def krull_dimension(self) -> Literal[0]:
             """
             Return the Krull dimension of this field, which is 0.
 
@@ -119,7 +126,7 @@ class Fields(CategoryWithAxiom):
                 sage: Frac(QQ['x,y']).krull_dimension()
                 0
             """
-        def is_field(self, proof: bool = True):
+        def is_field(self, proof: bool = True) -> Literal[True]:
             """
             Return ``True`` as ``self`` is a field.
 
@@ -133,7 +140,7 @@ class Fields(CategoryWithAxiom):
                 sage: Frac(ZZ['x,y']).is_field()
                 True
             """
-        def is_integrally_closed(self) -> bool:
+        def is_integrally_closed(self) -> Literal[True]:
             """
             Return whether ``self`` is integrally closed.
 
@@ -153,7 +160,7 @@ class Fields(CategoryWithAxiom):
                 sage: Frac(ZZ['x,y']).is_integrally_closed()
                 True
             """
-        def integral_closure(self):
+        def integral_closure(self) -> Self:
             """
             Return this field, since fields are integrally closed in their
             fraction field.
@@ -166,7 +173,7 @@ class Fields(CategoryWithAxiom):
                 Fraction Field of Multivariate Polynomial Ring in x, y
                 over Integer Ring
             """
-        def algebraic_closure(self) -> None:
+        def algebraic_closure(self):
             """
             Return the algebraic closure of ``self``.
 
@@ -183,7 +190,7 @@ class Fields(CategoryWithAxiom):
                 ...
                 NotImplementedError: algebraic closures of general fields not implemented
             """
-        def an_embedding(self, K):
+        def an_embedding(self, K: Field) -> RingHomomorphism:
             """
             Return some embedding of this field into another field `K`,
             and raise a :class:`ValueError` if none exists.
@@ -221,7 +228,7 @@ class Fields(CategoryWithAxiom):
                   To:   Cyclotomic Field of order 6 and degree 2
                   Defn: zeta3 -> zeta6 - 1
             """
-        def prime_subfield(self):
+        def prime_subfield(self) -> Field:
             """
             Return the prime subfield of ``self``.
 
@@ -231,7 +238,12 @@ class Fields(CategoryWithAxiom):
                 sage: k.prime_subfield()                                                    # needs sage.rings.finite_rings
                 Finite Field of size 3
             """
-        def divides(self, x, y, coerce: bool = True):
+        
+        @overload
+        def divides(self, x: FieldElement, y: FieldElement, coerce: Literal[False]): # TODO: how to express that x and y are the element of the field?
+            ...
+        @overload
+        def divides(self, x, y, coerce: Literal[True] = True):
             """
             Return ``True`` if ``x`` divides ``y`` in this field.
 
@@ -247,7 +259,7 @@ class Fields(CategoryWithAxiom):
                 sage: QQ.divides(0, 5)
                 False
             """
-        def is_perfect(self):
+        def is_perfect(self) -> bool:
             """
             Return whether this field is perfect, i.e., its characteristic is
             `p=0` or every element has a `p`-th root.
@@ -261,7 +273,7 @@ class Fields(CategoryWithAxiom):
                 sage: FunctionField(GF(2), 'x').is_perfect()
                 False
             """
-        def fraction_field(self):
+        def fraction_field(self) -> Self:
             """
             Return the *fraction field* of ``self``, which is ``self``.
 
@@ -338,7 +350,7 @@ class Fields(CategoryWithAxiom):
                 (3*a^2 + 2*a + 1) + O(5^7)
             """
     class ElementMethods:
-        def euclidean_degree(self):
+        def euclidean_degree(self) -> Annotated[Integer, Literal[0]]:
             """
             Return the degree of this element as an element of a Euclidean
             domain.
@@ -351,7 +363,7 @@ class Fields(CategoryWithAxiom):
                 sage: QQ.one().euclidean_degree()
                 0
             """
-        def quo_rem(self, other):
+        def quo_rem(self, other: Self):
             """
             Return the quotient with remainder of the division of this element
             by ``other``.
@@ -366,7 +378,7 @@ class Fields(CategoryWithAxiom):
                 sage: f.quo_rem(g)
                 (1/2, 0)
             """
-        def is_unit(self):
+        def is_unit(self) -> bool:
             """
             Return ``True`` if ``self`` has a multiplicative inverse.
 
@@ -378,7 +390,7 @@ class Fields(CategoryWithAxiom):
                 False
             """
         @coerce_binop
-        def gcd(self, other):
+        def gcd(self, other) -> Self:
             """
             Greatest common divisor.
 
@@ -425,7 +437,7 @@ class Fields(CategoryWithAxiom):
             - Vincent Delecroix (2015) -- :issue:`17671`
             """
         @coerce_binop
-        def lcm(self, other):
+        def lcm(self, other) -> Self:
             """
             Least common multiple.
 
@@ -556,3 +568,4 @@ class Fields(CategoryWithAxiom):
                 sage: RR(0).inverse_of_unit()
                 +infinity
             """
+

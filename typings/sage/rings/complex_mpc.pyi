@@ -1,3 +1,52 @@
+"""
+Arbitrary precision floating point complex numbers using GNU MPC
+
+This is a binding for the arbitrary-precision floating point library
+:ref:`GNU MPC <spkg_mpc>`.
+
+We define a class :class:`MPComplexField`, each instance of which
+specifies a field of floating-point complex numbers with
+a specified precision shared by the real and imaginary part and a rounding
+mode stating the rounding mode directions specific to real and imaginary
+parts.
+
+Individual floating-point numbers are of class :class:`MPComplexNumber`.
+
+For floating-point representation and rounding mode description see the
+documentation for the :mod:`sage.rings.real_mpfr`.
+
+AUTHORS:
+
+- Philippe Theveny (2008-10-13): initial version, adapted from
+  :mod:`sage.rings.real_mpfr` and :mod:`sage.rings.complex_mpfr`.
+
+- Alex Ghitza (2008-11): cache, generators, random element, and many doctests.
+
+- Yann Laigle-Chapuy (2010-01): improves compatibility with CC, updates.
+
+- Jeroen Demeyer (2012-02): reformat documentation, make MPC a standard
+  package.
+
+- Travis Scrimshaw (2012-10-18): Added doctests for full coverage.
+
+- Vincent Klein (2017-11-15) : add __mpc__() to class MPComplexNumber.
+  MPComplexNumber constructor support gmpy2.mpz, gmpy2.mpq, gmpy2.mpfr
+  and gmpy2.mpc parameters.
+
+EXAMPLES::
+
+    sage: MPC = MPComplexField(42)
+    sage: a = MPC(12, '15.64E+32'); a
+    12.0000000000 + 1.56400000000e33*I
+    sage: a *a *a *a
+    5.98338564121e132 - 1.83633318912e101*I
+    sage: a + 1
+    13.0000000000 + 1.56400000000e33*I
+    sage: a / 3
+    4.00000000000 + 5.21333333333e32*I
+    sage: MPC("infinity + NaN *I")
+    +infinity + NaN*I
+"""
 import _cython_3_2_1
 import cypari2.pari_instance
 import sage as sage
@@ -13,12 +62,31 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-AA: None
-CDF: None
-CLF: None
-MPComplexField: _cython_3_2_1.cython_function_or_method
-QQbar: None
-RLF: None
+from sage.rings.qqbar import AA as AA
+from sage.rings.qqbar import QQbar as QQbar
+from sage.rings.real_lazy import CLF as CLF, RLF as RLF
+from sage.rings.complex_double import CDF as CDF
+
+def MPComplexField(prec=53, rnd='RNDNN', names=None):
+    """
+    Return the complex field with real and imaginary parts having
+    prec *bits* of precision.
+
+    EXAMPLES::
+
+        sage: MPComplexField()
+        Complex Field with 53 bits of precision
+        sage: MPComplexField(100)
+        Complex Field with 100 bits of precision
+        sage: MPComplexField(100).base_ring()
+        Real Field with 100 bits of precision
+        sage: i = MPComplexField(200).gen()
+        sage: i^2
+        -1.0000000000000000000000000000000000000000000000000000000000
+    """
+    ...
+
+
 cache: dict
 complex_ten: str
 digit_ten: str
@@ -31,21 +99,18 @@ sign: str
 split_complex_string: _cython_3_2_1.cython_function_or_method
 
 class CCtoMPC(sage.categories.map.Map):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
 
 class INTEGERtoMPC(sage.categories.map.Map):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
 
 class MPComplexField_class(sage.rings.ring.Field):
     """MPComplexField_class(int prec=53, rnd='RNDNN')"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, intprec=..., rnd=...) -> Any:
+    def __init__(self, intprec=..., rnd=...):
         """File: /build/sagemath/src/sage/src/sage/rings/complex_mpc.pyx (starting at line 272)
 
                 Initialize ``self``.

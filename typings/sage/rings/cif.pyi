@@ -1,4 +1,4 @@
-from _typeshed import Incomplete
 from sage.rings.complex_interval_field import ComplexIntervalField as ComplexIntervalField
+from sage.rings.complex_interval_field import ComplexIntervalField_class
 
-CIF: Incomplete
+CIF: ComplexIntervalField_class

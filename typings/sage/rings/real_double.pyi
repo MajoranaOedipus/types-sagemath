@@ -1,3 +1,36 @@
+r"""
+Double precision floating point real numbers
+
+EXAMPLES:
+
+We create the real double vector space of dimension `3`::
+
+    sage: V = RDF^3; V                                                                  # needs sage.modules
+    Vector space of dimension 3 over Real Double Field
+
+Notice that this space is unique::
+
+    sage: V is RDF^3                                                                    # needs sage.modules
+    True
+    sage: V is FreeModule(RDF, 3)                                                       # needs sage.modules
+    True
+    sage: V is VectorSpace(RDF, 3)                                                      # needs sage.modules
+    True
+
+Also, you can instantly create a space of large dimension::
+
+    sage: V = RDF^10000                                                                 # needs sage.modules
+
+TESTS:
+
+Test NumPy conversions::
+
+    sage: RDF(1).__array_interface__
+    {'typestr': '=f8'}
+    sage: import numpy                                                                  # needs numpy
+    sage: numpy.array([RDF.pi()]).dtype                                                 # needs numpy
+    dtype('float64')
+"""
 import _cython_3_2_1
 import sage as sage
 import sage.categories.morphism
@@ -7,12 +40,39 @@ from sage.categories.category import ZZ as ZZ
 from sage.rings.real_double_element_gsl import RealDoubleElement_gsl as RealDoubleElement_gsl
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, overload
+from typing import Any, ClassVar, TypeGuard, overload
 
-RealDoubleField: _cython_3_2_1.cython_function_or_method
-__pyx_capi__: dict
-is_RealDoubleElement: _cython_3_2_1.cython_function_or_method
-new_gen_from_real_double_element: None
+def RealDoubleField() -> RealDoubleField_class:
+    """
+    Return the unique instance of the
+    :class:`real double field<RealDoubleField_class>`.
+
+    EXAMPLES::
+
+        sage: RealDoubleField() is RealDoubleField()
+        True
+    """
+    ...
+
+def is_RealDoubleElement(x) -> TypeGuard[RealDoubleElement]:
+    """
+    Check if ``x`` is an element of the real double field.
+
+    EXAMPLES::
+
+        sage: from sage.rings.real_double import is_RealDoubleElement
+        sage: is_RealDoubleElement(RDF(3))
+        doctest:warning...
+        DeprecationWarning: The function is_RealDoubleElement is deprecated;
+        use 'isinstance(..., RealDoubleElement)' instead.
+        See https://github.com/sagemath/sage/issues/38128 for details.
+        True
+        sage: is_RealDoubleElement(RIF(3))                                              # needs sage.rings.real_interval_field
+        False
+    """
+    ...
+
+from sage.libs.pari.convert_sage_real_double import new_gen_from_real_double_element as new_gen_from_real_double_element
 
 class RealDoubleElement(sage.structure.element.FieldElement):
     """RealDoubleElement(x)
@@ -25,8 +85,7 @@ class RealDoubleElement(sage.structure.element.FieldElement):
     calculations were performed with true real numbers. This is due to
     the rounding errors inherent to finite precision calculations."""
     __array_interface__: ClassVar[dict] = ...
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, x) -> Any:
+    def __init__(self, x):
         """File: /build/sagemath/src/sage/src/sage/rings/real_double.pyx (starting at line 697)
 
                 Create a new ``RealDoubleElement`` with value ``x``.
@@ -9196,8 +9255,7 @@ class RealDoubleField_class(sage.rings.abc.RealDoubleField):
 
 class ToRDF(sage.categories.morphism.Morphism):
     """ToRDF(R)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, R) -> Any:
+    def __init__(self, R):
         """File: /build/sagemath/src/sage/src/sage/rings/real_double.pyx (starting at line 1963)
 
                 Fast morphism from anything with a ``__float__`` method to an ``RDF``

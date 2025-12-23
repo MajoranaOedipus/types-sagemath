@@ -338,7 +338,7 @@ is_Vector: _cython_3_2_1.cython_function_or_method
 make_element: _cython_3_2_1.cython_function_or_method
 
 @overload
-def parent(x: Element) -> Parent:   # pyright: ignore[reportOverlappingOverload] # 
+def parent(x: Element) -> Parent:  # pyright: ignore[reportOverlappingOverload]
     ...
 @overload
 def parent[T](x: T) -> type[T]:
@@ -395,7 +395,7 @@ def parent[T](x: T) -> type[T]:
         <... 'list'>
     """
 
-
+bin
 class AdditiveGroupElement(ModuleElement):
     """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2602)
 
