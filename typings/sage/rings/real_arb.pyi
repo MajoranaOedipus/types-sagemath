@@ -11,8 +11,19 @@ from sage.rings.real_mpfi import RealIntervalField as RealIntervalField
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.unique_representation import UniqueRepresentation as UniqueRepresentation
 from typing import Any, ClassVar, overload
+from sage.categories.fields import Fields
+from sage.categories.sets_cat import Sets
 
 RBF: RealBallField_with_category
+
+class RealBallField_with_category(
+    RealBallField,
+    Fields.ParentMethods, 
+    Sets.ParentMethods, 
+    Sets.Infinite.ParentMethods
+): 
+    ...
+
 __pyx_capi__: dict
 create_RealBall: _cython_3_2_1.cython_function_or_method
 

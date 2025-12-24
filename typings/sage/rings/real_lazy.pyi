@@ -1,4 +1,24 @@
-import _cython_3_2_1
+"""
+Lazy real and complex numbers
+
+These classes are very lazy, in the sense that it doesn't really do anything
+but simply sits between exact rings of characteristic 0 and the real numbers.
+The values are actually computed when they are cast into a field of fixed
+precision.
+
+The main purpose of these classes is to provide a place for exact rings (e.g.
+number fields) to embed for the coercion model (as only one embedding can be
+specified in the forward direction).
+
+TESTS:
+
+Bug :issue:`21991`::
+
+    sage: a = QuadraticField(5).gen()                                                   # needs sage.rings.number_field
+    sage: u = -573147844013817084101/2*a + 1281597540372340914251/2                     # needs sage.rings.number_field
+    sage: RealIntervalField(128)(RLF(u)).is_exact()                                     # needs sage.rings.number_field
+    False
+"""
 import sage as sage
 import sage.categories.morphism
 import sage.rings.ring
@@ -7,12 +27,56 @@ from sage.rings.integer import Integer as Integer
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
+from sage.categories.fields import Fields
 
-CLF: ComplexLazyField_class_with_category
-ComplexLazyField: _cython_3_2_1.cython_function_or_method
+CLF: ComplexLazyField_class # with category
+def ComplexLazyField():
+    """
+    Return the lazy complex field.
+
+    EXAMPLES:
+
+    There is only one lazy complex field::
+
+        sage: ComplexLazyField() is ComplexLazyField()
+        True
+    """
 RLF: RealLazyField_class_with_category
-RealLazyField: _cython_3_2_1.cython_function_or_method
-make_element: _cython_3_2_1.cython_function_or_method
+def RealLazyField():
+    """
+    Return the lazy real field.
+
+    EXAMPLES:
+
+    There is only one lazy real field::
+
+        sage: RealLazyField() is RealLazyField()
+        True
+    """
+    ...
+
+def make_element(parent, *args):
+    """
+    Create an element of ``parent``.
+
+    EXAMPLES::
+
+        sage: a = RLF(pi) + RLF(sqrt(1/2))  # indirect doctest                          # needs sage.symbolic
+        sage: bool(loads(dumps(a)) == a)                                                # needs sage.symbolic
+        True
+    """
+
+class ComplexLazyField_class_with_category(
+    ComplexLazyField_class,
+    Fields.ParentMethods
+): 
+    ...
+
+class RealLazyField_class_with_category(
+    RealLazyField_class,
+    Fields.ParentMethods
+):
+    ...
 
 class ComplexLazyField_class(LazyField):
     """File: /build/sagemath/src/sage/src/sage/rings/real_lazy.pyx (starting at line 371)
@@ -38,7 +102,7 @@ class ComplexLazyField_class(LazyField):
 
             sage: TestSuite(CLF).run()
     """
-    def __init__(self) -> Any:
+    def __init__(self):
         """ComplexLazyField_class.__init__(self)
 
         File: /build/sagemath/src/sage/src/sage/rings/real_lazy.pyx (starting at line 394)
@@ -52,22 +116,7 @@ class ComplexLazyField_class(LazyField):
             0.3333333333333334?
             sage: Reals(200)(a)
             0.33333333333333333333333333333333333333333333333333333333333"""
-    @overload
-    def construction(self) -> Any:
-        """ComplexLazyField_class.construction(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/real_lazy.pyx (starting at line 447)
-
-        Return the functorial construction of ``self``, namely,
-        algebraic closure of the real lazy field.
-
-        EXAMPLES::
-
-            sage: c, S = CLF.construction(); S
-            Real Lazy Field
-            sage: CLF == c(S)
-            True"""
-    @overload
+    
     def construction(self) -> Any:
         """ComplexLazyField_class.construction(self)
 

@@ -1,3 +1,267 @@
+r"""
+Arbitrary precision real intervals using MPFI
+
+AUTHORS:
+
+- Carl Witty (2007-01-21): based on ``real_mpfr.pyx``; changed it to
+  use mpfi rather than mpfr.
+
+- William Stein (2007-01-24): modifications and clean up and docs, etc.
+
+- Niles Johnson (2010-08): :issue:`3893`: ``random_element()`` should pass
+  on ``*args`` and ``**kwds``.
+
+- Travis Scrimshaw (2012-10-20): Fixing scientific notation output
+  to fix :issue:`13634`.
+
+- Travis Scrimshaw (2012-11-02): Added doctests for full coverage
+
+This is a straightforward binding to the :ref:`MPFI library <spkg_mpfi>`;
+it may be useful to refer to its documentation for more details.
+
+An interval is represented as a pair of floating-point numbers `a`
+and `b` (where `a \leq b`) and is printed as a standard floating-point
+number with a question mark (for instance, ``3.1416?``). The question
+mark indicates that the preceding digit may have an error of `\pm 1`.
+These floating-point numbers are implemented using MPFR (the same
+as the :class:`RealNumber` elements of
+:class:`~sage.rings.real_mpfr.RealField_class`).
+
+There is also an alternate method of printing, where the interval
+prints as ``[a .. b]`` (for instance, ``[3.1415 .. 3.1416]``).
+
+The interval represents the set `\{ x : a \leq x \leq b \}` (so if `a = b`,
+then the interval represents that particular floating-point number). The
+endpoints can include positive and negative infinity, with the
+obvious meaning. It is also possible to have a ``NaN`` (Not-a-Number)
+interval, which is represented by having either endpoint be ``NaN``.
+
+PRINTING:
+
+There are two styles for printing intervals: 'brackets' style and
+'question' style (the default).
+
+In question style, we print the "known correct" part of the number,
+followed by a question mark. The question mark indicates that the
+preceding digit is possibly wrong by `\pm 1`.
+
+::
+
+    sage: RIF(sqrt(2))                                                                  # needs sage.symbolic
+    1.414213562373095?
+
+However, if the interval is precise (its lower bound is equal to
+its upper bound) and equal to a not-too-large integer, then we just
+print that integer.
+
+::
+
+    sage: RIF(0)
+    0
+    sage: RIF(654321)
+    654321
+
+::
+
+    sage: RIF(123, 125)
+    124.?
+    sage: RIF(123, 126)
+    1.3?e2
+
+As we see in the last example, question style can discard almost a
+whole digit's worth of precision. We can reduce this by allowing
+"error digits": an error following the question mark, that gives
+the maximum error of the digit(s) before the question mark. If the
+error is absent (which it always is in the default printing), then
+it is taken to be 1.
+
+::
+
+    sage: RIF(123, 126).str(error_digits=1)
+    '125.?2'
+    sage: RIF(123, 127).str(error_digits=1)
+    '125.?2'
+    sage: v = RIF(-e, pi); v                                                            # needs sage.symbolic
+    0.?e1
+    sage: v.str(error_digits=1)                                                         # needs sage.symbolic
+    '1.?4'
+    sage: v.str(error_digits=5)                                                         # needs sage.symbolic
+    '0.2117?29300'
+
+Error digits also sometimes let us indicate that the interval is
+actually equal to a single floating-point number::
+
+    sage: RIF(54321/256)
+    212.19140625000000?
+    sage: RIF(54321/256).str(error_digits=1)
+    '212.19140625000000?0'
+
+In brackets style, intervals are printed with the left value
+rounded down and the right rounded up, which is conservative, but
+in some ways unsatisfying.
+
+Consider a 3-bit interval containing exactly the floating-point
+number 1.25. In round-to-nearest or round-down, this prints as 1.2;
+in round-up, this prints as 1.3. The straightforward options, then,
+are to print this interval as ``[1.2 .. 1.2]`` (which does not even
+contain the true value, 1.25), or to print it as ``[1.2 .. 1.3]``
+(which gives the impression that the upper and lower bounds are not
+equal, even though they really are). Neither of these is very
+satisfying, but we have chosen the latter.
+
+::
+
+    sage: R = RealIntervalField(3)
+    sage: a = R(1.25)
+    sage: a.str(style='brackets')
+    '[1.2 .. 1.3]'
+    sage: a == 5/4
+    True
+    sage: a == 2
+    False
+
+Some default printing options can be set by modifying module globals::
+
+    sage: from sage.rings import real_mpfi
+    sage: x = RIF(sqrt(2), sqrt(2)+1e-10); x
+    1.4142135624?
+    sage: real_mpfi.printing_error_digits = 2
+    sage: x
+    1.414213562424?51
+    sage: real_mpfi.printing_style = 'brackets'
+    sage: x
+    [1.4142135623730949 .. 1.4142135624730952]
+    sage: real_mpfi.printing_style = 'question'; real_mpfi.printing_error_digits = 0  # revert to default
+
+The default value of using scientific notation can be configured at field construction instead::
+
+    sage: RealIntervalField(53, sci_not=False)(0.5)
+    0.50000000000000000?
+    sage: RealIntervalField(53, sci_not=True)(0.5)
+    5.0000000000000000?e-1
+
+COMPARISONS:
+
+Comparison operations (``==``, ``!=``, ``<``, ``<=``, ``>``, ``>=``)
+return ``True`` if every value in the first interval has the given relation
+to every value in the second interval.
+
+This convention for comparison operators has good and bad points.  The
+good:
+
+- Expected transitivity properties hold (if ``a > b`` and ``b == c``, then
+  ``a > c``; etc.)
+
+- ``a == 0`` is true if the interval contains only the floating-point number
+  0; similarly for ``a == 1``
+
+- ``a > 0`` means something useful (that every value in the interval is
+  greater than 0)
+
+The bad:
+
+- Trichotomy fails to hold: there are values ``(a,b)`` such that none of
+  ``a < b``, ``a == b``, or ``a > b`` are true
+
+- There are values ``a`` and ``b`` such that ``a <= b`` but neither ``a < b``
+  nor ``a == b`` hold.
+
+- There are values ``a`` and ``b`` such that neither ``a != b``
+  nor ``a == b`` hold.
+
+.. NOTE::
+
+    Intervals ``a`` and ``b`` overlap iff ``not(a != b)``.
+
+.. WARNING::
+
+    The ``cmp(a, b)`` function should not be used to compare real
+    intervals. Note that ``cmp`` will disappear in Python3.
+
+EXAMPLES::
+
+    sage: 0 < RIF(1, 2)
+    True
+    sage: 0 == RIF(0)
+    True
+    sage: not(0 == RIF(0, 1))
+    True
+    sage: not(0 != RIF(0, 1))
+    True
+    sage: 0 <= RIF(0, 1)
+    True
+    sage: not(0 < RIF(0, 1))
+    True
+
+Comparison with infinity is defined through coercion to the infinity
+ring where semi-infinite intervals are sent to their central value
+(plus or minus infinity); this implements the above convention for
+inequalities::
+
+    sage: InfinityRing.has_coerce_map_from(RIF)
+    True
+    sage: -oo < RIF(-1,1) < oo
+    True
+    sage: -oo < RIF(0,oo) <= oo
+    True
+    sage: -oo <= RIF(-oo,-1) < oo
+    True
+
+Comparison by equality shows what the semi-infinite intervals actually
+coerce to::
+
+    sage: RIF(1,oo) == oo
+    True
+    sage: RIF(-oo,-1) == -oo
+    True
+
+For lack of a better value in the infinity ring, the doubly infinite
+interval coerces to plus infinity::
+
+    sage: RIF(-oo,oo) == oo
+    True
+
+If you want to compare two intervals lexicographically, you can use the
+method ``lexico_cmp``. However, the behavior of this method is not
+specified if given a non-interval and an interval::
+
+    sage: RIF(0).lexico_cmp(RIF(0, 1))
+    -1
+    sage: RIF(0, 1).lexico_cmp(RIF(0))
+    1
+    sage: RIF(0, 1).lexico_cmp(RIF(1))
+    -1
+    sage: RIF(0, 1).lexico_cmp(RIF(0, 1))
+    0
+
+.. WARNING::
+
+    Mixing symbolic expressions with intervals (in particular, converting
+    constant symbolic expressions to intervals), can lead to incorrect
+    results::
+
+        sage: ref = RealIntervalField(100)(ComplexBallField(100).one().airy_ai().real())
+        sage: ref
+        0.135292416312881415524147423515?
+        sage: val = RIF(airy_ai(1)); val # known bug
+        0.13529241631288142?
+        sage: val.overlaps(ref)          # known bug
+        False
+
+TESTS::
+
+    sage: import numpy                                                                  # needs numpy
+    sage: if int(numpy.version.short_version[0]) > 1:                                   # needs numpy
+    ....:     _ = numpy.set_printoptions(legacy="1.25")                                     # needs numpy
+    sage: RIF(2) == numpy.int8('2')                                                     # needs numpy
+    True
+    sage: numpy.int8('2') == RIF(2)                                                     # needs numpy
+    True
+    sage: RIF(0,1) < float('2')
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for <: ...
+"""
 import _cython_3_2_1
 import sage as sage
 import sage.rings.abc
@@ -10,10 +274,118 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-RealInterval: _cython_3_2_1.cython_function_or_method
-RealIntervalField: _cython_3_2_1.cython_function_or_method
-is_RealIntervalField: _cython_3_2_1.cython_function_or_method
-is_RealIntervalFieldElement: _cython_3_2_1.cython_function_or_method
+def RealInterval(s: str | object, upper=None, base: int=10, pad: int = 0, min_prec=53):
+    r"""
+    Return the real number defined by the string s as an element of
+    ``RealIntervalField(prec=n)``, where ``n`` potentially has
+    slightly more (controlled by pad) bits than given by ``s``.
+
+    INPUT:
+
+    - ``s`` -- string that defines a real number (or
+      something whose string representation defines a number)
+
+    - ``upper`` -- (default: ``None``) upper endpoint of
+      interval if given, in which case ``s`` is the lower endpoint
+
+    - ``base`` -- integer between 2 and 36
+
+    - ``pad`` -- integer (default: 0)
+
+    - ``min_prec`` -- number will have at least this many
+      bits of precision, no matter what
+
+    EXAMPLES::
+
+        sage: RealInterval('2.3')
+        2.300000000000000?
+        sage: RealInterval(10)
+        10
+        sage: RealInterval('1.0000000000000000000000000000000000')
+        1
+        sage: RealInterval('1.2345678901234567890123456789012345')
+        1.23456789012345678901234567890123450?
+        sage: RealInterval(29308290382930840239842390482, 3^20).str(style='brackets')
+        '[3.48678440100000000000000000000e9 .. 2.93082903829308402398423904820e28]'
+
+    TESTS:
+
+    Make sure we've rounded up ``log(10,2)`` enough to guarantee
+    sufficient precision (:issue:`10164`).  This is a little tricky
+    because at the time of writing, we don't support intervals long
+    enough to trip the error.  However, at least we can make sure
+    that we either do it correctly or fail noisily::
+
+        sage: ks = 5*10**5, 10**6
+        sage: for k in ks:
+        ....:    try:
+        ....:        z = RealInterval("1." + "1"*k)
+        ....:        assert len(str(z))-4 >= k
+        ....:    except TypeError:
+        ....:        pass
+    """
+def RealIntervalField(prec=53, sci_not=False) -> RealIntervalField_class:
+    r"""
+    Construct a :class:`RealIntervalField_class`, with caching.
+
+    INPUT:
+
+    - ``prec`` -- integer (default: 53); precision.
+      The number of bits used to represent the mantissa of a
+      floating-point number. The precision can be any integer between
+      :func:`mpfr_prec_min()` and :func:`mpfr_prec_max()`. In the current
+      implementation, :func:`mpfr_prec_min()` is equal to 2.
+
+    - ``sci_not`` -- boolean (default: ``False``); whether or not to display using
+      scientific notation
+
+    EXAMPLES::
+
+        sage: RealIntervalField()
+        Real Interval Field with 53 bits of precision
+        sage: RealIntervalField(200, sci_not=True)
+        Real Interval Field with 200 bits of precision
+        sage: RealIntervalField(53) is RIF
+        True
+        sage: RealIntervalField(200) is RIF
+        False
+        sage: RealIntervalField(200) is RealIntervalField(200)
+        True
+
+    See the documentation for :class:`RealIntervalField_class
+    <sage.rings.real_mpfi.RealIntervalField_class>` for many more
+    examples.
+    """
+def is_RealIntervalField(x):
+    """
+    Check if ``x`` is a :class:`RealIntervalField_class`.
+
+    EXAMPLES::
+
+        sage: sage.rings.real_mpfi.is_RealIntervalField(RIF)
+        doctest:warning...
+        DeprecationWarning: The function is_RealIntervalField is deprecated;
+        use 'isinstance(..., RealIntervalField_class)' instead.
+        See https://github.com/sagemath/sage/issues/38128 for details.
+        True
+        sage: sage.rings.real_mpfi.is_RealIntervalField(RealIntervalField(200))
+        True
+    """
+def is_RealIntervalFieldElement(x):
+    """
+    Check if ``x`` is a :class:`RealIntervalFieldElement`.
+
+    EXAMPLES::
+
+        sage: sage.rings.real_mpfi.is_RealIntervalFieldElement(RIF(2.2))
+        doctest:warning...
+        DeprecationWarning: The function is_RealIntervalFieldElement is deprecated;
+        use 'isinstance(..., RealIntervalFieldElement)' instead.
+        See https://github.com/sagemath/sage/issues/38128 for details.
+        True
+        sage: sage.rings.real_mpfi.is_RealIntervalFieldElement(RealIntervalField(200)(2.2))
+        True
+    """
 printing_error_digits: int
 printing_style: str
 
