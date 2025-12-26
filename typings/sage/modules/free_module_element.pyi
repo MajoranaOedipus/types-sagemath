@@ -1,4 +1,109 @@
-import _cython_3_2_1
+r"""
+Elements of free modules
+
+AUTHORS:
+
+- William Stein
+
+- Josh Kantor
+
+- Thomas Feulner (2012-11): Added :meth:`FreeModuleElement.hamming_weight` and
+  :meth:`FreeModuleElement_generic_sparse.hamming_weight`
+
+- Jeroen Demeyer (2015-02-24): Implement fast Cython methods
+  ``get_unsafe`` and ``set_unsafe`` similar to other places in Sage
+  (:issue:`17562`)
+
+EXAMPLES: We create a vector space over `\QQ` and a
+subspace of this space.
+
+::
+
+    sage: V = QQ^5
+    sage: W = V.span([V.1, V.2])
+
+Arithmetic operations always return something in the ambient space,
+since there is a canonical map from `W` to `V` but
+not from `V` to `W`.
+
+::
+
+    sage: parent(W.0 + V.1)
+    Vector space of dimension 5 over Rational Field
+    sage: parent(V.1 + W.0)
+    Vector space of dimension 5 over Rational Field
+    sage: W.0 + V.1
+    (0, 2, 0, 0, 0)
+    sage: W.0 - V.0
+    (-1, 1, 0, 0, 0)
+
+Next we define modules over `\ZZ` and a finite
+field.
+
+::
+
+    sage: K = ZZ^5
+    sage: M = GF(7)^5
+
+Arithmetic between the `\QQ` and
+`\ZZ` modules is defined, and the result is always
+over `\QQ`, since there is a canonical coercion map
+to `\QQ`.
+
+::
+
+    sage: K.0 + V.1
+    (1, 1, 0, 0, 0)
+    sage: parent(K.0 + V.1)
+    Vector space of dimension 5 over Rational Field
+
+Since there is no canonical coercion map to the finite field from
+`\QQ` the following arithmetic is not defined::
+
+    sage: V.0 + M.0
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +:
+     'Vector space of dimension 5 over Rational Field' and
+     'Vector space of dimension 5 over Finite Field of size 7'
+
+However, there is a map from `\ZZ` to the finite
+field, so the following is defined, and the result is in the finite
+field.
+
+::
+
+    sage: w = K.0 + M.0; w
+    (2, 0, 0, 0, 0)
+    sage: parent(w)
+    Vector space of dimension 5 over Finite Field of size 7
+    sage: parent(M.0 + K.0)
+    Vector space of dimension 5 over Finite Field of size 7
+
+Matrix vector multiply::
+
+    sage: MS = MatrixSpace(QQ, 3)
+    sage: A = MS([0,1,0,1,0,0,0,0,1])
+    sage: V = QQ^3
+    sage: v = V([1,2,3])
+    sage: v * A
+    (2, 1, 3)
+
+TESTS::
+
+    sage: D = 46341
+    sage: u = 7
+    sage: R = Integers(D)
+    sage: p = matrix(R,[[84, 97, 55, 58, 51]])
+    sage: 2*p.row(0)                                                                    # needs sage.libs.pari
+    (168, 194, 110, 116, 102)
+
+This is a test from :issue:`20211`::
+
+    sage: MatrixSpace(ZZ, 1, 1)(vector([1]))
+    [1]
+"""
+
 import sage as sage
 import sage.structure.element
 from sage.arith.numerical_approx import digits_to_bits as digits_to_bits
@@ -9,16 +114,285 @@ from sage.rings.infinity import AnInfinity as AnInfinity, Infinity as Infinity
 from sage.structure.element import canonical_coercion as canonical_coercion, have_same_parent as have_same_parent, parent as parent, Vector as Vector
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from sage.structure.sequence import Sequence as Sequence
-from typing import Any, ClassVar, Iterable, overload
+from typing import Any, ClassVar, Iterable, TypeGuard, overload
+from sage.rings.ring import Ring
+from typings_sagemath import Int
 
-free_module_element: _cython_3_2_1.cython_function_or_method
-is_FreeModuleElement: _cython_3_2_1.cython_function_or_method
-make_FreeModuleElement_generic_dense: _cython_3_2_1.cython_function_or_method
-make_FreeModuleElement_generic_dense_v1: _cython_3_2_1.cython_function_or_method
-make_FreeModuleElement_generic_sparse: _cython_3_2_1.cython_function_or_method
-make_FreeModuleElement_generic_sparse_v1: _cython_3_2_1.cython_function_or_method
-prepare: _cython_3_2_1.cython_function_or_method
-random_vector: _cython_3_2_1.cython_function_or_method
+def is_FreeModuleElement(x: object) -> TypeGuard[FreeModuleElement]:
+    """
+    EXAMPLES::
+
+        sage: sage.modules.free_module_element.is_FreeModuleElement(0)
+        doctest:warning...
+        DeprecationWarning: The function is_FreeModuleElement is deprecated;
+        use 'isinstance(..., FreeModuleElement)' instead.
+        See https://github.com/sagemath/sage/issues/38184 for details.
+        False
+        sage: sage.modules.free_module_element.is_FreeModuleElement(vector([1,2,3]))
+        True
+    """
+
+def make_FreeModuleElement_generic_dense(parent, entries, degree) -> FreeModuleElement_generic_dense:
+    """
+    EXAMPLES::
+
+        sage: sage.modules.free_module_element.make_FreeModuleElement_generic_dense(QQ^3, [1,2,-3/7], 3)
+        (1, 2, -3/7)
+    """
+
+def make_FreeModuleElement_generic_dense_v1(parent, entries, degree, is_mutable) -> FreeModuleElement_generic_dense:
+    """
+    EXAMPLES::
+
+        sage: v = sage.modules.free_module_element.make_FreeModuleElement_generic_dense_v1(QQ^3, [1,2,-3/7], 3, True); v
+        (1, 2, -3/7)
+        sage: v[0] = 10; v
+        (10, 2, -3/7)
+        sage: v = sage.modules.free_module_element.make_FreeModuleElement_generic_dense_v1(QQ^3, [1,2,-3/7], 3, False); v
+        (1, 2, -3/7)
+        sage: v[0] = 10
+        Traceback (most recent call last):
+        ...
+        ValueError: vector is immutable; please change a copy instead (use copy())
+    """
+def make_FreeModuleElement_generic_sparse(parent, entries, degree) -> FreeModuleElement_generic_sparse:
+    """
+    EXAMPLES::
+
+        sage: v = sage.modules.free_module_element.make_FreeModuleElement_generic_sparse(QQ^3, {2:5/2}, 3); v
+        (0, 0, 5/2)
+    """
+def make_FreeModuleElement_generic_sparse_v1(parent, entries, degree, is_mutable) -> FreeModuleElement_generic_sparse:
+    """
+    EXAMPLES::
+
+        sage: v = sage.modules.free_module_element.make_FreeModuleElement_generic_sparse_v1(QQ^3, {2:5/2}, 3, False); v
+        (0, 0, 5/2)
+        sage: v.is_mutable()
+        False
+    """
+def prepare(v, R, degree=None):
+    r"""
+    Convert an object describing elements of a vector into a list of entries in a common ring.
+
+    INPUT:
+
+    - ``v`` -- dictionary with nonnegative integers as keys,
+      or a list or other object that can be converted by the ``Sequence``
+      constructor
+    - ``R`` -- a ring containing all the entries, possibly given as ``None``
+    - ``degree`` -- a requested size for the list when the input is a dictionary,
+      otherwise ignored
+
+    OUTPUT: a pair
+
+    The first item is a list of the values specified in the object ``v``.
+    If the object is a dictionary , entries are placed in the list
+    according to the indices that were their keys in the dictionary,
+    and the remainder of the entries are zero.  The value of
+    ``degree`` is assumed to be larger than any index provided
+    in the dictionary and will be used as the number of entries
+    in the returned list.
+
+    The second item returned is a ring that contains all of
+    the entries in the list. If ``R`` is given, the entries
+    are coerced in.  Otherwise a common ring is found. For
+    more details, see the
+    :class:`~sage.structure.sequence.Sequence` object.  When ``v``
+    has no elements and ``R`` is ``None``, the ring returned is
+    the integers.
+
+    EXAMPLES::
+
+        sage: from sage.modules.free_module_element import prepare
+        sage: prepare([1, 2/3, 5], None)
+        ([1, 2/3, 5], Rational Field)
+
+        sage: prepare([1, 2/3, 5], RR)
+        ([1.00000000000000, 0.666666666666667, 5.00000000000000],
+         Real Field with 53 bits of precision)
+
+        sage: prepare({1: 4, 3: -2}, ZZ, 6)
+        ([0, 4, 0, -2, 0, 0], Integer Ring)
+
+        sage: prepare({3: 1, 5: 3}, QQ, 6)
+        ([0, 0, 0, 1, 0, 3], Rational Field)
+
+        sage: prepare([1, 2/3, '10', 5], RR)
+        ([1.00000000000000, 0.666666666666667, 10.0000000000000, 5.00000000000000],
+         Real Field with 53 bits of precision)
+
+        sage: prepare({}, QQ, 0)
+        ([], Rational Field)
+
+        sage: prepare([1, 2/3, '10', 5], None)
+        Traceback (most recent call last):
+        ...
+        TypeError: unable to find a common ring for all elements
+
+    Some objects can be converted to sequences even if they are not always
+    thought of as sequences.  ::
+
+        sage: c = CDF(2 + 3*I)                                                          # needs sage.symbolic
+        sage: prepare(c, None)                                                          # needs sage.symbolic
+        ([2.0, 3.0], Real Double Field)
+
+    This checks a bug listed at :issue:`10595`. Without good evidence
+    for a ring, the default is the integers. ::
+
+        sage: prepare([], None)
+        ([], Integer Ring)
+    """
+def random_vector(ring, degree=None, *args, **kwds):
+    r"""
+    This function is available as ``random_vector(…)`` and ``vector.random(…)``.
+
+    Return a vector (or module element) with random entries.
+
+    INPUT:
+
+    - ``ring`` -- (default: ``ZZ``) the base ring for the entries
+    - ``degree`` -- nonnegative integer for the number of entries in the vector
+    - ``sparse`` -- (default: ``False``) whether to use a sparse implementation
+    - ``*args``, ``**kwds`` -- additional arguments and keywords are passed
+      to the ``random_element()`` method of the ring
+
+    OUTPUT:
+
+    A vector, or free module element, with ``degree`` elements
+    from ``ring``, chosen randomly from the ring according to
+    the ring's ``random_element()`` method.
+
+    .. NOTE::
+        See below for examples of how random elements are
+        generated by some common base rings.
+
+    EXAMPLES:
+
+    First, module elements over the integers.
+    The default distribution is tightly clustered around -1, 0, 1.
+    Uniform distributions can be specified by giving bounds, though
+    the upper bound is never met.  See
+    :meth:`sage.rings.integer_ring.IntegerRing_class.random_element`
+    for several other variants. ::
+
+        sage: random_vector(10).parent()
+        Ambient free module of rank 10 over the principal ideal domain Integer Ring
+        sage: random_vector(20).parent()
+        Ambient free module of rank 20 over the principal ideal domain Integer Ring
+
+        sage: v = random_vector(ZZ, 20, x=4)
+        sage: all(i in range(4) for i in v)
+        True
+
+        sage: v = random_vector(ZZ, 20, x=-20, y=100)
+        sage: all(i in range(-20, 100) for i in v)
+        True
+
+    If the ring is not specified, the default is the integers, and
+    parameters for the random distribution may be passed without using
+    keywords.  This is a random vector with 20 entries uniformly distributed
+    between -20 and 100.  ::
+
+        sage: random_vector(20, -20, 100).parent()
+        Ambient free module of rank 20 over the principal ideal domain Integer Ring
+
+    Now over the rationals.  Note that bounds on the numerator and
+    denominator may be specified.  See
+    :meth:`sage.rings.rational_field.RationalField.random_element`
+    for documentation. ::
+
+        sage: random_vector(QQ, 10).parent()
+        Vector space of dimension 10 over Rational Field
+
+        sage: v = random_vector(QQ, 10, num_bound=15, den_bound=5)
+        sage: v.parent()
+        Vector space of dimension 10 over Rational Field
+        sage: all(q.numerator() <= 15 and q.denominator() <= 5 for q in v)
+        True
+
+    Inexact rings may be used as well.  The reals have
+    uniform distributions, with the range `(-1,1)` as
+    the default.  More at:
+    :meth:`sage.rings.real_mpfr.RealField_class.random_element` ::
+
+        sage: v = random_vector(RR, 5)
+        sage: v.parent()
+        Vector space of dimension 5 over Real Field with 53 bits of precision
+        sage: all(-1 <= r <= 1 for r in v)
+        True
+
+        sage: v = random_vector(RR, 5, min=8, max=14)
+        sage: v.parent()
+        Vector space of dimension 5 over Real Field with 53 bits of precision
+        sage: all(8 <= r <= 14 for r in v)
+        True
+
+    Any ring with a ``random_element()`` method may be used. ::
+
+        sage: F = FiniteField(23)
+        sage: hasattr(F, 'random_element')
+        True
+        sage: v = random_vector(F, 10)
+        sage: v.parent()
+        Vector space of dimension 10 over Finite Field of size 23
+
+    The default implementation is a dense representation, equivalent to
+    setting ``sparse=False``. ::
+
+        sage: v = random_vector(10)
+        sage: v.is_sparse()
+        False
+
+        sage: w = random_vector(ZZ, 20, sparse=True)
+        sage: w.is_sparse()
+        True
+
+    The elements are chosen using the ring's ``random_element`` method::
+
+        sage: from sage.misc.randstate import current_randstate
+        sage: seed = current_randstate().seed()
+        sage: set_random_seed(seed)
+        sage: v1 = random_vector(ZZ, 20, distribution='1/n')
+        sage: v2 = random_vector(ZZ, 15, x=-1000, y=1000)
+        sage: v3 = random_vector(QQ, 10)
+        sage: v4 = random_vector(FiniteField(17), 10)
+        sage: v5 = random_vector(RR, 10)
+        sage: set_random_seed(seed)
+        sage: w1 = vector(ZZ.random_element(distribution='1/n') for _ in range(20))
+        sage: w2 = vector(ZZ.random_element(x=-1000, y=1000) for _ in range(15))
+        sage: w3 = vector(QQ.random_element() for _ in range(10))
+        sage: [v1, v2, v3] == [w1, w2, w3]
+        True
+        sage: w4 = vector(FiniteField(17).random_element() for _ in range(10))
+        sage: v4 == w4
+        True
+        sage: w5 = vector(RR.random_element() for _ in range(10))
+        sage: v5 == w5
+        True
+
+    Inputs get checked before constructing the vector. ::
+
+        sage: random_vector('junk')
+        Traceback (most recent call last):
+        ...
+        TypeError: degree of a random vector must be an integer, not None
+
+        sage: random_vector('stuff', 5)
+        Traceback (most recent call last):
+        ...
+        TypeError: elements of a vector, or module element, must come from a ring, not stuff
+
+        sage: random_vector(ZZ, -9)
+        Traceback (most recent call last):
+        ...
+        ValueError: degree of a random vector must be nonnegative, not -9
+    
+    We may also use vector.random(...) in place of random_vector(...). ::
+
+        sage: vector.random(10).parent()
+        Ambient free module of rank 10 over the principal ideal domain Integer Ring
+    """
 
 @overload
 def vector(object: Iterable, 
@@ -29,15 +403,15 @@ def vector(object: Iterable, ring: Rings,
            sparse: bool | None = None, immutable: bool = False) -> Vector:
     ...
 @overload
-def vector(ring: Rings, object: Iterable,
+def vector(ring: Ring, object: Iterable,
            sparse: bool | None = None, immutable: bool = False) -> Vector:
     ...
 @overload
-def vector(ring: Rings, degree: int, object: Iterable, 
+def vector(ring: Ring, degree: Int, object: Iterable, 
            sparse: bool | None = None, immutable: bool = False) -> Vector:
     ...
 @overload
-def vector(ring: Rings, degree: int,
+def vector(ring: Ring, degree: Int,
            sparse: bool | None = None, immutable: bool = False) -> Vector:
     """
     vector(arg0, arg1=None, arg2=None, sparse=None, immutable=False)
@@ -386,7 +760,81 @@ We check that ``sparse`` is respected for numpy arrays::
     True
 """
 
-zero_vector: _cython_3_2_1.cython_function_or_method
+free_module_element = vector
+
+@overload
+def zero_vector(degree: Int) -> Vector:
+    ...
+@overload
+def zero_vector(ring: Ring, degree: Int) -> Vector:
+    r"""
+    Return a vector or free module element with a specified number of zeros.
+
+    CALL FORMATS:
+
+        1. zero_vector(degree)
+
+        2. zero_vector(ring, degree)
+
+    INPUT:
+
+    - ``degree`` -- the number of zero entries in the vector or
+      free module element
+
+    - ``ring`` -- (default: ``ZZ``) the base ring of the vector
+      space or module containing the constructed zero vector
+
+    OUTPUT:
+
+    A vector or free module element with ``degree`` entries,
+    all equal to zero and belonging to the ring if specified.
+    If no ring is given, a free module element over ``ZZ``
+    is returned.
+
+    EXAMPLES:
+
+    A zero vector over the field of rationals. ::
+
+        sage: v = zero_vector(QQ, 5); v
+        (0, 0, 0, 0, 0)
+        sage: v.parent()
+        Vector space of dimension 5 over Rational Field
+
+    A free module zero element. ::
+
+        sage: w = zero_vector(Integers(6), 3); w
+        (0, 0, 0)
+        sage: w.parent()
+        Ambient free module of rank 3 over Ring of integers modulo 6
+
+    If no ring is given, the integers are used. ::
+
+        sage: u = zero_vector(9); u
+        (0, 0, 0, 0, 0, 0, 0, 0, 0)
+        sage: u.parent()
+        Ambient free module of rank 9 over the principal ideal domain Integer Ring
+
+    Non-integer degrees produce an error. ::
+
+        sage: zero_vector(5.6)
+        Traceback (most recent call last):
+        ...
+        TypeError: Attempt to coerce non-integral RealNumber to Integer
+
+    Negative degrees also give an error. ::
+
+        sage: zero_vector(-3)
+        Traceback (most recent call last):
+        ...
+        ValueError: rank (=-3) must be nonnegative
+
+    Garbage instead of a ring will be recognized as such. ::
+
+        sage: zero_vector(x^2, 5)                                                       # needs sage.symbolic
+        Traceback (most recent call last):
+        ...
+        TypeError: first argument must be a ring
+    """
 
 class FreeModuleElement(sage.structure.element.Vector):
     """FreeModuleElement(parent)

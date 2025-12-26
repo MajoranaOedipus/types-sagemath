@@ -7374,7 +7374,7 @@ class Rational(sage.structure.element.FieldElement):
             7/3
             sage: 2/3 - polygen(QQ)
             -x + 2/3"""
-    def __truediv__(self, left, right) -> Any:
+    def __truediv__(self, right) -> Any:
         """Rational.__truediv__(left, right)
 
         File: /build/sagemath/src/sage/src/sage/rings/rational.pyx (starting at line 2467)
@@ -7401,7 +7401,7 @@ class Z_to_Q(sage.categories.morphism.Morphism):
 
     A morphism from `\\ZZ` to `\\QQ`."""
     __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self) -> Any:
+    def __init__(self):
         """File: /build/sagemath/src/sage/src/sage/rings/rational.pyx (starting at line 4103)
 
                 Create morphism from integers to rationals.

@@ -1,4 +1,5 @@
-from _typeshed import Incomplete
+import operator
+
 from sage.structure.element import Expression as Expression
 
 def add_vararg(first, *rest):
@@ -42,8 +43,20 @@ def mul_vararg(first, *rest):
         True
     """
 
-arithmetic_operators: Incomplete
-relation_operators: Incomplete
+arithmetic_operators = {add_vararg: '+',
+                        mul_vararg: '*',
+                        operator.add: '+',
+                        operator.sub: '-',
+                        operator.mul: '*',
+                        operator.truediv: '/',
+                        operator.floordiv: '//',
+                        operator.pow: '^'}
+relation_operators = {operator.eq: '==',
+                      operator.lt: '<',
+                      operator.gt: '>',
+                      operator.ne: '!=',
+                      operator.le: '<=',
+                      operator.ge: '>='}
 
 class FDerivativeOperator:
     """
@@ -177,4 +190,4 @@ class DerivativeOperator:
             True
         """
 
-D: Incomplete
+D: DerivativeOperator

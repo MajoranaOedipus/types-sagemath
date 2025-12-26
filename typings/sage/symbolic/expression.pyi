@@ -1,3 +1,302 @@
+"""
+Symbolic Expressions
+
+RELATIONAL EXPRESSIONS:
+
+We create a relational expression::
+
+    sage: x = var('x')
+    sage: eqn = (x-1)^2 <= x^2 - 2*x + 3
+    sage: eqn.subs(x == 5)
+    16 <= 18
+
+Notice that squaring the relation squares both sides.
+
+::
+
+    sage: eqn^2
+    (x - 1)^4 <= (x^2 - 2*x + 3)^2
+    sage: eqn.expand()
+    x^2 - 2*x + 1 <= x^2 - 2*x + 3
+
+This can transform a true relation into a false one::
+
+    sage: eqn = SR(-5) < SR(-3); eqn
+    -5 < -3
+    sage: bool(eqn)
+    True
+    sage: eqn^2
+    25 < 9
+    sage: bool(eqn^2)
+    False
+
+We can do arithmetic with relations::
+
+    sage: e = x+1 <= x-2
+    sage: e + 2
+    x + 3 <= x
+    sage: e - 1
+    x <= x - 3
+    sage: e*(-1)
+    -x - 1 <= -x + 2
+    sage: (-2)*e
+    -2*x - 2 <= -2*x + 4
+    sage: e*5
+    5*x + 5 <= 5*x - 10
+    sage: e/5
+    1/5*x + 1/5 <= 1/5*x - 2/5
+    sage: 5/e
+    5/(x + 1) <= 5/(x - 2)
+    sage: e/(-2)
+    -1/2*x - 1/2 <= -1/2*x + 1
+    sage: -2/e
+    -2/(x + 1) <= -2/(x - 2)
+
+We can even add together two relations, as long as the operators are
+the same::
+
+    sage: (x^3 + x <= x - 17)  + (-x <= x - 10)
+    x^3 <= 2*x - 27
+
+Here they are not::
+
+    sage: (x^3 + x <= x - 17)  + (-x >= x - 10)
+    Traceback (most recent call last):
+    ...
+    TypeError: incompatible relations
+
+
+ARBITRARY SAGE ELEMENTS:
+
+You can work symbolically with any Sage data type.  This can lead to
+nonsense if the data type is strange, e.g., an element of a finite
+field (at present).
+
+We mix Singular variables with symbolic variables::
+
+    sage: R.<u,v> = QQ[]
+    sage: var('a,b,c')
+    (a, b, c)
+    sage: expand((u + v + a + b + c)^2)
+    a^2 + 2*a*b + b^2 + 2*a*c + 2*b*c + c^2 + 2*a*u + 2*b*u + 2*c*u + u^2 + 2*a*v + 2*b*v + 2*c*v + 2*u*v + v^2
+
+TESTS:
+
+Test Jacobian on Pynac expressions. (:issue:`5546`) ::
+
+    sage: var('x,y')
+    (x, y)
+    sage: f = x + y
+    sage: jacobian(f, [x,y])
+    [1 1]
+
+Test if matrices work (:issue:`5546`) ::
+
+    sage: var('x,y,z')
+    (x, y, z)
+    sage: M = matrix(2,2,[x,y,z,x])
+    sage: v = vector([x,y])
+    sage: M * v
+    (x^2 + y^2, x*y + x*z)
+    sage: v*M
+    (x^2 + y*z, 2*x*y)
+
+Test if comparison bugs from :issue:`6256` are fixed::
+
+    sage: t = exp(sqrt(x)); u = 1/t
+    sage: t*u
+    1
+    sage: t + u
+    e^(-sqrt(x)) + e^sqrt(x)
+    sage: t
+    e^sqrt(x)
+
+Test if :issue:`9947` is fixed::
+
+    sage: r = real_part(1+2*(sqrt(2)+1)*(sqrt(2)-1)); r
+    2*(sqrt(2) + 1)*(sqrt(2) - 1) + 1
+    sage: r.expand()
+    3
+    sage: a = (sqrt(4*(sqrt(3) - 5)*(sqrt(3) + 5) + 48) + 4*sqrt(3))/ (sqrt(3) + 5)
+    sage: a.real_part()
+    4*sqrt(3)/(sqrt(3) + 5)
+    sage: a.imag_part()
+    2*sqrt(10)/(sqrt(3) + 5)
+
+Check the fix for :issue:`25251` and :issue:`25252`::
+
+    sage: e1 = sqrt(2)*I - sqrt(2) - 2
+    sage: e2 = sqrt(2)
+    sage: e1 * e2
+    sqrt(2)*((I - 1)*sqrt(2) - 2)
+    sage: (1 + exp(I*pi/4)) * exp(I*pi/4)
+    -(1/4*I + 1/4)*sqrt(2)*(-(I + 1)*sqrt(2) - 2)
+
+Test if :issue:`24883` is fixed::
+
+    sage: a = exp(I*pi/4) + 1
+    sage: b = 1 - exp(I*pi/4)
+    sage: a*b
+    1/4*((I + 1)*sqrt(2) - 2)*(-(I + 1)*sqrt(2) - 2)
+
+Test that :issue:`20784` is fixed (equations should stay unevaluated)::
+
+    sage: limit(1/x, x=0) == unsigned_infinity
+    Infinity == Infinity
+    sage: SR(unsigned_infinity) == unsigned_infinity
+    Infinity == Infinity
+
+Many tests about comparison.
+
+Use :func:`sage.symbolic.expression.mixed_order` instead of
+the operators ``<=``, ``<``, etc. to compare symbolic expressions when
+you do not want to get a formal inequality::
+
+    sage: from sage.symbolic.expression import mixed_order
+
+    sage: a = sqrt(3)
+    sage: b = x^2+1
+    sage: mixed_order(a, b)   # indirect doctest
+    -1
+
+    sage: x,y = var('x,y')
+    sage: x < y
+    x < y
+    sage: mixed_order(x, y)
+    1
+
+    sage: mixed_order(SR(0.5), SR(0.7))
+    -1
+    sage: SR(0.5) < SR(0.7)
+    0.500000000000000 < 0.700000000000000
+    sage: mixed_order(SR(0.5), 0.7)
+    -1
+
+    sage: mixed_order(sin(SR(2)), sin(SR(1)))
+    1
+    sage: float(sin(SR(2)))
+    0.9092974268256817
+    sage: float(sin(SR(1)))
+    0.8414709848078965
+
+Check that :issue:`9880` is fixed::
+
+    sage: b = [var('b_%s'%i) for i in range(4)]
+    sage: precomp = (2^b_2 + 2)*(2^b_1 + 2^(-b_1) + 2^b_1*2^b_0 - \
+    ....:       2^b_1*2^(-b_0) - 2^(-b_1)*2^b_0 - 2^(-b_1)*2^(-b_0) + \
+    ....:       2^b_0 + 2^(-b_0) - 9) + (2^b_1 + 2^(-b_1) + \
+    ....:       2^b_1*2^b_0 - 2^b_1*2^(-b_0) - 2^(-b_1)*2^b_0 - \
+    ....:        2^(-b_1)*2^(-b_0) + 2^b_0 + 2^(-b_0) - 9)/2^b_2
+    sage: repl_dict = {b_0: b_0, b_3: b_1, b_2: b_3, b_1: b_2}
+    sage: P = precomp.substitute(repl_dict)
+    sage: P.expand()
+    2^b_0*2^b_2*2^b_3 + 2*2^b_0*2^b_2 + 2^b_0*2^b_3 + 2^b_2*2^b_3 +
+    2*2^b_0 + 2*2^b_2 - 9*2^b_3 + 2^b_0*2^b_2/2^b_3 -
+    2^b_0*2^b_3/2^b_2 - 2^b_2*2^b_3/2^b_0 - 2*2^b_0/2^b_2 -
+    2*2^b_2/2^b_0 + 2^b_0/2^b_3 + 2^b_2/2^b_3 + 2^b_3/2^b_0 +
+    2^b_3/2^b_2 + 2/2^b_0 + 2/2^b_2 - 2^b_0/(2^b_2*2^b_3) -
+    2^b_2/(2^b_0*2^b_3) - 9/2^b_3 - 2^b_3/(2^b_0*2^b_2) -
+    2/(2^b_0*2^b_2) + 1/(2^b_0*2^b_3) + 1/(2^b_2*2^b_3) -
+    1/(2^b_0*2^b_2*2^b_3) - 18
+
+    sage: _0,b_1,b_2=var('b_0,b_1,b_2')
+    sage: f = 1/27*b_2^2/(2^b_2)^2 + 1/27*b_1^2/(2^b_1)^2 + \
+    ....: 1/27*b_0^2/(2^b_0)^2 + 1/27*b_2/(2^b_2)^2 - 2/81/(2^b_2)^2 + \
+    ....: 1/27*b_1/(2^b_1)^2 + 8/243/(2^b_2)^2 - 1/81*b_0/(2^b_0)^2 - \
+    ....: 1/27*b_1^2/((2^b_2)^2*(2^b_1)^2) - \
+    ....: 1/27*b_0^2/((2^b_2)^2*(2^b_0)^2) - 20/243/(2^b_1)^2 + 1/9/2^b_0 \
+    ....: + 4/81*b_0/(2^b_0)^2 - 8/243/(2^b_2)^2 - 2/9/(2^b_2*2^b_1) - \
+    ....: 2/9/(2^b_2*2^b_0) + 8/243/(2^b_1)^2 - 1/9/2^b_0 + \
+    ....: 2/9/(2^b_2*2^b_1) + 2/9/(2^b_2*2^b_0) - \
+    ....: 2/27*b_1*b_2/((2^b_2)^2*(2^b_1)^2) - \
+    ....: 1/27*b_2^2/((2^b_2)^2*(2^b_1)^2) - \
+    ....: 2/27*b_0*b_2/((2^b_2)^2*(2^b_0)^2) - \
+    ....: 1/27*b_2^2/((2^b_2)^2*(2^b_0)^2) + 2/81/(2^b_1)^2 - \
+    ....: 1/27*b_0^2/((2^b_1)^2*(2^b_0)^2) - \
+    ....: 2/27*b_0*b_1/((2^b_1)^2*(2^b_0)^2) - \
+    ....: 1/27*b_1^2/((2^b_1)^2*(2^b_0)^2) - 2/81/(2^b_0)^2 + \
+    ....: 5/27*b_1/((2^b_2)^2*(2^b_1)^2) + 5/27*b_2/((2^b_2)^2*(2^b_1)^2) \
+    ....: + 5/27*b_0/((2^b_2)^2*(2^b_0)^2) + \
+    ....: 5/27*b_2/((2^b_2)^2*(2^b_0)^2) + 5/27*b_0/((2^b_1)^2*(2^b_0)^2) \
+    ....: + 5/27*b_1/((2^b_1)^2*(2^b_0)^2) - 4/81/((2^b_2)^2*(2^b_1)^2) + \
+    ....: 1/27*b_0^2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 2/27*b_0*b_1/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 2/27*b_0*b_2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 1/27*b_1^2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 2/27*b_1*b_2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 1/27*b_2^2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) - \
+    ....: 4/81/((2^b_2)^2*(2^b_0)^2) - 4/81/((2^b_1)^2*(2^b_0)^2) - \
+    ....: 11/27*b_0/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) - \
+    ....: 11/27*b_1/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) - \
+    ....: 11/27*b_2/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + \
+    ....: 64/81/((2^b_2)^2*(2^b_1)^2*(2^b_0)^2) + 35/81
+    sage: f.nops()
+    38
+
+    sage: x,y,z = var('x y z')
+    sage: print((-x+z)*(3*x-3*z))
+    -3*(x - z)^2
+
+    sage: t = var('t')
+    sage: (x-t)^3
+    -(t - x)^3
+    sage: (-t+x)^3
+    -(t - x)^3
+    sage: (-x+t)^3
+    (t - x)^3
+
+This example is from :issue:`10833`::
+
+    sage: R.<x,c> = PolynomialRing(QQ,2)
+    sage: phi(x) = x^2 + c
+    sage: def iterkate(n):
+    ....:     pol = x
+    ....:     for i in range(1,n):
+    ....:         pol = phi(pol)
+    ....:     return pol
+    ....:
+    sage: g = expand(iterkate(7))
+    sage: g.nops()
+    480
+
+Check if :issue:`10849` is fixed::
+
+    sage: t = I.parent()(-1/2)
+    sage: t > 0
+    False
+    sage: t = I*x-1/2; t
+    I*x - 1/2
+    sage: t.subs(x=I*x).subs(x=0).is_positive()
+    False
+
+Check if :issue:`16397` is fixed:
+
+    sage: mixed_order(1, sqrt(2))
+    -1
+    sage: mixed_order(SR(1), sqrt(2))
+    -1
+    sage: mixed_order(log(8), 3*log(2))
+    0
+    sage: bool(RLF(1) < RLF(sqrt(2)))
+    True
+    sage: RealSet((0, pi),[pi, pi],(pi,4))
+    (0, 4)
+    sage: RealSet((0, pi),[0, pi],(pi,4))
+    [0, 4)
+    sage: RealSet((0, pi),[0, 3.5],(pi,4))
+    [0, 4)
+
+More sanity tests::
+
+    sage: bool(pi < pi)
+    False
+    sage: bool(e < e)
+    False
+    sage: bool(sqrt(2) < sqrt(2))
+    False
+    sage: bool(pi < SR.zero())
+    False
+"""
 import _cython_3_2_1
 import sage as sage
 import sage.libs.mpmath.utils as mpmath_utils
@@ -77,8 +376,28 @@ py_tgamma_for_doctests: _cython_3_2_1.cython_function_or_method
 py_zeta_for_doctests: _cython_3_2_1.cython_function_or_method
 register_or_update_function: _cython_3_2_1.cython_function_or_method
 restore_op_wrapper: _cython_3_2_1.cython_function_or_method
-solve_diophantine: _cython_3_2_1.cython_function_or_method
-symbol_table: dict
+def solve_diophantine(f: Expression | Any, *args, **kwds) -> list:
+    """
+    Solve a Diophantine equation.
+
+    The argument, if not given as symbolic equation, is set equal to zero.
+    It can be given in any form that can be converted to symbolic. Please
+    see :meth:`Expression.solve_diophantine` for a detailed
+    synopsis.
+
+    EXAMPLES::
+
+        sage: R.<a,b> = PolynomialRing(ZZ); R
+        Multivariate Polynomial Ring in a, b over Integer Ring
+        sage: solve_diophantine(a^2 - 3*b^2 + 1)
+        []
+        sage: sorted(solve_diophantine(a^2 - 3*b^2 + 2), key=str)
+        [(-1/2*sqrt(3)*(sqrt(3) + 2)^t + 1/2*sqrt(3)*(-sqrt(3) + 2)^t - 1/2*(sqrt(3) + 2)^t - 1/2*(-sqrt(3) + 2)^t,
+          -1/6*sqrt(3)*(sqrt(3) + 2)^t + 1/6*sqrt(3)*(-sqrt(3) + 2)^t - 1/2*(sqrt(3) + 2)^t - 1/2*(-sqrt(3) + 2)^t),
+          (1/2*sqrt(3)*(sqrt(3) + 2)^t - 1/2*sqrt(3)*(-sqrt(3) + 2)^t + 1/2*(sqrt(3) + 2)^t + 1/2*(-sqrt(3) + 2)^t,
+           1/6*sqrt(3)*(sqrt(3) + 2)^t - 1/6*sqrt(3)*(-sqrt(3) + 2)^t + 1/2*(sqrt(3) + 2)^t + 1/2*(-sqrt(3) + 2)^t)]
+    """
+    symbol_table: dict
 test_binomial: _cython_3_2_1.cython_function_or_method
 tolerant_is_symbol: _cython_3_2_1.cython_function_or_method
 unpack_operands: _cython_3_2_1.cython_function_or_method

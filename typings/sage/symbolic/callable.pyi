@@ -1,5 +1,66 @@
+"""
+Callable Symbolic Expressions
+
+EXAMPLES:
+
+When you do arithmetic with::
+
+    sage: f(x, y, z) = sin(x+y+z)
+    sage: g(x, y) = y + 2*x
+    sage: f + g
+    (x, y, z) |--> 2*x + y + sin(x + y + z)
+
+::
+
+    sage: f(x, y, z) = sin(x+y+z)
+    sage: g(w, t) = cos(w - t)
+    sage: f + g
+    (t, w, x, y, z) |--> cos(-t + w) + sin(x + y + z)
+
+::
+
+    sage: f(x, y, t) = y*(x^2-t)
+    sage: g(x, y, w) = x + y - cos(w)
+    sage: f*g
+    (x, y, t, w) |--> (x^2 - t)*(x + y - cos(w))*y
+
+::
+
+    sage: f(x,y, t) = x+y
+    sage: g(x, y, w) = w + t
+    sage: f + g
+    (x, y, t, w) |--> t + w + x + y
+
+TESTS:
+
+The arguments in the definition must be symbolic variables (:issue:`10747`)::
+
+    sage: f(1)=2
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call...
+
+    sage: f(x,1)=2
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call...
+
+    sage: f(1,2)=3
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call...
+
+    sage: f(1,2)=x
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call...
+
+    sage: f(x,2)=x
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call...
+"""
 import sage.rings.abc
-from _typeshed import Incomplete
 from sage.categories.pushout import ConstructionFunctor as ConstructionFunctor
 from sage.structure.factory import UniqueFactory as UniqueFactory
 from sage.symbolic.ring import SR as SR, SymbolicRing as SymbolicRing
@@ -104,7 +165,7 @@ class CallableSymbolicExpressionFunctor(ConstructionFunctor):
         """
 
 class CallableSymbolicExpressionRing_class(SymbolicRing, sage.rings.abc.CallableSymbolicExpressionRing):
-    symbols: Incomplete
+    symbols: dict
     def __init__(self, arguments) -> None:
         """
         EXAMPLES:
@@ -169,4 +230,4 @@ class CallableSymbolicExpressionRingFactory(UniqueFactory):
             Callable function ring with arguments (x, y)
         """
 
-CallableSymbolicExpressionRing: Incomplete
+CallableSymbolicExpressionRing: CallableSymbolicExpressionRingFactory

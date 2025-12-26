@@ -1,4 +1,10 @@
-from _typeshed import Incomplete
+r"""
+Miscellaneous arithmetic functions
+
+AUTHORS:
+
+- Kevin Stueve (2010-01-17): in ``is_prime(n)``, delegated calculation to ``n.is_prime()``
+"""
 from collections.abc import Generator
 from sage.arith.functions import LCM_list as LCM_list
 from sage.misc.misc_c import prod as prod
@@ -11,6 +17,9 @@ from sage.rings.rational_field import QQ as QQ
 from sage.structure.coerce import py_scalar_to_element as py_scalar_to_element
 from sage.structure.element import parent as parent
 from sage.structure.sequence import Sequence as Sequence
+
+from sage.structure.element import RingElement
+from typings_sagemath import Int
 
 def algebraic_dependency(z, degree, known_bits=None, use_bits=None, known_digits=None, use_digits=None, height_bound=None, proof: bool = False):
     '''
@@ -750,7 +759,8 @@ def eratosthenes(n):
         sage: eratosthenes(mpz(3))
         [2, 3]
     """
-def primes(start: int = 2, stop=None, proof=None) -> Generator[Incomplete]:
+def primes(start: Int = 2, stop: Int | None = None, proof: bool | None = None
+        ) -> Generator[Integer]:
     """
     Return an iterator over all primes between ``start`` and ``stop-1``,
     inclusive. This is much slower than :func:`prime_range`, but
@@ -2388,7 +2398,7 @@ class Euler_Phi:
             46.0
         """
 
-euler_phi: Incomplete
+euler_phi: Euler_Phi
 
 def carmichael_lambda(n):
     """
@@ -3620,7 +3630,7 @@ class Moebius:
             True
         """
 
-moebius: Incomplete
+moebius: Moebius
 
 def continuant(v, n=None):
     """
@@ -4523,7 +4533,7 @@ def fundamental_discriminant(D):
         sage: fundamental_discriminant(mpz(102))
         408
     """
-def squarefree_divisors(x) -> Generator[Incomplete]:
+def squarefree_divisors[R: RingElement](x: R) -> Generator[R]:
     """
     Return an iterator over the squarefree divisors (up to units)
     of this ring element.
