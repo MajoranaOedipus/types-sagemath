@@ -115,13 +115,6 @@ if sys.platform != 'win32':
 
 from sage.interacts import all as interacts
 
-from sage.rings.qqbar import (
-    ZZX_x as ZZX_x, AA_0 as AA_0, QQbar_I as QQbar_I, 
-    AA_hash_offset as AA_hash_offset, QQbar_hash_offset as QQbar_hash_offset,
-    QQbar_I_generator as QQbar_I_generator, QQbar_I_nf as QQbar_I_nf, 
-    QQ_0 as QQ_0, QQ_1 as QQ_1, QQ_1_2 as QQ_1_2, QQ_1_4 as QQ_1_4, 
-    RR_1_10 as RR_1_10 )
-
 CC = ComplexField()
 QQ = RationalField()
 RR = RealField()
