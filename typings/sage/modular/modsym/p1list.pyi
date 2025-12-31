@@ -1,11 +1,102 @@
+r"""
+Lists of Manin symbols over `\QQ`, elements of `\mathbb{P}^1(\ZZ/N\ZZ)`
+"""
 import _cython_3_2_1
 import sage as sage
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-lift_to_sl2z: _cython_3_2_1.cython_function_or_method
-lift_to_sl2z_int: _cython_3_2_1.cython_function_or_method
-lift_to_sl2z_llong: _cython_3_2_1.cython_function_or_method
+def lift_to_sl2z(c: int, d: int, N: int) -> list[int]:
+    r"""
+    Return a list of Python ints `[a,b,c',d']` that are the entries of a
+    2x2 matrix with determinant 1 and lower two entries congruent to
+    `c,d` modulo `N`.
+
+    INPUT:
+
+    - ``c``, ``d``, ``N`` -- python ints or longs such that `\gcd(c,d,N)=1`
+
+    EXAMPLES::
+
+        sage: lift_to_sl2z(2,3,6)
+        [1, 1, 2, 3]
+        sage: lift_to_sl2z(2,3,6000000)
+        [1, 1, 2, 3]
+
+    You will get a :exc:`ValueError` exception if the input is invalid.
+    Note that here gcd(15,6,24)=3::
+
+        sage: lift_to_sl2z(15,6,24)
+        Traceback (most recent call last):
+        ...
+        ValueError: input must have gcd 1
+
+    This function is not implemented except for N at most 2**31::
+
+        sage: lift_to_sl2z(1,1,2^32)
+        Traceback (most recent call last):
+        ...
+        NotImplementedError: N too large
+
+    TESTS::
+
+        sage: lift_to_sl2z(0, 0, 1)
+        [1, 0, 0, 1]
+    """
+def lift_to_sl2z_int(c: int, d: int, N: int) -> list[int]:
+    r"""
+    Lift a pair `(c, d)` to an element of `SL(2, \ZZ)`.
+
+    `(c,d)` is assumed to be an element of
+    `\mathbb{P}^1(\ZZ/N\ZZ)`. This function computes
+    and returns a list `[a, b, c', d']` that defines a 2x2
+    matrix, with determinant 1 and integer entries, such that
+    `c=c'` (mod `N`) and `d=d'` (mod `N`).
+
+    INPUT:
+
+    - ``c``, ``d``, ``N`` -- integers such that `\gcd(c,d,N)=1`
+
+    EXAMPLES::
+
+        sage: from sage.modular.modsym.p1list import lift_to_sl2z_int
+        sage: lift_to_sl2z_int(2,6,11)
+        [1, 8, 2, 17]
+        sage: m = Matrix(Integers(),2,2,lift_to_sl2z_int(2,6,11)); m
+        [ 1  8]
+        [ 2 17]
+
+    AUTHOR:
+
+    - Justin Walker
+    """
+def lift_to_sl2z_llong(c: int, d: int, N: int) -> list[int]:
+    r"""
+    Lift a pair `(c, d)` (modulo `N`) to an element of `SL(2, \ZZ)`.
+
+    `(c,d)` is assumed to be an element of
+    `\mathbb{P}^1(\ZZ/N\ZZ)`. This function computes and
+    returns a list `[a, b, c', d']` that defines a 2x2 matrix,
+    with determinant 1 and integer entries, such that `c=c'` (mod `N`)
+    and `d=d'` (mod `N`).
+
+    INPUT:
+
+    - ``c``, ``d``, ``N`` -- integers such that `\gcd(c,d,N)=1`
+
+    EXAMPLES::
+
+        sage: from sage.modular.modsym.p1list import lift_to_sl2z_llong
+        sage: lift_to_sl2z_llong(2,6,11)
+        [1, 8, 2, 17]
+        sage: m = Matrix(Integers(),2,2,lift_to_sl2z_llong(2,6,11)); m
+        [ 1  8]
+        [ 2 17]
+
+    AUTHOR:
+
+    - Justin Walker
+    """
 p1_normalize: _cython_3_2_1.cython_function_or_method
 p1_normalize_int: _cython_3_2_1.cython_function_or_method
 p1_normalize_llong: _cython_3_2_1.cython_function_or_method

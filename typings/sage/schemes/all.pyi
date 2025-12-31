@@ -1,3 +1,6 @@
+"""
+all.py -- export of schemes to Sage
+"""
 from sage.schemes.jacobians.all import *
 from sage.schemes.hyperelliptic_curves.all import *
 from sage.schemes.curves.all import *

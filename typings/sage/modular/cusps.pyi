@@ -1,4 +1,17 @@
-from _typeshed import Incomplete
+r"""
+The set `\mathbb{P}^1(\QQ)` of cusps
+
+EXAMPLES::
+
+    sage: Cusps
+    Set P^1(QQ) of all cusps
+
+::
+
+    sage: Cusp(oo)
+    Infinity
+"""
+
 from sage.libs.pari import pari as pari
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.misc.fast_methods import Singleton as Singleton
@@ -534,4 +547,4 @@ class Cusps_class(Singleton, Parent):
             False
         """
 
-Cusps: Incomplete
+Cusps: Cusps_class

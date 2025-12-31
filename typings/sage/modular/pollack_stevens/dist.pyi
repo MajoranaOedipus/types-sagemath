@@ -1,4 +1,19 @@
-import _cython_3_2_1
+"""
+`p`-adic distributions spaces
+
+This module implements `p`-adic distributions, a `p`-adic Banach
+space dual to locally analytic functions on a disc.
+
+EXAMPLES::
+
+    sage: D = OverconvergentDistributions(5, 7, 15)
+    sage: v = D([7,14,21,28,35]); v
+    (7 + O(7^5), 2*7 + O(7^4), 3*7 + O(7^3), 4*7 + O(7^2), O(7))
+
+REFERENCES:
+
+- [PS2011]_
+"""
 import sage.categories.action
 import sage.structure.element
 from sage.arith.misc import bernoulli as bernoulli
@@ -16,7 +31,34 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-get_dist_classes: _cython_3_2_1.cython_function_or_method
+def get_dist_classes(p, prec_cap, base, symk, implementation):
+    r"""
+    Determine the element and action classes to be used for given inputs.
+
+    INPUT:
+
+    - ``p`` -- prime
+
+    - ``prec_cap`` -- the `p`-adic precision cap
+
+    - ``base`` -- the base ring
+
+    - ``symk`` -- an element of Symk
+
+    - ``implementation`` -- string; if not ``None``, override the
+      automatic choice of implementation. May be 'long' or 'vector',
+      otherwise raise a :exc:`NotImplementedError`.
+
+    OUTPUT:
+
+    - Either a Dist_vector and WeightKAction_vector, or a Dist_vector_long
+      and WeightKAction_vector_long
+
+    EXAMPLES::
+
+        sage: D = OverconvergentDistributions(2, 3, 5); D # indirect doctest
+        Space of 3-adic distributions with k=2 action and precision cap 5
+    """
 
 class Dist(sage.structure.element.ModuleElement):
     """File: /build/sagemath/src/sage/src/sage/modular/pollack_stevens/dist.pyx (starting at line 92)

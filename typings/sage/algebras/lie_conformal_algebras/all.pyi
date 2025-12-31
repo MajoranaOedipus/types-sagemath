@@ -1,1 +1,3 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+
+from sage.algebras.lie_conformal_algebras.lie_conformal_algebra import LieConformalAlgebra as LieConformalAlgebra
+from sage.algebras.lie_conformal_algebras import examples as lie_conformal_algebras

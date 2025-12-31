@@ -1,7 +1,109 @@
-import _cython_3_2_1
-from typing import Any, overload
+"""
+Abstract SAT Solver
 
-SAT: _cython_3_2_1.cython_function_or_method
+All SAT solvers must inherit from this class.
+
+.. NOTE::
+
+    Our SAT solver interfaces are 1-based, i.e., literals start at
+    1. This is consistent with the popular DIMACS format for SAT
+    solving but not with Python's 0-based convention. However, this
+    also allows to construct clauses using simple integers.
+
+AUTHORS:
+
+- Martin Albrecht (2012): first version
+"""
+from typing import Any, overload, Literal
+from sage.sat.solvers.cryptominisat import CryptoMiniSat
+from sage.sat.solvers.picosat import PicoSAT
+from sage.sat.solvers.sat_lp import SatLP
+from sage.sat.solvers.dimacs import Glucose
+from sage.sat.solvers.dimacs import GlucoseSyrup
+from sage.sat.solvers.dimacs import Kissat
+
+@overload
+def SAT(solver: Literal["cryptominisat"], *args, **kwds) -> CryptoMiniSat:
+    ...
+@overload
+def SAT(solver: Literal["picosat"], *args, **kwds) -> PicoSAT:
+    ...
+@overload
+def SAT(solver: Literal["LP"], *args, **kwds) -> SatLP:
+    ...
+@overload
+def SAT(solver: Literal["glucose"], *args, **kwds) -> Glucose:
+    ...
+@overload
+def SAT(solver: Literal["glucose-syrup"], *args, **kwds) -> GlucoseSyrup:
+    ...
+@overload
+def SAT(solver: Literal["kissat"], *args, **kwds) -> Kissat:
+    ...
+@overload
+def SAT(solver: None = None, *args, **kwds) -> CryptoMiniSat | PicoSAT | SatLP:
+    r"""
+    Return a :class:`SatSolver` instance.
+
+    Through this class, one can define and solve
+    :wikipedia:`SAT problems <Boolean_satisfiability_problem>`.
+
+    INPUT:
+
+    - ``solver`` -- string; select a solver. Admissible values are:
+
+        - ``'cryptominisat'`` -- note that the pycryptosat package must be
+          installed
+
+        - ``'picosat'`` -- note that the pycosat package must be installed
+
+        - ``'glucose'`` -- note that the glucose package must be installed
+
+        - ``'glucose-syrup'`` -- note that the glucose package must be installed
+
+        - ``'LP'`` -- use :class:`~sage.sat.solvers.sat_lp.SatLP` to solve the
+          SAT instance
+
+        - ``None`` -- default; use CryptoMiniSat if available, else PicoSAT if
+          available, and a LP solver otherwise
+
+    EXAMPLES::
+
+        sage: SAT(solver='LP')                                                          # needs sage.numerical.mip
+        an ILP-based SAT Solver
+
+    TESTS::
+
+        sage: SAT(solver='Wouhouuuuuu')
+        Traceback (most recent call last):
+        ...
+        ValueError: Solver 'Wouhouuuuuu' is not available
+
+    Forcing CryptoMiniSat::
+
+        sage: SAT(solver='cryptominisat')                                   # optional - pycryptosat
+        CryptoMiniSat solver: 0 variables, 0 clauses.
+
+    Forcing PicoSat::
+
+        sage: SAT(solver='picosat')                                         # optional - pycosat
+        PicoSAT solver: 0 variables, 0 clauses.
+
+    Forcing Glucose::
+
+        sage: SAT(solver='glucose')
+        DIMACS Solver: 'glucose -verb=0 -model {input}'
+
+    Forcing Glucose Syrup::
+
+        sage: SAT(solver='glucose-syrup')
+        DIMACS Solver: 'glucose-syrup -model -verb=0 {input}'
+
+    Forcing Kissat::
+
+        sage: SAT(solver='kissat')
+        DIMACS Solver: 'kissat -q {input}'
+    """
 
 class SatSolver:
     @classmethod

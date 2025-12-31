@@ -1,5 +1,6 @@
 from sage.rings.integer import Integer
-from typing import SupportsInt
+
 
 
 type Int = int | Integer
+type Num = Int | float | complex

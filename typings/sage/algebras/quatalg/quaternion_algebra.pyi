@@ -1,3 +1,35 @@
+"""
+Quaternion Algebras
+
+AUTHORS:
+
+- Jon Bobber (2009): rewrite
+
+- William Stein (2009): rewrite
+
+- Julian Rueth (2014-03-02): use UniqueFactory for caching
+
+- Peter Bruin (2021): do not require the base ring to be a field
+
+- Lorenz Panny (2022): :meth:`QuaternionOrder.isomorphism_to`,
+  :meth:`QuaternionFractionalIdeal_rational.minimal_element`
+
+- Sebastian A. Spindler (2024): extend ramification functionality to number fields,
+  adapt :meth:`QuaternionAlgebra_ab.maximal_order` to allow for extension of an order
+
+- Eloi Torrents (2024): construct quaternion algebras over number fields from ramification
+
+This code is partly based on Sage code by David Kohel from 2005.
+
+TESTS:
+
+Pickling test::
+
+    sage: Q.<i,j,k> = QuaternionAlgebra(QQ,-5,-2)
+    sage: Q == loads(dumps(Q))
+    True
+"""
+
 from . import quaternion_algebra_cython as quaternion_algebra_cython
 from .quaternion_algebra_element import QuaternionAlgebraElement_abstract as QuaternionAlgebraElement_abstract, QuaternionAlgebraElement_generic as QuaternionAlgebraElement_generic, QuaternionAlgebraElement_number_field as QuaternionAlgebraElement_number_field, QuaternionAlgebraElement_rational_field as QuaternionAlgebraElement_rational_field
 from _typeshed import Incomplete
@@ -278,7 +310,7 @@ class QuaternionAlgebraFactory(UniqueFactory):
             Quaternion Algebra (-1, -1) with base ring Rational Field
         '''
 
-QuaternionAlgebra: Incomplete
+QuaternionAlgebra: QuaternionAlgebraFactory
 
 def is_QuaternionAlgebra(A):
     """

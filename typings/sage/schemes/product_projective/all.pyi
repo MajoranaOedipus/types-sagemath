@@ -1,1 +1,4 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.schemes.product_projective.space import (
+    ProductProjectiveSpaces as ProductProjectiveSpaces,
+    is_ProductProjectiveSpaces as is_ProductProjectiveSpaces
+    )

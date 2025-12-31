@@ -1,1 +1,6 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+"""
+Fusion Rings
+"""
+
+from sage.algebras.fusion_rings.fusion_ring import FusionRing as FusionRing
+from sage.algebras.fusion_rings.fusion_double import FusionDouble as FusionDouble

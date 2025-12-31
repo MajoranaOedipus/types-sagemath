@@ -1,1 +1,8 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+"""
+The Steenrod algebra
+"""
+
+from sage.algebras.steenrod.steenrod_algebra import (
+    SteenrodAlgebra as SteenrodAlgebra,
+    Sq as Sq 
+)

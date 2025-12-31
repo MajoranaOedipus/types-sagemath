@@ -130,4 +130,4 @@ class SL2Z_class(Gamma0_class):
             True
         """
 
-SL2Z: Incomplete
+SL2Z: SL2Z_class    # TODO: with category

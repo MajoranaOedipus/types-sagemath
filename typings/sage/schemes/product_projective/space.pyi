@@ -1,5 +1,35 @@
-from _typeshed import Incomplete
+r"""
+Products of projective spaces
+
+This class builds on the projective space class and its point and morphism
+classes.
+
+Products of projective spaces of varying dimension are convenient ambient
+spaces for complete intersections.
+
+Group actions on them, and the interplay with representation theory, provide
+many interesting examples of algebraic varieties.
+
+EXAMPLES:
+
+We construct products projective spaces of various dimensions over the same ring::
+
+    sage: P1 = ProjectiveSpace(ZZ, 1, 'x')
+    sage: P2 = ProjectiveSpace(ZZ, 2, 'y')
+    sage: ProductProjectiveSpaces([P1, P2])
+    Product of projective spaces P^1 x P^2 over Integer Ring
+
+We can also construct the product by specifying the dimensions and the base ring::
+
+    sage: ProductProjectiveSpaces([1, 2, 3], QQ, 'z')
+    Product of projective spaces P^1 x P^2 x P^3 over Rational Field
+
+    sage: P2xP2 = ProductProjectiveSpaces([2, 2], QQ, names=['x', 'y'])
+    sage: P2xP2.coordinate_ring().inject_variables()
+    Defining x0, x1, x2, y0, y1, y2
+"""
 from collections.abc import Generator
+from typing import TypeGuard
 from sage.categories.commutative_rings import CommutativeRings as CommutativeRings
 from sage.categories.fields import Fields as Fields
 from sage.misc.cachefunc import cached_method as cached_method
@@ -17,7 +47,7 @@ from sage.schemes.product_projective.point import ProductProjectiveSpaces_point_
 from sage.schemes.product_projective.subscheme import AlgebraicScheme_subscheme_product_projective as AlgebraicScheme_subscheme_product_projective
 from sage.schemes.projective.projective_space import ProjectiveSpace as ProjectiveSpace, ProjectiveSpace_ring as ProjectiveSpace_ring
 
-def is_ProductProjectiveSpaces(x):
+def is_ProductProjectiveSpaces(x: object) -> TypeGuard[ProductProjectiveSpaces_ring]:
     """
     Return ``True`` if ``x`` is a product of projective spaces.
 

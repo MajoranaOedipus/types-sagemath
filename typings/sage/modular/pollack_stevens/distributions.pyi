@@ -1,4 +1,34 @@
-from _typeshed import Incomplete
+r"""
+Spaces of distributions for Pollack-Stevens modular symbols
+
+The Pollack-Stevens version of modular symbols take values on a
+`\Sigma_0(N)`-module which can be either a symmetric power of the standard
+representation of GL2, or a finite approximation module to the module of
+overconvergent distributions.
+
+EXAMPLES::
+
+    sage: from sage.modular.pollack_stevens.distributions import Symk
+    sage: S = Symk(6); S
+    Sym^6 Q^2
+    sage: v = S(list(range(7))); v
+    (0, 1, 2, 3, 4, 5, 6)
+    sage: v.act_right([1,2,3,4])
+    (18432, 27136, 39936, 58752, 86400, 127008, 186624)
+
+    sage: S = Symk(4,Zp(5)); S
+    Sym^4 Z_5^2
+    sage: S([1,2,3,4,5])
+    (1 + O(5^20), 2 + O(5^20), 3 + O(5^20), 4 + O(5^20), 5 + O(5^21))
+
+::
+
+    sage: from sage.modular.pollack_stevens.distributions import OverconvergentDistributions
+    sage: D = OverconvergentDistributions(3, 11, 5); D
+    Space of 11-adic distributions with k=3 action and precision cap 5
+    sage: D([1,2,3,4,5])
+    (1 + O(11^5), 2 + O(11^4), 3 + O(11^3), 4 + O(11^2), 5 + O(11))
+"""
 from sage.categories.commutative_rings import CommutativeRings as CommutativeRings
 from sage.categories.fields import Fields as Fields
 from sage.categories.modules import Modules as Modules
@@ -9,6 +39,13 @@ from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
 from sage.structure.factory import UniqueFactory as UniqueFactory
 from sage.structure.parent import Parent as Parent
+
+from sage.modular.pollack_stevens.dist import get_dist_classes as get_dist_classes
+from sage.rings.padics.factory import (
+    ZpCA as ZpCA,
+    QpCR as QpCR
+)
+from sage.rings.padics.padic_generic import pAdicGeneric as pAdicGeneric
 
 class OverconvergentDistributions_factory(UniqueFactory):
     """
@@ -130,8 +167,8 @@ class Symk_factory(UniqueFactory):
             Sym^6 Q^2
         """
 
-OverconvergentDistributions: Incomplete
-Symk: Incomplete
+OverconvergentDistributions: OverconvergentDistributions_factory
+Symk: Symk_factory
 
 class OverconvergentDistributions_abstract(Module):
     """
