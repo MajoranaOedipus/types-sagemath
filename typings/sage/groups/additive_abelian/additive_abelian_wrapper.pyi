@@ -1,3 +1,57 @@
+r"""
+Wrapper class for abelian groups
+
+This class is intended as a template for anything in Sage that needs the
+functionality of abelian groups. One can create an ``AdditiveAbelianGroupWrapper``
+object from any given set of elements in some given parent, as long as an
+``_add_`` method has been defined.
+
+EXAMPLES:
+
+We create a toy example based on the Mordell-Weil group of an elliptic curve over `\QQ`::
+
+    sage: # needs sage.schemes
+    sage: E = EllipticCurve('30a2')
+    sage: pts = [E(4,-7,1), E(7/4, -11/8, 1), E(3, -2, 1)]
+    sage: M = AdditiveAbelianGroupWrapper(pts[0].parent(), pts, [3, 2, 2]); M
+    Additive abelian group isomorphic to Z/3 + Z/2 + Z/2 embedded in Abelian
+    group of points on Elliptic Curve defined by y^2 + x*y + y = x^3 - 19*x + 26
+    over Rational Field
+    sage: M.gens()
+    ((4 : -7 : 1), (7/4 : -11/8 : 1), (3 : -2 : 1))
+    sage: 3*M.0
+    (0 : 1 : 0)
+    sage: 3000000000000001 * M.0
+    (4 : -7 : 1)
+    sage: M == loads(dumps(M))  # known bug (https://github.com/sagemath/sage/issues/11599#comment:7)
+    True
+
+TESTS:
+
+We check that ridiculous operations are being avoided::
+
+    sage: from sage.misc.verbose import set_verbose
+    sage: set_verbose(2, 'additive_abelian_wrapper.py')
+    sage: 300001 * M.0                                                                  # needs sage.schemes
+    verbose 1 (...: additive_abelian_wrapper.py, discrete_exp) Calling discrete exp on (1, 0, 0)
+    (4 : -7 : 1)
+    sage: set_verbose(0, 'additive_abelian_wrapper.py')
+
+
+.. TODO::
+
+    Think about subgroups and quotients, which probably won't work
+    in the current implementation -- some fiddly adjustments will be
+    needed in order to be able to pass extra arguments to the
+    subquotient's init method.
+
+AUTHORS:
+
+- David Loeffler (2010)
+- Lorenz Panny (2017): :meth:`AdditiveAbelianGroupWrapper.discrete_log`
+- Lorenz Panny (2023): :meth:`AdditiveAbelianGroupWrapper.from_generators`
+"""
+
 from . import additive_abelian_group as addgp
 from sage.categories.morphism import Morphism as Morphism
 from sage.misc.superseded import deprecated_function_alias as deprecated_function_alias

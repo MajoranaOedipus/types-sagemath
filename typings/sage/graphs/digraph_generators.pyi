@@ -1,3 +1,59 @@
+r"""
+Common digraphs
+
+All digraphs in Sage can be built through the ``digraphs`` object. In order to
+build a circuit on 15 elements, one can do::
+
+    sage: g = digraphs.Circuit(15)
+
+To get a circulant graph on 10 vertices in which a vertex `i` has `i+2` and
+`i+3` as outneighbors::
+
+    sage: p = digraphs.Circulant(10,[2,3])
+
+More interestingly, one can get the list of all digraphs that Sage knows how to
+build by typing ``digraphs.`` in Sage and then hitting :kbd:`Tab`.
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~DiGraphGenerators.ButterflyGraph`      | Return a `n`-dimensional butterfly graph.
+    :meth:`~DiGraphGenerators.Circuit`             | Return the circuit on `n` vertices.
+    :meth:`~DiGraphGenerators.Circulant`           | Return a circulant digraph on `n` vertices from a set of integers.
+    :meth:`~DiGraphGenerators.Complete`            | Return a complete digraph on `n` vertices.
+    :meth:`~DiGraphGenerators.DeBruijn`            | Return the De Bruijn digraph with parameters `k,n`.
+    :meth:`~DiGraphGenerators.GeneralizedDeBruijn` | Return the generalized de Bruijn digraph of order `n` and degree `d`.
+    :meth:`~DiGraphGenerators.ImaseItoh`           | Return the digraph of Imase and Itoh of order `n` and degree `d`.
+    :meth:`~DiGraphGenerators.Kautz`               | Return the Kautz digraph of degree `d` and diameter `D`.
+    :meth:`~DiGraphGenerators.nauty_directg`       | Return an iterator yielding digraphs using nauty's ``directg`` program.
+    :meth:`~DiGraphGenerators.nauty_posetg`        | Return an iterator yielding Hasse diagrams of posets using nauty's ``genposetg`` program.
+    :meth:`~DiGraphGenerators.Paley`               | Return a Paley digraph on `q` vertices.
+    :meth:`~DiGraphGenerators.Path`                | Return a directed path on `n` vertices.
+    :meth:`~DiGraphGenerators.RandomDirectedAcyclicGraph` | Return a random (weighted) directed acyclic graph of order `n`.
+    :meth:`~DiGraphGenerators.RandomDirectedGNC`   | Return a random growing network with copying (GNC) digraph with `n` vertices.
+    :meth:`~DiGraphGenerators.RandomDirectedGNM`   | Return a random labelled digraph on `n` nodes and `m` arcs.
+    :meth:`~DiGraphGenerators.RandomDirectedGNP`   | Return a random digraph on `n` nodes.
+    :meth:`~DiGraphGenerators.RandomDirectedGN`    | Return a random growing network (GN) digraph with `n` vertices.
+    :meth:`~DiGraphGenerators.RandomDirectedGNR`   | Return a random growing network with redirection (GNR) digraph.
+    :meth:`~DiGraphGenerators.RandomSemiComplete`  | Return a random semi-complete digraph of order `n`.
+    :meth:`~DiGraphGenerators.RandomTournament`    | Return a random tournament on `n` vertices.
+    :meth:`~DiGraphGenerators.TransitiveTournament`| Return a transitive tournament on `n` vertices.
+    :meth:`~DiGraphGenerators.tournaments_nauty`   | Iterator over all tournaments on `n` vertices using Nauty.
+
+
+AUTHORS:
+
+- Robert L. Miller (2006)
+- Emily A. Kirkman (2006)
+- Michael C. Yurko (2009)
+- David Coudert    (2012)
+- Janmenjaya Panda (2024)
+
+Functions and methods
+---------------------
+"""
 from _typeshed import Incomplete
 from collections.abc import Generator
 from sage.cpython.string import bytes_to_str as bytes_to_str
@@ -1333,4 +1389,4 @@ class DiGraphGenerators:
             sage: digraphs?  # not tested
         """
 
-digraphs: Incomplete
+digraphs: DiGraphGenerators

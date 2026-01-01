@@ -1,7 +1,293 @@
+r"""
+Common graphs
+
+All graphs in Sage can be built through the ``graphs`` object. In order to
+build a complete graph on 15 elements, one can do::
+
+    sage: g = graphs.CompleteGraph(15)
+
+To get a path with 4 vertices, and the house graph::
+
+    sage: p = graphs.PathGraph(4)
+    sage: h = graphs.HouseGraph()
+
+More interestingly, one can get the list of all graphs that Sage knows how to
+build by typing ``graphs.`` in Sage and then hitting :kbd:`Tab`.
+
+**Basic structures**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`BullGraph <GraphGenerators.BullGraph>` | :meth:`DiamondGraph <GraphGenerators.DiamondGraph>` | :meth:`HouseXGraph <GraphGenerators.HouseXGraph>`
+    :meth:`ButterflyGraph <GraphGenerators.ButterflyGraph>` | :meth:`GemGraph <GraphGenerators.GemGraph>` | :meth:`LadderGraph <GraphGenerators.LadderGraph>`
+    :meth:`CircularLadderGraph <GraphGenerators.CircularLadderGraph>` | :meth:`DartGraph <GraphGenerators.DartGraph>` | :meth:`LollipopGraph <GraphGenerators.LollipopGraph>`
+    :meth:`ClawGraph <GraphGenerators.ClawGraph>` | :meth:`ForkGraph <GraphGenerators.ForkGraph>` | :meth:`MoebiusLadderGraph <GraphGenerators.MoebiusLadderGraph>`
+    :meth:`CycleGraph <GraphGenerators.CycleGraph>` | :meth:`DipoleGraph <GraphGenerators.DipoleGraph>` | :meth:`PathGraph <GraphGenerators.PathGraph>`
+    :meth:`CompleteBipartiteGraph <GraphGenerators.CompleteBipartiteGraph>` | :meth:`EmptyGraph <GraphGenerators.EmptyGraph>` | :meth:`StarGraph <GraphGenerators.StarGraph>`
+    :meth:`CompleteGraph <GraphGenerators.CompleteGraph>` | :meth:`Grid2dGraph <GraphGenerators.Grid2dGraph>` | :meth:`TadpoleGraph <GraphGenerators.TadpoleGraph>`
+    :meth:`CompleteMultipartiteGraph <GraphGenerators.CompleteMultipartiteGraph>` | :meth:`GridGraph <GraphGenerators.GridGraph>` | :meth:`ToroidalGrid2dGraph <GraphGenerators.ToroidalGrid2dGraph>`
+    :meth:`CorrelationGraph <GraphGenerators.CorrelationGraph>` | :meth:`HouseGraph <GraphGenerators.HouseGraph>` | :meth:`Toroidal6RegularGrid2dGraph <GraphGenerators.Toroidal6RegularGrid2dGraph>`
+
+**Small Graphs**
+
+A small graph is just a single graph and has no parameter influencing
+the number of edges or vertices.
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`Balaban10Cage <GraphGenerators.Balaban10Cage>` | :meth:`GossetGraph <GraphGenerators.GossetGraph>` | :meth:`MeredithGraph <GraphGenerators.MeredithGraph>`
+    :meth:`Balaban11Cage <GraphGenerators.Balaban11Cage>` | :meth:`graph_3O73 <GraphGenerators.graph_3O73>` | :meth:`MoebiusKantorGraph <GraphGenerators.MoebiusKantorGraph>`
+    :meth:`BidiakisCube <GraphGenerators.BidiakisCube>` | :meth:`GrayGraph <GraphGenerators.GrayGraph>` | :meth:`MoserSpindle <GraphGenerators.MoserSpindle>`
+    :meth:`BiggsSmithGraph <GraphGenerators.BiggsSmithGraph>` | :meth:`GritsenkoGraph <GraphGenerators.GritsenkoGraph>` | :meth:`MurtyGraph <GraphGenerators.MurtyGraph>`
+    :meth:`BlanusaFirstSnarkGraph <GraphGenerators.BlanusaFirstSnarkGraph>` | :meth:`GrotzschGraph <GraphGenerators.GrotzschGraph>` | :meth:`NauruGraph <GraphGenerators.NauruGraph>`
+    :meth:`BlanusaSecondSnarkGraph <GraphGenerators.BlanusaSecondSnarkGraph>` | :meth:`HallJankoGraph <GraphGenerators.HallJankoGraph>` | :meth:`PappusGraph <GraphGenerators.PappusGraph>`
+    :meth:`BrinkmannGraph <GraphGenerators.BrinkmannGraph>` | :meth:`HarborthGraph <GraphGenerators.HarborthGraph>` | :meth:`PoussinGraph <GraphGenerators.PoussinGraph>`
+    :meth:`BrouwerHaemersGraph <GraphGenerators.BrouwerHaemersGraph>` | :meth:`HarriesGraph <GraphGenerators.HarriesGraph>` | :meth:`PerkelGraph <GraphGenerators.PerkelGraph>`
+    :meth:`BuckyBall <GraphGenerators.BuckyBall>` | :meth:`HarriesWongGraph <GraphGenerators.HarriesWongGraph>` | :meth:`PetersenGraph <GraphGenerators.PetersenGraph>`
+    :meth:`CameronGraph <GraphGenerators.CameronGraph>` | :meth:`HeawoodGraph <GraphGenerators.HeawoodGraph>` | :meth:`RobertsonGraph <GraphGenerators.RobertsonGraph>`
+    :meth:`Cell600 <GraphGenerators.Cell600>` | :meth:`HerschelGraph <GraphGenerators.HerschelGraph>` | :meth:`SchlaefliGraph <GraphGenerators.SchlaefliGraph>`
+    :meth:`Cell120 <GraphGenerators.Cell120>` | :meth:`HigmanSimsGraph <GraphGenerators.HigmanSimsGraph>` | :meth:`shortened_00_11_binary_Golay_code_graph <GraphGenerators.shortened_00_11_binary_Golay_code_graph>`
+    :meth:`ChvatalGraph <GraphGenerators.ChvatalGraph>` | :meth:`HoffmanGraph <GraphGenerators.HoffmanGraph>` | :meth:`shortened_000_111_extended_binary_Golay_code_graph <GraphGenerators.shortened_000_111_extended_binary_Golay_code_graph>`
+    :meth:`ClebschGraph <GraphGenerators.ClebschGraph>` | :meth:`HoffmanSingletonGraph <GraphGenerators.HoffmanSingletonGraph>` | :meth:`ShrikhandeGraph <GraphGenerators.ShrikhandeGraph>`
+    :meth:`cocliques_HoffmannSingleton <GraphGenerators.cocliques_HoffmannSingleton>` | :meth:`HoltGraph <GraphGenerators.HoltGraph>` | :meth:`SimsGewirtzGraph <GraphGenerators.SimsGewirtzGraph>`
+    :meth:`ConwaySmith_for_3S7 <GraphGenerators.ConwaySmith_for_3S7>` | :meth:`HortonGraph <GraphGenerators.HortonGraph>` | :meth:`SousselierGraph <GraphGenerators.SousselierGraph>`
+    :meth:`CoxeterGraph <GraphGenerators.CoxeterGraph>` | :meth:`IoninKharaghani765Graph <GraphGenerators.IoninKharaghani765Graph>` | :meth:`SylvesterGraph <GraphGenerators.SylvesterGraph>`
+    :meth:`CubeplexGraph <GraphGenerators.CubeplexGraph>` | :meth:`IvanovIvanovFaradjevGraph <GraphGenerators.IvanovIvanovFaradjevGraph>` | :meth:`SzekeresSnarkGraph <GraphGenerators.SzekeresSnarkGraph>`
+    :meth:`DesarguesGraph <GraphGenerators.DesarguesGraph>` | :meth:`J2Graph <GraphGenerators.J2Graph>` | :meth:`ThomsenGraph <GraphGenerators.ThomsenGraph>`
+    :meth:`DejterGraph <GraphGenerators.DejterGraph>` | :meth:`JankoKharaghaniGraph <GraphGenerators.JankoKharaghaniGraph>` | :meth:`TietzeGraph <GraphGenerators.TietzeGraph>`
+    :meth:`distance_3_doubly_truncated_Golay_code_graph <GraphGenerators.distance_3_doubly_truncated_Golay_code_graph>` | :meth:`JankoKharaghaniTonchevGraph <GraphGenerators.JankoKharaghaniTonchevGraph>` | :meth:`TricornGraph <GraphGenerators.TricornGraph>`
+    :meth:`DoubleStarSnark <GraphGenerators.DoubleStarSnark>` | :meth:`KittellGraph <GraphGenerators.KittellGraph>` | :meth:`TruncatedIcosidodecahedralGraph <GraphGenerators.TruncatedIcosidodecahedralGraph>`
+    :meth:`DoublyTruncatedWittGraph <GraphGenerators.DoublyTruncatedWittGraph>` | :meth:`KrackhardtKiteGraph <GraphGenerators.KrackhardtKiteGraph>` | :meth:`TruncatedTetrahedralGraph <GraphGenerators.TruncatedTetrahedralGraph>`
+    :meth:`DurerGraph <GraphGenerators.DurerGraph>` | :meth:`Klein3RegularGraph <GraphGenerators.Klein3RegularGraph>` | :meth:`TruncatedWittGraph <GraphGenerators.TruncatedWittGraph>`
+    :meth:`DyckGraph <GraphGenerators.DyckGraph>` | :meth:`Klein7RegularGraph <GraphGenerators.Klein7RegularGraph>` | :meth:`Tutte12Cage <GraphGenerators.Tutte12Cage>`
+    :meth:`EllinghamHorton54Graph <GraphGenerators.EllinghamHorton54Graph>` | :meth:`LargeWittGraph <GraphGenerators.LargeWittGraph>` | :meth:`TutteCoxeterGraph <GraphGenerators.TutteCoxeterGraph>`
+    :meth:`EllinghamHorton78Graph <GraphGenerators.EllinghamHorton78Graph>` | :meth:`LeonardGraph <GraphGenerators.LeonardGraph>` | :meth:`TutteGraph <GraphGenerators.TutteGraph>`
+    :meth:`ErreraGraph <GraphGenerators.ErreraGraph>` | :meth:`LjubljanaGraph <GraphGenerators.LjubljanaGraph>` | :meth:`TwinplexGraph <GraphGenerators.TwinplexGraph>`
+    :meth:`F26AGraph <GraphGenerators.F26AGraph>` | :meth:`vanLintSchrijverGraph <GraphGenerators.vanLintSchrijverGraph>` | :meth:`U42Graph216 <GraphGenerators.U42Graph216>`
+    :meth:`FlowerSnark <GraphGenerators.FlowerSnark>` | :meth:`LivingstoneGraph <GraphGenerators.LivingstoneGraph>` | :meth:`U42Graph540 <GraphGenerators.U42Graph540>`
+    :meth:`FolkmanGraph <GraphGenerators.FolkmanGraph>` | :meth:`locally_GQ42_distance_transitive_graph <GraphGenerators.locally_GQ42_distance_transitive_graph>` | :meth:`WagnerGraph <GraphGenerators.WagnerGraph>`
+    :meth:`FosterGraph <GraphGenerators.FosterGraph>` | :meth:`LocalMcLaughlinGraph <GraphGenerators.LocalMcLaughlinGraph>` | :meth:`WatkinsSnarkGraph <GraphGenerators.WatkinsSnarkGraph>`
+    :meth:`FosterGraph3S6 <GraphGenerators.FosterGraph3S6>` | :meth:`M22Graph <GraphGenerators.M22Graph>` | :meth:`WellsGraph <GraphGenerators.WellsGraph>`
+    :meth:`FranklinGraph <GraphGenerators.FranklinGraph>` | :meth:`MarkstroemGraph <GraphGenerators.MarkstroemGraph>` | :meth:`WienerArayaGraph <GraphGenerators.WienerArayaGraph>`
+    :meth:`FruchtGraph <GraphGenerators.FruchtGraph>` | :meth:`MathonStronglyRegularGraph <GraphGenerators.MathonStronglyRegularGraph>` | :meth:`SuzukiGraph <GraphGenerators.SuzukiGraph>`
+    :meth:`GoldnerHararyGraph <GraphGenerators.GoldnerHararyGraph>` | :meth:`McGeeGraph <GraphGenerators.McGeeGraph>` | 
+    :meth:`GolombGraph <GraphGenerators.GolombGraph>` | :meth:`McLaughlinGraph <GraphGenerators.McLaughlinGraph>` | 
+
+**Platonic solids** (ordered ascending by number of vertices)
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`TetrahedralGraph <GraphGenerators.TetrahedralGraph>` | :meth:`HexahedralGraph <GraphGenerators.HexahedralGraph>` | :meth:`DodecahedralGraph <GraphGenerators.DodecahedralGraph>`
+    :meth:`OctahedralGraph <GraphGenerators.OctahedralGraph>` | :meth:`IcosahedralGraph <GraphGenerators.IcosahedralGraph>` | 
+
+**Families of graphs**
+
+A family of graphs is a set of graphs, which can be indexed by fixed
+number of parameters, e.g. two integer parameters. (A method whose name starts
+with a small letter does not return a single graph object but a graph iterator
+or a list of graphs or ...)
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`AlternatingFormsGraph <GraphGenerators.AlternatingFormsGraph>` | :meth:`GeneralisedDodecagonGraph <GraphGenerators.GeneralisedDodecagonGraph>` | :meth:`NKStarGraph <GraphGenerators.NKStarGraph>`
+    :meth:`AztecDiamondGraph <GraphGenerators.AztecDiamondGraph>` | :meth:`GeneralisedHexagonGraph <GraphGenerators.GeneralisedHexagonGraph>` | :meth:`NStarGraph <GraphGenerators.NStarGraph>`
+    :meth:`BarbellGraph <GraphGenerators.BarbellGraph>` | :meth:`GeneralisedOctagonGraph <GraphGenerators.GeneralisedOctagonGraph>` | :meth:`OddGraph <GraphGenerators.OddGraph>`
+    :meth:`BilinearFormsGraph <GraphGenerators.BilinearFormsGraph>` | :meth:`GeneralizedPetersenGraph <GraphGenerators.GeneralizedPetersenGraph>` | :meth:`PaleyGraph <GraphGenerators.PaleyGraph>`
+    :meth:`BiwheelGraph <GraphGenerators.BiwheelGraph>` | :meth:`GeneralizedSierpinskiGraph <GraphGenerators.GeneralizedSierpinskiGraph>` | :meth:`PasechnikGraph <GraphGenerators.PasechnikGraph>`
+    :meth:`BubbleSortGraph <GraphGenerators.BubbleSortGraph>` | :meth:`GoethalsSeidelGraph <GraphGenerators.GoethalsSeidelGraph>` | :meth:`petersen_family <GraphGenerators.petersen_family>`
+    :meth:`CaiFurerImmermanGraph <GraphGenerators.CaiFurerImmermanGraph>` | :meth:`GrassmannGraph <GraphGenerators.GrassmannGraph>` | :meth:`p2_forbidden_minors <GraphGenerators.p2_forbidden_minors>`
+    :meth:`chang_graphs <GraphGenerators.chang_graphs>` | :meth:`HalfCube <GraphGenerators.HalfCube>` | :meth:`planar_graphs <GraphGenerators.planar_graphs>`
+    :meth:`CirculantGraph <GraphGenerators.CirculantGraph>` | :meth:`HammingGraph <GraphGenerators.HammingGraph>` | :meth:`plantri_gen <GraphGenerators.plantri_gen>`
+    :meth:`cographs <GraphGenerators.cographs>` | :meth:`HanoiTowerGraph <GraphGenerators.HanoiTowerGraph>` | :meth:`quadrangulations <GraphGenerators.quadrangulations>`
+    :meth:`cospectral_graphs <GraphGenerators.cospectral_graphs>` | :meth:`HararyGraph <GraphGenerators.HararyGraph>` | :meth:`RingedTree <GraphGenerators.RingedTree>`
+    :meth:`CubeGraph <GraphGenerators.CubeGraph>` | :meth:`HermitianFormsGraph <GraphGenerators.HermitianFormsGraph>` | :meth:`SierpinskiGasketGraph <GraphGenerators.SierpinskiGasketGraph>`
+    :meth:`CubeConnectedCycle <GraphGenerators.CubeConnectedCycle>` | :meth:`HyperStarGraph <GraphGenerators.HyperStarGraph>` | :meth:`SquaredSkewHadamardMatrixGraph <GraphGenerators.SquaredSkewHadamardMatrixGraph>`
+    :meth:`distance_regular_graph <GraphGenerators.distance_regular_graph>` | :meth:`JohnsonGraph <GraphGenerators.JohnsonGraph>` | :meth:`SwitchedSquaredSkewHadamardMatrixGraph <GraphGenerators.SwitchedSquaredSkewHadamardMatrixGraph>`
+    :meth:`DorogovtsevGoltsevMendesGraph <GraphGenerators.DorogovtsevGoltsevMendesGraph>` | :meth:`KneserGraph <GraphGenerators.KneserGraph>` | :meth:`StaircaseGraph <GraphGenerators.StaircaseGraph>`
+    :meth:`DoubleGrassmannGraph <GraphGenerators.DoubleGrassmannGraph>` | :meth:`LCFGraph <GraphGenerators.LCFGraph>` | :meth:`strongly_regular_graph <GraphGenerators.strongly_regular_graph>`
+    :meth:`DoubleOddGraph <GraphGenerators.DoubleOddGraph>` | :meth:`line_graph_forbidden_subgraphs <GraphGenerators.line_graph_forbidden_subgraphs>` | :meth:`TruncatedBiwheelGraph <GraphGenerators.TruncatedBiwheelGraph>`
+    :meth:`EgawaGraph <GraphGenerators.EgawaGraph>` | :meth:`MathonPseudocyclicMergingGraph <GraphGenerators.MathonPseudocyclicMergingGraph>` | :meth:`triangulations <GraphGenerators.triangulations>`
+    :meth:`FoldedCubeGraph <GraphGenerators.FoldedCubeGraph>` | :meth:`MathonPseudocyclicStronglyRegularGraph <GraphGenerators.MathonPseudocyclicStronglyRegularGraph>` | :meth:`TuranGraph <GraphGenerators.TuranGraph>`
+    :meth:`FriendshipGraph <GraphGenerators.FriendshipGraph>` | :meth:`MuzychukS6Graph <GraphGenerators.MuzychukS6Graph>` | :meth:`UstimenkoGraph <GraphGenerators.UstimenkoGraph>`
+    :meth:`fullerenes <GraphGenerators.fullerenes>` | :meth:`MycielskiGraph <GraphGenerators.MycielskiGraph>` | :meth:`WheelGraph <GraphGenerators.WheelGraph>`
+    :meth:`FurerGadget <GraphGenerators.FurerGadget>` | :meth:`MycielskiStep <GraphGenerators.MycielskiStep>` | :meth:`WindmillGraph <GraphGenerators.WindmillGraph>`
+    :meth:`fusenes <GraphGenerators.fusenes>` | :meth:`nauty_geng <GraphGenerators.nauty_geng>` | 
+    :meth:`FuzzyBallGraph <GraphGenerators.FuzzyBallGraph>` | :meth:`nauty_genbg <GraphGenerators.nauty_genbg>` | 
+
+**Graphs from classical geometries over finite fields**
+
+A number of classes of graphs related to geometries over finite fields and
+quadrics and Hermitean varieties there.
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`AffineOrthogonalPolarGraph <GraphGenerators.AffineOrthogonalPolarGraph>` | :meth:`SymplecticDualPolarGraph <GraphGenerators.SymplecticDualPolarGraph>` | :meth:`HaemersGraph <GraphGenerators.HaemersGraph>`
+    :meth:`AhrensSzekeresGeneralizedQuadrangleGraph <GraphGenerators.AhrensSzekeresGeneralizedQuadrangleGraph>` | :meth:`SymplecticPolarGraph <GraphGenerators.SymplecticPolarGraph>` | :meth:`CossidentePenttilaGraph <GraphGenerators.CossidentePenttilaGraph>`
+    :meth:`NonisotropicOrthogonalPolarGraph <GraphGenerators.NonisotropicOrthogonalPolarGraph>` | :meth:`TaylorTwographDescendantSRG <GraphGenerators.TaylorTwographDescendantSRG>` | :meth:`UnitaryDualPolarGraph <GraphGenerators.UnitaryDualPolarGraph>`
+    :meth:`NonisotropicUnitaryPolarGraph <GraphGenerators.NonisotropicUnitaryPolarGraph>` | :meth:`TaylorTwographSRG <GraphGenerators.TaylorTwographSRG>` | :meth:`UnitaryPolarGraph <GraphGenerators.UnitaryPolarGraph>`
+    :meth:`OrthogonalDualPolarGraph <GraphGenerators.OrthogonalDualPolarGraph>` | :meth:`T2starGeneralizedQuadrangleGraph <GraphGenerators.T2starGeneralizedQuadrangleGraph>` | 
+    :meth:`OrthogonalPolarGraph <GraphGenerators.OrthogonalPolarGraph>` | :meth:`Nowhere0WordsTwoWeightCodeGraph <GraphGenerators.Nowhere0WordsTwoWeightCodeGraph>` | 
+
+**Chessboard Graphs**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`BishopGraph <GraphGenerators.BishopGraph>` | :meth:`KnightGraph <GraphGenerators.KnightGraph>` | :meth:`RookGraph <GraphGenerators.RookGraph>`
+    :meth:`KingGraph <GraphGenerators.KingGraph>` | :meth:`QueenGraph <GraphGenerators.QueenGraph>` | 
+
+**Intersection graphs**
+
+These graphs are generated by geometric representations. The objects of
+the representation correspond to the graph vertices and the intersections
+of objects yield the graph edges.
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`IntersectionGraph <GraphGenerators.IntersectionGraph>` | :meth:`OrthogonalArrayBlockGraph <GraphGenerators.OrthogonalArrayBlockGraph>` | :meth:`ToleranceGraph <GraphGenerators.ToleranceGraph>`
+    :meth:`IntervalGraph <GraphGenerators.IntervalGraph>` | :meth:`PermutationGraph <GraphGenerators.PermutationGraph>` | 
+
+**Random graphs**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`RandomBarabasiAlbert <GraphGenerators.RandomBarabasiAlbert>` | :meth:`RandomGNM <GraphGenerators.RandomGNM>` | :meth:`RandomProperIntervalGraph <GraphGenerators.RandomProperIntervalGraph>`
+    :meth:`RandomBicubicPlanar <GraphGenerators.RandomBicubicPlanar>` | :meth:`RandomGNP <GraphGenerators.RandomGNP>` | :meth:`RandomRegular <GraphGenerators.RandomRegular>`
+    :meth:`RandomBipartite <GraphGenerators.RandomBipartite>` | :meth:`RandomHolmeKim <GraphGenerators.RandomHolmeKim>` | :meth:`RandomShell <GraphGenerators.RandomShell>`
+    :meth:`RandomRegularBipartite <GraphGenerators.RandomRegularBipartite>` | :meth:`RandomIntervalGraph <GraphGenerators.RandomIntervalGraph>` | :meth:`RandomToleranceGraph <GraphGenerators.RandomToleranceGraph>`
+    :meth:`RandomBlockGraph <GraphGenerators.RandomBlockGraph>` | :meth:`RandomKTree <GraphGenerators.RandomKTree>` | :meth:`RandomTriangulation <GraphGenerators.RandomTriangulation>`
+    :meth:`RandomBoundedToleranceGraph <GraphGenerators.RandomBoundedToleranceGraph>` | :meth:`RandomPartialKTree <GraphGenerators.RandomPartialKTree>` | :meth:`RandomUnitDiskGraph <GraphGenerators.RandomUnitDiskGraph>`
+    :meth:`RandomChordalGraph <GraphGenerators.RandomChordalGraph>` | :meth:`RandomNewmanWattsStrogatz <GraphGenerators.RandomNewmanWattsStrogatz>` | 
+
+**Trees**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`BalancedTree <GraphGenerators.BalancedTree>` | :meth:`RandomLobster <GraphGenerators.RandomLobster>` | :meth:`trees <GraphGenerators.trees>`
+    :meth:`FibonacciTree <GraphGenerators.FibonacciTree>` | :meth:`RandomTree <GraphGenerators.RandomTree>` | :meth:`nauty_gentreeg <GraphGenerators.nauty_gentreeg>`
+    :meth:`Caterpillar <GraphGenerators.Caterpillar>` | :meth:`RandomTreePowerlaw <GraphGenerators.RandomTreePowerlaw>` | 
+
+**Graphs with a given degree sequence**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`DegreeSequence <GraphGenerators.DegreeSequence>` | :meth:`DegreeSequenceConfigurationModel <GraphGenerators.DegreeSequenceConfigurationModel>` | :meth:`DegreeSequenceTree <GraphGenerators.DegreeSequenceTree>`
+    :meth:`DegreeSequenceBipartite <GraphGenerators.DegreeSequenceBipartite>` | :meth:`DegreeSequenceExpected <GraphGenerators.DegreeSequenceExpected>` | 
+
+**Miscellaneous**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 33, 33, 33
+    :delim: |
+
+    :meth:`WorldMap <GraphGenerators.WorldMap>` | :meth:`AfricaMap <GraphGenerators.AfricaMap>` | 
+    :meth:`EuropeMap <GraphGenerators.EuropeMap>` | :meth:`USAMap <GraphGenerators.USAMap>` | 
+
+
+AUTHORS:
+
+- Robert Miller (2006-11-05): initial version, empty, random, petersen
+
+- Emily Kirkman (2006-11-12): basic structures, node positioning for
+  all constructors
+
+- Emily Kirkman (2006-11-19): docstrings, examples
+
+- William Stein (2006-12-05): Editing.
+
+- Robert Miller (2007-01-16): Cube generation and plotting
+
+- Emily Kirkman (2007-01-16): more basic structures, docstrings
+
+- Emily Kirkman (2007-02-14): added more named graphs
+
+- Robert Miller (2007-06-08-11): Platonic solids, random graphs,
+  graphs with a given degree sequence, random directed graphs
+
+- Robert Miller (2007-10-24): Isomorph free exhaustive generation
+
+- Nathann Cohen (2009-08-12): WorldMap
+
+- Michael Yurko (2009-9-01): added hyperstar, (n,k)-star, n-star, and
+  bubblesort graphs
+
+- Anders Jonsson (2009-10-15): added generalized Petersen graphs
+
+- Harald Schilly and Yann Laigle-Chapuy (2010-03-24): added Fibonacci Tree
+
+- Jason Grout (2010-06-04): cospectral_graphs
+
+- Edward Scheinerman (2010-08-11): RandomTree
+
+- Ed Scheinerman (2010-08-21): added Grotzsch graph and Mycielski graphs
+
+- Ed Scheinerman (2010-11-15): added RandomTriangulation
+
+- Minh Van Nguyen (2010-11-26): added more named graphs
+
+- Keshav Kini (2011-02-16): added Shrikhande and Dyck graphs
+
+- David Coudert (2012-02-10): new RandomGNP generator
+
+- David Coudert (2012-08-02): added chessboard graphs: Queen, King,
+  Knight, Bishop, and Rook graphs
+
+- Nico Van Cleemput (2013-05-26): added fullerenes
+
+- Nico Van Cleemput (2013-07-01): added benzenoids
+
+- Birk Eisermann (2013-07-29): new section 'intersection graphs',
+  added (random, bounded) tolerance graphs
+
+- Marco Cognetta (2016-03-03): added TuranGraph
+
+- Janmenjaya Panda (2024-05-26): added MoebiusLadderGraph
+
+- Janmenjaya Panda (2024-06-09): added StaircaseGraph, BiwheelGraph and
+  TruncatedBiwheelGraph
+
+
+Functions and methods
+---------------------
+
+"""
 from . import graph as graph, strongly_regular_db as strongly_regular_db
 from .generators import basic as basic, chessboard as chessboard, classical_geometries as classical_geometries, degree_sequence as degree_sequence, distance_regular as distance_regular, families as families, intersection as intersection, platonic_solids as platonic_solids, random as random, smallgraphs as smallgraphs, world_map as world_map
+
+from collections.abc import Generator, Collection, Sequence, Callable
+from sage.graphs.graph import Graph
+from sage.groups.perm_gps.permgroup import PermutationGroup_generic # TODO: with category
 from _typeshed import Incomplete
-from collections.abc import Generator
 
 class GraphGenerators:
     '''
@@ -1749,7 +2035,10 @@ class GraphGenerators:
     DegreeSequenceTree: Incomplete
     DegreeSequenceExpected: Incomplete
 
-def canaug_traverse_vert(g, aut_gens, max_verts, property, dig: bool = False, loops: bool = False, sparse: bool = True) -> Generator[Incomplete]:
+def canaug_traverse_vert(
+        g: Graph, aut_gens: Collection[PermutationGroup_generic], 
+        max_verts: int, property: Callable[[Graph], bool], dig: bool = False, 
+        loops: bool = False, sparse: bool = True) -> Generator[Graph]:
     """
     Main function for exhaustive generation. Recursive traversal of a
     canonically generated tree of isomorph free (di)graphs satisfying a
@@ -1803,7 +2092,10 @@ def canaug_traverse_vert(g, aut_gens, max_verts, property, dig: bool = False, lo
         Digraph on 2 vertices
         Digraph on 2 vertices
     """
-def check_aut(aut_gens, cut_vert, n) -> Generator[Incomplete]:
+def check_aut(
+    aut_gens: Collection[PermutationGroup_generic], 
+    cut_vert: int, n: int
+) -> Generator[list[int]]:
     """
     Helper function for exhaustive generation.
 
@@ -1823,7 +2115,10 @@ def check_aut(aut_gens, cut_vert, n) -> Generator[Incomplete]:
         sage: list( check_aut( [ [0, 3, 2, 1], [1, 0, 3, 2], [2, 1, 0, 3] ], 2, 3))
         [[1, 0, 3, 2], [1, 2, 3, 0]]
     """
-def canaug_traverse_edge(g, aut_gens, property, dig: bool = False, loops: bool = False, sparse: bool = True) -> Generator[Incomplete]:
+def canaug_traverse_edge(
+    g: Graph, aut_gens: Collection[PermutationGroup_generic], 
+    property: Callable[[Graph], bool], dig: bool = False, loops: bool = False, sparse: bool = True
+) -> Generator[Graph]:
     """
     Main function for exhaustive generation. Recursive traversal of a
     canonically generated tree of isomorph free graphs satisfying a
@@ -1870,7 +2165,10 @@ def canaug_traverse_edge(g, aut_gens, property, dig: bool = False, loops: bool =
         Digraph on 3 vertices
         Digraph on 3 vertices
     """
-def check_aut_edge(aut_gens, cut_edge, i, j, n, dig: bool = False) -> Generator[Incomplete]:
+def check_aut_edge(
+        aut_gens: Collection[PermutationGroup_generic], 
+        cut_edge: Sequence[int], 
+        i: int, j: int, n: int, dig: bool = False) -> Generator[list[int]]:
     """
     Helper function for exhaustive generation.
 
@@ -1891,5 +2189,6 @@ def check_aut_edge(aut_gens, cut_edge, i, j, n, dig: bool = False) -> Generator[
         sage: list( check_aut( [ [0, 3, 2, 1], [1, 0, 3, 2], [2, 1, 0, 3] ], 2, 3))
         [[1, 0, 3, 2], [1, 2, 3, 0]]
     """
+    ...
 
-graphs: Incomplete
+graphs: GraphGenerators

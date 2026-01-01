@@ -1,3 +1,35 @@
+r"""
+Hypergraph generators
+
+This module implements generators of hypergraphs. All hypergraphs can be built
+through the ``hypergraphs`` object. For instance, to build a complete 3-uniform
+hypergraph on 5 points, one can do::
+
+    sage: H = hypergraphs.CompleteUniform(5, 3)
+
+To enumerate hypergraphs with certain properties up to isomorphism, one can use
+method :meth:`~nauty`, which calls Brendan McKay's Nauty
+(`<http://cs.anu.edu.au/~bdm/nauty/>`_)::
+
+    sage: list(hypergraphs.nauty(2, 2, connected=True))
+    [((0,), (0, 1))]
+
+
+**This module contains the following hypergraph generators**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~HypergraphGenerators.nauty` | Enumerate hypergraphs up to isomorphism using Nauty.
+    :meth:`~HypergraphGenerators.CompleteUniform` | Return the complete `k`-uniform hypergraph on `n` points.
+    :meth:`~HypergraphGenerators.UniformRandomUniform` | Return a uniformly sampled `k`-uniform hypergraph on `n` points with `m` hyperedges.
+
+
+Functions and methods
+---------------------
+"""
 from _typeshed import Incomplete
 from collections.abc import Generator
 
@@ -202,4 +234,4 @@ class HypergraphGenerators:
             ValueError: the uniformity should be an integer
         """
 
-hypergraphs: Incomplete
+hypergraphs: HypergraphGenerators

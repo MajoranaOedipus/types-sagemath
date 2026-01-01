@@ -1,1 +1,9 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.groups.matrix_gps.linear import GL as GL
+from sage.groups.matrix_gps.linear import SL as SL
+from sage.groups.matrix_gps.symplectic import Sp as Sp
+from sage.groups.matrix_gps.unitary import SU as SU
+from sage.groups.matrix_gps.unitary import GU as GU
+from sage.groups.matrix_gps.orthogonal import GO as GO
+from sage.groups.matrix_gps.orthogonal import SO as SO
+from sage.groups.matrix_gps.finitely_generated import MatrixGroup as MatrixGroup
+from sage.groups.matrix_gps.finitely_generated import QuaternionMatrixGroupGF3 as QuaternionMatrixGroupGF3

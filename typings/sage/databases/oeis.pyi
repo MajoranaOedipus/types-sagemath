@@ -1,4 +1,137 @@
+r"""
+The On-Line Encyclopedia of Integer Sequences (OEIS)
+
+You can query the OEIS (Online Database of Integer Sequences) through Sage in
+order to:
+
+- identify a sequence from its first terms.
+- obtain more terms, formulae, references, etc. for a given sequence.
+
+EXAMPLES::
+
+    sage: oeis
+    The On-Line Encyclopedia of Integer Sequences (https://oeis.org/)
+
+What about a sequence starting with `3, 7, 15, 1` ?
+
+::
+
+    sage: # optional - internet
+    sage: search = oeis([3, 7, 15, 1], max_results=4); search   # random
+    0: A001203: Simple continued fraction expansion of Pi.
+    1: A240698: Partial sums of divisors of n, cf. A027750.
+    2: A082495: a(n) = (2^n - 1) mod n.
+    3: A165416: Irregular array read by rows: The n-th row contains those
+                distinct positive integers that each, when written in binary,
+                occurs as a substring in binary n.
+    sage: [u.id() for u in search]                              # random
+    ['A001203', 'A240698', 'A082495', 'A165416']
+    sage: c = search[0]; c
+    A001203: Simple continued fraction expansion of Pi.
+
+::
+
+    sage: # optional - internet
+    sage: c.first_terms(15)
+    (3, 7, 15, 1, 292, 1, 1, 1, 2, 1, 3, 1, 14, 2, 1)
+    sage: c.examples()
+    0: Pi = 3.1415926535897932384...
+    1:    = 3 + 1/(7 + 1/(15 + 1/(1 + 1/(292 + ...))))
+    2:    = [a_0; a_1, a_2, a_3, ...] = [3; 7, 15, 1, 292, ...].
+    sage: c.comments()
+    0: The first 5821569425 terms were computed by _Eric W. Weisstein_ on Sep 18 2011.
+    1: The first 10672905501 terms were computed by _Eric W. Weisstein_ on Jul 17 2013.
+    2: The first 15000000000 terms were computed by _Eric W. Weisstein_ on Jul 27 2013.
+    3: The first 30113021586 terms were computed by _Syed Fahad_ on Apr 27 2021.
+
+::
+
+    sage: # optional - internet
+    sage: x = c.natural_object(); type(x)
+    <class 'sage.rings.continued_fraction.ContinuedFraction_periodic'>
+    sage: x.convergents()[:7]
+    [3, 22/7, 333/106, 355/113, 103993/33102, 104348/33215, 208341/66317]
+    sage: RR(x.value())
+    3.14159265358979
+    sage: RR(x.value()) == RR(pi)
+    True
+
+What about posets? Are they hard to count? To which other structures are they
+related?
+
+::
+
+    sage: # optional - internet
+    sage: [Posets(i).cardinality() for i in range(10)]
+    [1, 1, 2, 5, 16, 63, 318, 2045, 16999, 183231]
+    sage: oeis(_)
+    0: A000112: Number of partially ordered sets ("posets") with n unlabeled elements.
+    sage: p = _[0]
+    sage: 'hard' in p.keywords()
+    True
+    sage: len(p.formulas())
+    0
+    sage: len(p.first_terms())
+    17
+    sage: p.cross_references(fetch=True)    # random
+    0: A000798: Number of different quasi-orders (or topologies, or transitive digraphs)
+                with n labeled elements.
+    1: A001035: Number of partially ordered sets ("posets") with n labeled elements
+                (or labeled acyclic transitive digraphs).
+    2: A001930: Number of topologies, or transitive digraphs with n unlabeled nodes.
+    3: A006057: Number of topologies on n labeled points satisfying axioms T_0-T_4.
+    4: A079263: Number of constrained mixed models with n factors.
+    5: A079265: Number of antisymmetric transitive binary relations on n unlabeled points.
+    6: A263859: Triangle read by rows: T(n,k) (n>=1, k>=0) is the number of posets
+                with n elements and rank k (or depth k+1).
+    7: A316978: Number of factorizations of n into factors > 1 with no equivalent primes.
+    8: A319559: Number of non-isomorphic T_0 set systems of weight n.
+    9: A326939: Number of T_0 sets of subsets of {1..n} that cover all n vertices.
+    10: A326943: Number of T_0 sets of subsets of {1..n} that cover all n vertices and
+                 are closed under intersection.
+    ...
+
+What does the Taylor expansion of the `e^{e^x-1}` function have to do with
+primes ?
+
+::
+
+    sage: # optional - internet, needs sage.symbolic
+    sage: x = var('x') ; f(x) = e^(e^x - 1)
+    sage: L = [a*factorial(b) for a,b in taylor(f(x), x, 0, 20).coefficients()]; L
+    [1, 1, 2, 5, 15, 52, 203, 877, 4140, 21147, 115975, 678570, 4213597,
+     27644437, 190899322, 1382958545, 10480142147, 82864869804, 682076806159,
+     5832742205057, 51724158235372]
+    sage: oeis(L)
+    0: A000110: Bell or exponential numbers: number of ways to partition
+                a set of n labeled elements.
+    1: A292935: E.g.f.: exp(exp(-x) - 1).
+    sage: b = _[0]
+    sage: b.formulas()[0]
+    'E.g.f.: exp(exp(x) - 1).'
+    sage: [i for i in b.comments() if 'prime' in i][-1]
+    'When n is prime, ...'
+    sage: [n for n in range(2, 20) if (b(n)-2) % n == 0]
+    [2, 3, 5, 7, 11, 13, 17, 19]
+
+.. SEEALSO::
+
+    - If you plan to do a lot of automatic searches for subsequences, you
+      should consider installing :mod:`SloaneEncyclopedia
+      <sage.databases.sloane>`, a local partial copy of the OEIS.
+    - Some infinite OEIS sequences are implemented in Sage, via the
+      :mod:`sloane_functions <sage.combinat.sloane_functions>` module.
+
+AUTHORS:
+
+- Thierry Monteil (2012-02-10 -- 2013-06-21): initial version.
+- Vincent Delecroix (2014): modifies continued fractions because of :issue:`14567`
+- Moritz Firsching (2016): modifies handling of dead sequence, see :issue:`17330`
+- Thierry Monteil (2019): refactorization (unique representation :issue:`28480`,
+  laziness :issue:`28627`)
+"""
 from _typeshed import Incomplete
+from typing import Literal
 from sage.cpython.string import bytes_to_str as bytes_to_str
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.misc.flatten import flatten as flatten
@@ -12,7 +145,7 @@ from sage.structure.sage_object import SageObject as SageObject
 from sage.structure.unique_representation import UniqueRepresentation as UniqueRepresentation
 from sage.version import version as version
 
-oeis_url: str
+oeis_url: Literal['https://oeis.org/']
 
 def to_tuple(string):
     """
@@ -1406,4 +1539,4 @@ class FancyTuple(tuple):
             1: (4, 5, 6)
         """
 
-oeis: Incomplete
+oeis: OEIS

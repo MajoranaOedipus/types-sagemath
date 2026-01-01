@@ -122,7 +122,7 @@ class SloaneEncyclopediaClass:
         Remove the database from memory.
         """
 
-SloaneEncyclopedia: Incomplete
+SloaneEncyclopedia: SloaneEncyclopediaClass
 
 def copy_gz_file(gz_source, bz_destination) -> None:
     """
