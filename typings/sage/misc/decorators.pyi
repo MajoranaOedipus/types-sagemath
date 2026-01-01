@@ -1,7 +1,37 @@
-from _typeshed import Incomplete
-from sage.misc.sageinspect import sage_getargspec as sage_getargspec, sage_getsource as sage_getsource, sage_getsourcelines as sage_getsourcelines
+"""
+Decorators
 
-def sage_wraps(wrapped, assigned=..., updated=...):
+Python decorators for use in Sage.
+
+AUTHORS:
+
+- Tim Dumol (5 Dec 2009) -- initial version.
+- Johan S. R. Nielsen (2010) -- collect decorators from various modules.
+- Johan S. R. Nielsen (8 apr 2011) -- improve introspection on decorators.
+- Simon King (2011-05-26) -- improve introspection of sage_wraps. Put this
+  file into the reference manual.
+- Julian Rueth (2014-03-19): added ``decorator_keywords`` decorator
+"""
+from _typeshed import Incomplete
+from typing import Protocol
+from collections.abc import Callable, Iterable
+from sage.misc.sageinspect import sage_getargspec as sage_getargspec, sage_getsource as sage_getsource, sage_getsourcelines as sage_getsourcelines
+from functools import WRAPPER_ASSIGNMENTS, WRAPPER_UPDATES, update_wrapper
+
+class SageWrapped[**P, T](Protocol):
+    def __call__(self, 
+                 wrapper: Callable[P, T], 
+                 assigned: Iterable[str] = WRAPPER_ASSIGNMENTS, 
+                 updated: Iterable[str] = WRAPPER_UPDATES
+    ) -> Callable[P, T]:
+        ...
+
+
+def sage_wraps[**P, ReturnT](
+        wrapped: Callable[P, ReturnT], 
+        assigned: Iterable[str] = WRAPPER_ASSIGNMENTS, 
+        updated: Iterable[str] = WRAPPER_UPDATES
+) -> SageWrapped[P, ReturnT]:
     '''
     Decorator factory which should be used in decorators for making sure that
     meta-information on the decorated callables are retained through the
@@ -131,6 +161,7 @@ def sage_wraps(wrapped, assigned=..., updated=...):
         sage: g(3)  # this line used to fail for some people if these command were manually entered on the sage prompt
         81
     '''
+    ...
 
 class infix_operator:
     """
@@ -443,7 +474,9 @@ class specialize:
     def __init__(self, *args, **kwargs) -> None: ...
     def __call__(self, f): ...
 
-def decorator_keywords(func):
+def decorator_keywords[**P, T](
+        func: Callable[P, T]
+) -> SageWrapped[P, T]:
     """
     A decorator for decorators with optional keyword arguments.
 
