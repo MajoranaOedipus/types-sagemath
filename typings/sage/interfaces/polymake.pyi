@@ -1,5 +1,14 @@
+r"""
+Interface to polymake
+
+polymake (https://polymake.org) is a mature open source package for
+research in polyhedral geometry and related fields, developed since 1997
+by Ewgenij Gawrilow and Michael Joswig and various contributors.
+
+polymake has been described in [GJ1997]_, [GJ2006]_, [JMP2009]_, [GJRW2010]_,
+[GHJ2016]_, and [AGHJLPR2017]_.
+"""
 from .interface import Interface as Interface, InterfaceElement as InterfaceElement, InterfaceFunctionElement as InterfaceFunctionElement
-from _typeshed import Incomplete
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.misc.verbose import get_verbose as get_verbose
@@ -947,5 +956,5 @@ def reduce_load_Polymake():
         Polymake
     """
 Polymake = PolymakeJuPyMake
-polymake: Incomplete
-polymake_jupymake: Incomplete
+polymake: PolymakeJuPyMake
+polymake_jupymake: PolymakeJuPyMake

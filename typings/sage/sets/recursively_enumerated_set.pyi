@@ -1,12 +1,484 @@
-import _cython_3_2_1
+r"""
+Recursively Enumerated Sets
+
+A set `S` is called recursively enumerable if there is an algorithm that
+enumerates the members of `S`. We consider here the recursively enumerated
+sets that are described by some ``seeds`` and a successor function
+``successors``.  The successor function may have some structure (symmetric,
+graded, forest) or not. The elements of a set having a symmetric, graded or
+forest structure can be enumerated uniquely without keeping all of them in
+memory. Many kinds of iterators are provided in this module: depth first
+search, breadth first search and elements of given depth.
+
+See :wikipedia:`Recursively_enumerable_set`.
+
+See the documentation of :func:`RecursivelyEnumeratedSet` below for the
+description of the inputs.
+
+AUTHORS:
+
+- Sébastien Labbé, April 2014, at Sage Days 57, Cernay-la-ville
+
+EXAMPLES:
+
+.. RUBRIC:: No hypothesis on the structure
+
+What we mean by "no hypothesis" is that the set is not known
+to be a forest, symmetric, or graded. However, it may have other
+structure, such as not containing an oriented cycle, that does not
+help with the enumeration.
+
+In this example, the seed is 0 and the successor function is either ``+2``
+or ``+3``. This is the set of nonnegative linear combinations of 2 and 3::
+
+    sage: succ = lambda a:[a+2,a+3]
+    sage: C = RecursivelyEnumeratedSet([0], succ)
+    sage: C
+    A recursively enumerated set (breadth first search)
+
+Breadth first search::
+
+    sage: it = C.breadth_first_search_iterator()
+    sage: [next(it) for _ in range(10)]
+    [0, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+Depth first search::
+
+    sage: it = C.depth_first_search_iterator()
+    sage: [next(it) for _ in range(10)]
+    [0, 3, 6, 9, 12, 15, 18, 21, 24, 27]
+
+.. RUBRIC:: Symmetric structure
+
+The origin ``(0, 0)`` as seed and the upper, lower, left and right lattice
+point as successor function. This function is symmetric since `p` is a
+successor of `q` if and only if `q` is a successor or `p`::
+
+    sage: succ = lambda a: [(a[0]-1,a[1]), (a[0],a[1]-1), (a[0]+1,a[1]), (a[0],a[1]+1)]
+    sage: seeds = [(0,0)]
+    sage: C = RecursivelyEnumeratedSet(seeds, succ, structure='symmetric', enumeration='depth')
+    sage: C
+    A recursively enumerated set with a symmetric structure (depth first search)
+
+In this case, depth first search is the default enumeration for iteration::
+
+    sage: it_depth = iter(C)
+    sage: [next(it_depth) for _ in range(10)]
+    [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (0, 9)]
+
+Breadth first search::
+
+    sage: it_breadth = C.breadth_first_search_iterator()
+    sage: [next(it_breadth) for _ in range(13)]
+    [(0, 0),
+     (-1, 0), (0, -1), (1, 0), (0, 1),
+     (-2, 0), (-1, -1), (-1, 1), (0, -2), (1, -1), (2, 0), (1, 1), (0, 2)]
+
+Levels (elements of given depth)::
+
+    sage: sorted(C.graded_component(0))
+    [(0, 0)]
+    sage: sorted(C.graded_component(1))
+    [(-1, 0), (0, -1), (0, 1), (1, 0)]
+    sage: sorted(C.graded_component(2))
+    [(-2, 0), (-1, -1), (-1, 1), (0, -2), (0, 2), (1, -1), (1, 1), (2, 0)]
+
+.. RUBRIC:: Graded structure
+
+Identity permutation as seed and ``permutohedron_succ`` as successor
+function::
+
+    sage: succ = attrcall("permutohedron_succ")
+    sage: seed = [Permutation([1..5])]
+    sage: R = RecursivelyEnumeratedSet(seed, succ, structure='graded')
+    sage: R
+    A recursively enumerated set with a graded structure (breadth first search)
+
+Depth first search iterator::
+
+    sage: it_depth = R.depth_first_search_iterator()
+    sage: [next(it_depth) for _ in range(5)]
+    [[1, 2, 3, 4, 5],
+     [1, 2, 3, 5, 4],
+     [1, 2, 5, 3, 4],
+     [1, 2, 5, 4, 3],
+     [1, 5, 2, 4, 3]]
+
+Breadth first search iterator::
+
+    sage: it_breadth = R.breadth_first_search_iterator()
+    sage: [next(it_breadth) for _ in range(5)]
+    [[1, 2, 3, 4, 5],
+     [2, 1, 3, 4, 5],
+     [1, 3, 2, 4, 5],
+     [1, 2, 4, 3, 5],
+     [1, 2, 3, 5, 4]]
+
+Elements of given depth iterator::
+
+    sage: sorted(R.elements_of_depth_iterator(9))
+    [[4, 5, 3, 2, 1], [5, 3, 4, 2, 1], [5, 4, 2, 3, 1], [5, 4, 3, 1, 2]]
+    sage: list(R.elements_of_depth_iterator(10))
+    [[5, 4, 3, 2, 1]]
+
+Graded components (set of elements of the same depth)::
+
+    sage: # needs sage.combinat
+    sage: sorted(R.graded_component(0))
+    [[1, 2, 3, 4, 5]]
+    sage: sorted(R.graded_component(1))
+    [[1, 2, 3, 5, 4], [1, 2, 4, 3, 5], [1, 3, 2, 4, 5], [2, 1, 3, 4, 5]]
+    sage: sorted(R.graded_component(9))
+    [[4, 5, 3, 2, 1], [5, 3, 4, 2, 1], [5, 4, 2, 3, 1], [5, 4, 3, 1, 2]]
+    sage: sorted(R.graded_component(10))
+    [[5, 4, 3, 2, 1]]
+
+.. RUBRIC:: Forest structure (Example 1)
+
+The set of words over the alphabet `\{a,b\}` can be generated from the
+empty word by appending the letter `a` or `b` as a successor function. This set
+has a forest structure::
+
+    sage: seeds = ['']
+    sage: succ = lambda w: [w+'a', w+'b']
+    sage: C = RecursivelyEnumeratedSet(seeds, succ, structure='forest')
+    sage: C
+    An enumerated set with a forest structure
+
+Depth first search iterator::
+
+    sage: it = C.depth_first_search_iterator()
+    sage: [next(it) for _ in range(6)]
+    ['', 'a', 'aa', 'aaa', 'aaaa', 'aaaaa']
+
+Breadth first search iterator::
+
+    sage: it = C.breadth_first_search_iterator()
+    sage: [next(it) for _ in range(6)]
+    ['', 'a', 'b', 'aa', 'ab', 'ba']
+
+This example was provided by Florent Hivert.
+
+How to define a set using those classes?
+
+Only two things are necessary to define a set using a
+:class:`RecursivelyEnumeratedSet` object (the other
+classes being very similar):
+
+.. MATH::
+
+    \begin{array}{ccc}
+                      & \emptyset \\
+        \hfil\swarrow & \downarrow & \searrow\hfil\\
+                    a & b & c \\
+        \begin{array}{ccc}
+             \swarrow & \downarrow & \searrow \\
+                   aa & ab & ac \\
+        \end{array}   &
+        \begin{array}{ccc}
+             \swarrow & \downarrow & \searrow \\
+                   ba & bb & bc \\
+        \end{array}   &
+        \begin{array}{ccc}
+             \swarrow & \downarrow & \searrow \\
+                   ca & cb & cc \\
+        \end{array}
+    \end{array}
+
+For the previous example, the two necessary pieces of information are:
+
+- the initial element ``""``;
+
+- the function::
+
+      lambda x: [x + letter for letter in ['a', 'b', 'c']
+
+This would actually describe an **infinite** set, as such rules describe
+"all words" on 3 letters. Hence, it is a good idea to replace the function by::
+
+    lambda x: [x + letter for letter in ['a', 'b', 'c']] if len(x) < 2 else []
+
+or even::
+
+    sage: def children(x):
+    ....:     if len(x) < 2:
+    ....:         for letter in ['a', 'b', 'c']:
+    ....:             yield x+letter
+
+We can then create the :class:`RecursivelyEnumeratedSet` object with either::
+
+    sage: S = RecursivelyEnumeratedSet([''],
+    ....:     lambda x: [x + letter for letter in ['a', 'b', 'c']]
+    ....:               if len(x) < 2 else [],
+    ....:     structure='forest', enumeration='depth',
+    ....:     category=FiniteEnumeratedSets())
+    sage: S.list()
+    ['', 'a', 'aa', 'ab', 'ac', 'b', 'ba', 'bb', 'bc', 'c', 'ca', 'cb', 'cc']
+
+or::
+
+    sage: S = RecursivelyEnumeratedSet([''], children,
+    ....:     structure='forest', enumeration='depth',
+    ....:     category=FiniteEnumeratedSets())
+    sage: S.list()
+    ['', 'a', 'aa', 'ab', 'ac', 'b', 'ba', 'bb', 'bc', 'c', 'ca', 'cb', 'cc']
+
+.. RUBRIC:: Forest structure (Example 2)
+
+This example was provided by Florent Hivert.
+
+Here is a little more involved example. We want to iterate through all
+permutations of a given set `S`. One solution is to take elements of `S` one
+by one and insert them at every position. So a node of the generating tree
+contains two pieces of information:
+
+- the list ``lst`` of already inserted element;
+- the set ``st`` of the yet to be inserted element.
+
+We want to generate a permutation only if ``st`` is empty (leaves on the
+tree). Also suppose for the sake of the example, that instead of list we want
+to generate tuples. This selection of some nodes and final mapping of a
+function to the element is done by the ``post_process = f`` argument. The
+convention is that the generated elements are the ``s := f(n)``, except when
+``s`` not ``None`` when no element is generated at all. Here is the code::
+
+    sage: def children(node):
+    ....:     (lst, st) = node
+    ....:     st = set(st) # make a copy
+    ....:     if st:
+    ....:        el = st.pop()
+    ....:        for i in range(len(lst) + 1):
+    ....:            yield (lst[0:i] + [el] + lst[i:], st)
+    sage: list(children(([1,2], {3,7,9})))
+    [([9, 1, 2], {3, 7}), ([1, 9, 2], {3, 7}), ([1, 2, 9], {3, 7})]
+    sage: def post_process(node):
+    ....:     (l, s) = node
+    ....:     return tuple(l) if not s else None
+    sage: S = RecursivelyEnumeratedSet( [([], {1,3,6,8})],
+    ....:     children, post_process=post_process,
+    ....:     structure='forest', enumeration='depth',
+    ....:     category=FiniteEnumeratedSets())
+    sage: S.list()
+    [(6, 3, 1, 8), (3, 6, 1, 8), (3, 1, 6, 8), (3, 1, 8, 6), (6, 1, 3, 8),
+     (1, 6, 3, 8), (1, 3, 6, 8), (1, 3, 8, 6), (6, 1, 8, 3), (1, 6, 8, 3),
+     (1, 8, 6, 3), (1, 8, 3, 6), (6, 3, 8, 1), (3, 6, 8, 1), (3, 8, 6, 1),
+     (3, 8, 1, 6), (6, 8, 3, 1), (8, 6, 3, 1), (8, 3, 6, 1), (8, 3, 1, 6),
+     (6, 8, 1, 3), (8, 6, 1, 3), (8, 1, 6, 3), (8, 1, 3, 6)]
+    sage: S.cardinality()
+    24
+"""
 import sage.structure.parent
 from sage.categories.enumerated_sets import EnumeratedSets as EnumeratedSets
 from sage.misc.abstract_method import abstract_method as abstract_method
 from sage.misc.prandom import randint as randint
-from typing import Any, ClassVar, overload
+from typing import Annotated, Any, ClassVar, Literal, overload, Hashable
+from collections.abc import Iterable, Callable
+from typings_sagemath import Int
 
-RecursivelyEnumeratedSet: _cython_3_2_1.cython_function_or_method
-search_forest_iterator: _cython_3_2_1.cython_function_or_method
+def RecursivelyEnumeratedSet[T: Hashable](
+        seeds: Iterable[T], 
+        successors: Callable[[T], Iterable[T]], 
+        structure: Literal["forest", "graded", "symmetric"] | None = None,
+        enumeration: Literal["depth", "breadth", "naive"] | None = None,
+        max_depth: Int | Annotated[float, "inf"] = float("inf"),
+        post_process=None,
+        facade=None, category=None):    # TODO: to decide the types, we need to look into sage.structure.parent.Parent
+    r"""
+    Return a recursively enumerated set.
+
+    A set `S` is called recursively enumerable if there is an algorithm that
+    enumerates the members of `S`. We consider here the recursively
+    enumerated sets that are described by some ``seeds`` and a successor
+    function ``successors``.
+
+    Let `U` be a set and ``successors`` `:U \to 2^U` be a successor function
+    associating to each element of `U` a subset of `U`. Let ``seeds`` be a
+    subset of `U`. Let `S\subseteq U` be the set of elements of `U` that
+    can be reached from a seed by applying recursively the ``successors``
+    function. This class provides different kinds of iterators (breadth first,
+    depth first, elements of given depth, etc.) for the elements of `S`.
+
+    See :wikipedia:`Recursively_enumerable_set`.
+
+    INPUT:
+
+    - ``seeds`` -- list (or iterable) of hashable objects
+    - ``successors`` -- function (or callable) returning a list (or iterable) of
+      hashable objects
+    - ``structure`` -- string (default: ``None``); structure of the
+      set, possible values are:
+
+      - ``None`` -- nothing is known about the structure of the set
+      - ``'forest'`` -- if the ``successors`` function generates a *forest*, that
+        is, each element can be reached uniquely from a seed
+      - ``'graded'`` -- if the ``successors`` function is *graded*, that is, all
+        paths from a seed to a given element have equal length
+      - ``'symmetric'`` -- if the relation is *symmetric*, that is,
+        ``y in successors(x)`` if and only if ``x in successors(y)``
+
+    - ``enumeration`` -- ``'depth'``, ``'breadth'``, ``'naive'`` or ``None``
+      (default: ``None``); the default enumeration for the
+      ``__iter__`` function
+    - ``max_depth`` -- integer (default: ``float("inf")``); limit
+      the search to a certain depth, currently works only for breadth first
+      search
+    - ``post_process`` -- (default: ``None``) for forest only
+    - ``facade`` -- (default: ``None``)
+    - ``category`` -- (default: ``None``)
+
+    EXAMPLES:
+
+    A recursive set with no other information::
+
+        sage: f = lambda a: [a+3, a+5]
+        sage: C = RecursivelyEnumeratedSet([0], f)
+        sage: C
+        A recursively enumerated set (breadth first search)
+        sage: it = iter(C)
+        sage: [next(it) for _ in range(10)]
+        [0, 3, 5, 6, 8, 10, 9, 11, 13, 15]
+
+    A recursive set with a forest structure::
+
+        sage: f = lambda a: [2*a,2*a+1]
+        sage: C = RecursivelyEnumeratedSet([1], f, structure='forest'); C
+        An enumerated set with a forest structure
+        sage: it = C.depth_first_search_iterator()
+        sage: [next(it) for _ in range(7)]
+        [1, 2, 4, 8, 16, 32, 64]
+        sage: it = C.breadth_first_search_iterator()
+        sage: [next(it) for _ in range(7)]
+        [1, 2, 3, 4, 5, 6, 7]
+
+    A recursive set given by a symmetric relation::
+
+        sage: f = lambda a: [a-1,a+1]
+        sage: C = RecursivelyEnumeratedSet([10, 15], f, structure='symmetric')
+        sage: C
+        A recursively enumerated set with a symmetric structure (breadth first search)
+        sage: it = iter(C)
+        sage: [next(it) for _ in range(7)]
+        [10, 15, 9, 11, 14, 16, 8]
+
+    A recursive set given by a graded relation::
+
+        sage: # needs sage.symbolic
+        sage: def f(a):
+        ....:     return [a + 1, a + I]
+        sage: C = RecursivelyEnumeratedSet([0], f, structure='graded'); C
+        A recursively enumerated set with a graded structure (breadth first search)
+        sage: it = iter(C)
+        sage: [next(it) for _ in range(7)]
+        [0, 1, I, 2, I + 1, 2*I, 3]
+
+    .. WARNING::
+
+        If you do not set a good structure, you might obtain bad results,
+        like elements generated twice::
+
+            sage: f = lambda a: [a-1,a+1]
+            sage: C = RecursivelyEnumeratedSet([0], f, structure='graded')
+            sage: it = iter(C)
+            sage: [next(it) for _ in range(7)]
+            [0, -1, 1, -2, 0, 2, -3]
+
+    TESTS:
+
+    The successors method is an attribute::
+
+        sage: R = RecursivelyEnumeratedSet([1], lambda x: [x+1, x-1])
+        sage: R.successors(4)
+        [5, 3]
+
+    ::
+
+        sage: C = RecursivelyEnumeratedSet((1, 2, 3), factor)
+        sage: C.successors
+        <function factor at ...>
+        sage: C._seeds
+        (1, 2, 3)
+    """
+    if structure is None:
+        if enumeration is None:
+            enumeration = 'breadth'
+        return RecursivelyEnumeratedSet_generic(seeds, successors,
+                enumeration, max_depth, facade=facade, category=category)
+    if structure == 'symmetric':
+        if enumeration is None:
+            enumeration = 'breadth'
+        return RecursivelyEnumeratedSet_symmetric(seeds, successors,
+                enumeration, max_depth, facade=facade, category=category)
+    if structure == 'forest':
+        if enumeration is None:
+            enumeration = 'depth'
+        return RecursivelyEnumeratedSet_forest(roots=seeds, children=successors,
+                algorithm=enumeration, post_process=post_process,
+                facade=facade, category=category)
+    if structure == 'graded':
+        if enumeration is None:
+            enumeration = 'breadth'
+        return RecursivelyEnumeratedSet_graded(seeds, successors, enumeration,
+                max_depth, facade=facade, category=category)
+
+    raise ValueError("Unknown value for structure (={})".format(structure))
+def search_forest_iterator(roots, children, algorithm='depth'):
+    r"""
+    Return an iterator on the nodes of the forest having the given
+    roots, and where ``children(x)`` returns the children of the node ``x``
+    of the forest.  Note that every node of the tree is returned,
+    not simply the leaves.
+
+    INPUT:
+
+    - ``roots`` -- list (or iterable)
+    - ``children`` -- a function returning a list (or iterable)
+    - ``algorithm`` -- ``'depth'`` or ``'breadth'`` (default: ``'depth'``)
+
+    EXAMPLES:
+
+    We construct the prefix tree of binary sequences of length at most
+    three, and enumerate its nodes::
+
+        sage: from sage.sets.recursively_enumerated_set import search_forest_iterator
+        sage: list(search_forest_iterator([[]], lambda l: [l + [0], l + [1]]
+        ....:                                   if len(l) < 3 else []))
+        [[], [0], [0, 0], [0, 0, 0], [0, 0, 1], [0, 1], [0, 1, 0],
+         [0, 1, 1], [1], [1, 0], [1, 0, 0], [1, 0, 1], [1, 1], [1, 1, 0], [1, 1, 1]]
+
+    By default, the nodes are iterated through by depth first search.
+    We can instead use a breadth first search (increasing depth)::
+
+        sage: list(search_forest_iterator([[]], lambda l: [l + [0], l + [1]]
+        ....:                                   if len(l) < 3 else [],
+        ....:                             algorithm='breadth'))
+        [[],
+         [0], [1],
+         [0, 0], [0, 1], [1, 0], [1, 1],
+         [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+         [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]]
+
+    This allows for iterating through trees of infinite depth::
+
+        sage: it = search_forest_iterator([[]], lambda l: [l + [0], l + [1]],
+        ....:                             algorithm='breadth')
+        sage: [ next(it) for i in range(16) ]
+        [[],
+         [0], [1], [0, 0], [0, 1], [1, 0], [1, 1],
+         [0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+         [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1],
+         [0, 0, 0, 0]]
+
+    Here is an iterator through the prefix tree of sequences of
+    letters in `0,1,2` without repetitions, sorted by length; the
+    leaves are therefore permutations::
+
+        sage: list(search_forest_iterator([[]], lambda l: [l + [i] for i in range(3) if i not in l],
+        ....:                             algorithm='breadth'))
+        [[],
+         [0], [1], [2],
+         [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1],
+         [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+    """
 
 class RecursivelyEnumeratedSet_forest(sage.structure.parent.Parent):
     """File: /build/sagemath/src/sage/src/sage/sets/recursively_enumerated_set.pyx (starting at line 1551)
@@ -718,7 +1190,7 @@ class RecursivelyEnumeratedSet_forest(sage.structure.parent.Parent):
             sage: next(f)
             [0, 0]"""
 
-class RecursivelyEnumeratedSet_generic(sage.structure.parent.Parent):
+class RecursivelyEnumeratedSet_generic[T: Hashable](sage.structure.parent.Parent):
     """RecursivelyEnumeratedSet_generic(seeds, successors, enumeration='depth', max_depth=float('inf'), post_process=None, facade=None, category=None)
 
     File: /build/sagemath/src/sage/src/sage/sets/recursively_enumerated_set.pyx (starting at line 432)
@@ -750,9 +1222,9 @@ class RecursivelyEnumeratedSet_generic(sage.structure.parent.Parent):
         A recursively enumerated set (naive search)
         sage: RecursivelyEnumeratedSet([0], f, enumeration='depth')
         A recursively enumerated set (depth first search)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    successors: successors
-    def __init__(self, seeds, successors, enumeration=..., max_depth=..., post_process=..., facade=..., category=...) -> Any:
+
+    successors: Callable[[T], Iterable[T]]
+    def __init__(self, seeds, successors, enumeration=..., max_depth=..., post_process=..., facade=..., category=...):
         """File: /build/sagemath/src/sage/src/sage/sets/recursively_enumerated_set.pyx (starting at line 462)
 
                 TESTS::

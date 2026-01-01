@@ -331,7 +331,95 @@ get_sfunction_from_hash: _cython_3_2_1.cython_function_or_method
 get_sfunction_from_serial: _cython_3_2_1.cython_function_or_method
 hold: hold_class
 init_function_table: _cython_3_2_1.cython_function_or_method
-init_pynac_I: _cython_3_2_1.cython_function_or_method
+def init_pynac_I() -> Expression: 
+    """Initialize the numeric ``I`` object in pynac. We use the generator of ``QQ(i)``.
+
+EXAMPLES::
+
+    sage: from sage.symbolic.constants import I as symbolic_I
+    sage: symbolic_I
+    I
+    sage: symbolic_I^2
+    -1
+
+Note that conversions to real fields will give :exc:`TypeError`::
+
+    sage: float(symbolic_I)
+    Traceback (most recent call last):
+    ...
+    TypeError: unable to simplify to float approximation
+    sage: gp(symbolic_I)
+    I
+    sage: RR(symbolic_I)
+    Traceback (most recent call last):
+    ...
+    TypeError: unable to convert '1.00000000000000*I' to a real number
+
+We can convert to complex fields::
+
+    sage: C = ComplexField(200); C
+    Complex Field with 200 bits of precision
+    sage: C(symbolic_I)
+    1.0000000000000000000000000000000000000000000000000000000000*I
+    sage: symbolic_I._complex_mpfr_field_(ComplexField(53))
+    1.00000000000000*I
+
+    sage: symbolic_I._complex_double_(CDF)
+    1.0*I
+    sage: CDF(symbolic_I)
+    1.0*I
+
+    sage: z = symbolic_I + symbolic_I; z
+    2*I
+    sage: C(z)
+    2.0000000000000000000000000000000000000000000000000000000000*I
+    sage: 1e8*symbolic_I
+    1.00000000000000e8*I
+
+    sage: complex(symbolic_I)
+    1j
+
+    sage: QQbar(symbolic_I)
+    I
+
+    sage: abs(symbolic_I)
+    1
+
+    sage: symbolic_I.minpoly()
+    x^2 + 1
+    sage: maxima(2*symbolic_I)
+    2*%i
+
+TESTS::
+
+    sage: repr(symbolic_I)
+    'I'
+    sage: latex(symbolic_I)
+    i
+
+    sage: I = sage.symbolic.expression.init_pynac_I()
+    sage: type(I)
+    <class 'sage.symbolic.expression.Expression'>
+    sage: type(I.pyobject())
+    <class 'sage.rings.number_field.number_field_element_quadratic.NumberFieldElement_gaussian'>
+
+Check that :issue:`10064` is fixed::
+
+    sage: y = symbolic_I*symbolic_I*x / x  # so y is the expression -1
+    sage: y.is_positive()
+    False
+    sage: z = -x / x
+    sage: z.is_positive()
+    False
+    sage: bool(z == y)
+    True
+
+Check that :issue:`31869` is fixed::
+
+    sage: x * ((3*I + 4)*x - 5)
+    ((3*I + 4)*x - 5)*x
+"""
+
 is_SymbolicEquation: _cython_3_2_1.cython_function_or_method
 make_map: _cython_3_2_1.cython_function_or_method
 math_sorted: _cython_3_2_1.cython_function_or_method

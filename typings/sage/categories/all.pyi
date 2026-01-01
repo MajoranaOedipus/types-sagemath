@@ -1,6 +1,53 @@
-from sage.categories.all__sagemath_objects import *
-from sage.categories.basic import *
+r"""
+Sage categories quickref
+
+- ``sage.categories.primer?``                      a primer on Elements, Parents, and Categories
+- ``sage.categories.tutorial?``                    a tutorial on Elements, Parents, and Categories
+- ``Category?``                                    technical background on categories
+- ``Sets()``, ``Semigroups()``, ``Algebras(QQ)``   some categories
+- ``SemiGroups().example()??``                     sample implementation of a semigroup
+- ``Hom(A, B)``, ``End(A, Algebras())``            homomorphisms sets
+- ``tensor``, ``cartesian_product``                functorial constructions
+
+Module layout:
+
+- :mod:`sage.categories.basic`                the basic categories
+- :mod:`sage.categories.all`                  all categories
+- :mod:`sage.categories.semigroups`           the ``Semigroups()`` category
+- :mod:`sage.categories.examples.semigroups`  the example of ``Semigroups()``
+- :mod:`sage.categories.homset`               morphisms, ...
+- :mod:`sage.categories.map`
+- :mod:`sage.categories.morphism`
+- :mod:`sage.categories.functors`
+- :mod:`sage.categories.cartesian_product`    functorial constructions
+- :mod:`sage.categories.tensor`
+- :mod:`sage.categories.dual`
+"""
+
+
 from sage.categories import primer as primer
+
+from sage.categories.objects import Objects as Objects
+from sage.categories.sets_cat import (
+    Sets as Sets, 
+    EmptySetError as EmptySetError
+)
+from sage.categories.category import Category as Category
+from sage.categories.category_types import Elements as Elements
+from sage.categories.cartesian_product import cartesian_product as cartesian_product
+from sage.categories.functor import (ForgetfulFunctor as ForgetfulFunctor,
+                                     IdentityFunctor as IdentityFunctor)
+from sage.categories.homset import (
+    Hom as Hom, hom as hom,
+    End as End, end as end,
+    Homset as Homset, HomsetWithBase as HomsetWithBase
+)
+from sage.categories.morphism import Morphism as Morphism
+from sage.categories.realizations import Realizations as Realizations
+from sage.categories.sets_with_partial_maps import SetsWithPartialMaps as SetsWithPartialMaps
+
+from sage.categories.basic import *
+
 from sage.categories.affine_weyl_groups import AffineWeylGroups as AffineWeylGroups
 from sage.categories.algebra_ideals import AlgebraIdeals as AlgebraIdeals
 from sage.categories.algebra_modules import AlgebraModules as AlgebraModules
@@ -75,8 +122,9 @@ from sage.categories.simplicial_complexes import SimplicialComplexes as Simplici
 from sage.categories.tensor import tensor as tensor
 from sage.categories.vector_spaces import VectorSpaces as VectorSpaces
 from sage.categories.weyl_groups import WeylGroups as WeylGroups
-from sage.misc.lazy_import import lazy_import as lazy_import
-from sage.misc.namespace_package import install_doc as install_doc
+
+from sage.categories.polyhedra import PolyhedralSets as PolyhedralSets
+from sage.categories.lie_conformal_algebras import LieConformalAlgebras as LieConformalAlgebras
 
 RingModules = Modules
 Ideals = RingIdeals

@@ -1,3 +1,7 @@
+r"""
+A subset of sage.categories.all with just the basic categories needed
+for sage startup (i.e. to define ZZ, QQ, ...).
+"""
 from sage.categories.additive_magmas import AdditiveMagmas as AdditiveMagmas
 from sage.categories.commutative_additive_groups import CommutativeAdditiveGroups as CommutativeAdditiveGroups
 from sage.categories.commutative_additive_monoids import CommutativeAdditiveMonoids as CommutativeAdditiveMonoids

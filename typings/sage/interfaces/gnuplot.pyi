@@ -1,4 +1,7 @@
-from _typeshed import Incomplete
+r"""
+Interface to the Gnuplot interpreter
+"""
+
 from sage.structure.sage_object import SageObject as SageObject
 
 class Gnuplot(SageObject):
@@ -56,6 +59,6 @@ class Gnuplot(SageObject):
     def interact(self, cmd) -> None: ...
     def console(self) -> None: ...
 
-gnuplot: Incomplete
+gnuplot: Gnuplot
 
 def gnuplot_console() -> None: ...

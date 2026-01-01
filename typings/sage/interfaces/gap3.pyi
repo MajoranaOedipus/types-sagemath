@@ -1,10 +1,231 @@
-from _typeshed import Incomplete
+r"""
+Interface to GAP3
+
+This module implements an interface to GAP3.
+
+AUTHORS:
+
+-  Franco Saliola (February 2010)
+-  Christian Stump (March 2016)
+
+.. WARNING::
+
+    The experimental package for GAP3 is Jean Michel's pre-packaged GAP3,
+    which is a minimal GAP3 distribution containing packages that have
+    no equivalent in GAP4, see :issue:`20107` and also
+
+        https://webusers.imj-prg.fr/~jean.michel/gap3/
+
+Obtaining GAP3
+--------------
+
+Instead of installing the experimental GAP3 package, one can as well install
+by hand either of the following two versions of GAP3:
+
+- Frank Luebeck maintains a GAP3 Linux executable, optimized
+  for i686 and statically linked for jobs of 2 GByte or more:
+
+    http://www.math.rwth-aachen.de/~Frank.Luebeck/gap/GAP3
+
+- or you can download GAP3 from the GAP website below. Since GAP3
+  is no longer supported, it may not be easy to install this version.
+
+    https://www.gap-system.org/Gap3/Download3/download.html
+
+Changing which GAP3 is used
+---------------------------
+
+.. WARNING::
+
+    There is a bug in the pexpect module (see :issue:`8471`) that
+    prevents the following from working correctly. For now, just make sure
+    that ``gap3`` is in your ``PATH``.
+
+Sage assumes that GAP3 can be launched with the command ``gap3``; that is,
+Sage assumes that the command ``gap3`` is in your ``PATH``. If this is not
+the case, then you can start GAP3 using the following command::
+
+    sage: gap3 = Gap3(command='/usr/local/bin/gap3')            # not tested
+
+Functionality and Examples
+--------------------------
+
+The interface to GAP3 offers the following functionality.
+
+#.  ``gap3(expr)`` -- evaluation of arbitrary GAP3 expressions, with the
+    result returned as a Sage object wrapping the corresponding GAP3 element::
+
+        sage: # optional - gap3
+        sage: a = gap3('3+2')
+        sage: a
+        5
+        sage: type(a)
+        <class 'sage.interfaces.gap3.GAP3Element'>
+
+    ::
+
+        sage: # optional - gap3
+        sage: S5 = gap3('SymmetricGroup(5)')
+        sage: S5
+        Group( (1,5), (2,5), (3,5), (4,5) )
+        sage: type(S5)
+        <class 'sage.interfaces.gap3.GAP3Record'>
+
+    This provides a Pythonic interface to GAP3. If ``gap_function`` is the
+    name of a GAP3 function, then the syntax ``gap_element.gap_function()``
+    returns the ``gap_element`` obtained by evaluating the command
+    ``gap_function(gap_element)`` in GAP3::
+
+        sage: # optional - gap3
+        sage: S5.Size()
+        120
+        sage: S5.CharTable()
+        CharTable( Group( (1,5), (2,5), (3,5), (4,5) ) )
+
+    Alternatively, you can instead use the syntax
+    ``gap3.gap_function(gap_element)``::
+
+        sage: gap3.DerivedSeries(S5)                       #optional - gap3
+        [ Group( (1,5), (2,5), (3,5), (4,5) ),
+          Subgroup( Group( (1,5), (2,5), (3,5), (4,5) ),
+                    [ (1,2,5), (1,3,5), (1,4,5) ] ) ]
+
+    If ``gap_element`` corresponds to a GAP3 record, then
+    ``gap_element.recfield`` provides a means to access the record element
+    corresponding to the field ``recfield``::
+
+        sage: # optional - gap3
+        sage: S5.IsRec()
+        true
+        sage: S5.recfields()
+        ['isDomain', 'isGroup', 'identity', 'generators', 'operations',
+        'isPermGroup', 'isFinite', '1', '2', '3', '4', 'degree']
+        sage: S5.identity
+        ()
+        sage: S5.degree
+        5
+        sage: S5.1
+        (1,5)
+        sage: S5.2
+        (2,5)
+
+#.  By typing ``%gap3`` or ``gap3.interact()`` at the command-line, you can
+    interact directly with the underlying GAP3 session.
+
+    ::
+
+        sage: gap3.interact()                            # not tested
+
+          --> Switching to Gap3 <--
+
+        gap3:
+
+#.  You can start a new GAP3 session as follows::
+
+        sage: gap3.console()                             # not tested
+
+                     ########            Lehrstuhl D fuer Mathematik
+                   ###    ####           RWTH Aachen
+                  ##         ##
+                 ##          #             #######            #########
+                ##                        #      ##          ## #     ##
+                ##           #           #       ##             #      ##
+                ####        ##           ##       #             #      ##
+                 #####     ###           ##      ##             ##    ##
+                   ######### #            #########             #######
+                             #                                  #
+                            ##           Version 3              #
+                           ###           Release 4.4            #
+                          ## #           18 Apr 97              #
+                         ##  #
+                        ##   #  Alice Niemeyer, Werner Nickel,  Martin Schoenert
+                       ##    #  Johannes Meier, Alex Wegner,    Thomas Bischops
+                      ##     #  Frank Celler,   Juergen Mnich,  Udo Polis
+                      ###   ##  Thomas Breuer,  Goetz Pfeiffer, Hans U. Besche
+                       ######   Volkmar Felsch, Heiko Theissen, Alexander Hulpke
+                                Ansgar Kaup,    Akos Seress,    Erzsebet Horvath
+                                Bettina Eick
+                                For help enter: ?<return>
+        gap>
+
+#.  The interface also has access to the GAP3 help system::
+
+        sage: gap3.help('help', pager=False)             # not tested
+        Help _______________________________________________________...
+
+        This  section describes  together with  the following sections the   GAP
+        help system.  The help system lets you read the manual interactively...
+
+Common Pitfalls
+---------------
+
+#.  If you want to pass a string to GAP3, then you need to wrap it in
+    single quotes as follows::
+
+        sage: gap3('"This is a GAP3 string"')              #optional - gap3
+        "This is a GAP3 string"
+
+    This is particularly important when a GAP3 package is loaded via the
+    ``RequirePackage`` method (note that one can instead use the
+    ``load_package`` method)::
+
+        sage: gap3.RequirePackage('"chevie"')             #optional - gap3
+
+Examples
+--------
+
+Load a GAP3 package::
+
+    sage: # optional - gap3
+    sage: gap3.load_package("chevie")
+    sage: gap3.version() # random  # not tested
+    'lib: v3r4p4 1997/04/18, src: v3r4p0 1994/07/10, sys: usg gcc ansi'
+
+Working with GAP3 lists. Note that GAP3 lists are 1-indexed::
+
+    sage: # optional - gap3
+    sage: L = gap3([1,2,3])
+    sage: L[1]
+    1
+    sage: L[2]
+    2
+    sage: 3 in L
+    True
+    sage: 4 in L
+    False
+    sage: m = gap3([[1,2],[3,4]])
+    sage: m[2,1]
+    3
+    sage: [1,2] in m
+    True
+    sage: [3,2] in m
+    False
+    sage: gap3([1,2]) in m
+    True
+
+Controlling variable names used by GAP3::
+
+    sage: # optional - gap3
+    sage: gap3('2', name='x')
+    2
+    sage: gap3('x')
+    2
+    sage: gap3.unbind('x')
+    sage: gap3('x')
+    Traceback (most recent call last):
+    ...
+    TypeError: Gap3 produced error output
+    Error, Variable: 'x' must have a value
+    ...
+"""
+
+from typing import Literal
 from sage.cpython.string import bytes_to_str as bytes_to_str
 from sage.interfaces.expect import Expect as Expect
 from sage.interfaces.gap import GapElement_generic as GapElement_generic, Gap_generic as Gap_generic
 from sage.misc.cachefunc import cached_method as cached_method
 
-gap3_cmd: str
+gap3_cmd: Literal["gap3"]
 
 class Gap3(Gap_generic):
     """
@@ -161,7 +382,7 @@ class Gap3(Gap_generic):
             gap>
         """
 
-gap3: Incomplete
+gap3: Gap3
 
 class GAP3Element(GapElement_generic):
     """
@@ -211,7 +432,6 @@ class GAP3Element(GapElement_generic):
 
     - Franco Saliola (Feb 2010)
     """
-    __class__: Incomplete
     def __init__(self, parent, value, is_name: bool = False, name=None) -> None:
         """
         See ``GAP3Element`` for full documentation.
@@ -352,7 +572,7 @@ def gap3_console() -> None:
                                 For help enter: ?<return>
         gap>
     """
-def gap3_version():
+def gap3_version() -> str:
     """
     Return the version of GAP3 that you have in your PATH on your computer.
 

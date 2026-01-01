@@ -6,7 +6,7 @@ from sage.symbolic.expression import E as E, init_pynac_I as init_pynac_I, regis
 
 constants_table: Incomplete
 constants_name_table: Incomplete
-I: Incomplete
+I: Expression
 
 def unpickle_Constant(class_name, name, conversions, latex, mathml, domain):
     """

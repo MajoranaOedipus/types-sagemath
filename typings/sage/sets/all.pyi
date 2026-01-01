@@ -1,4 +1,5 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.sets.real_set import RealSet as RealSet
+from sage.sets.recursively_enumerated_set import RecursivelyEnumeratedSet as RecursivelyEnumeratedSet
 from sage.sets.condition_set import ConditionSet as ConditionSet
 from sage.sets.disjoint_set import DisjointSet as DisjointSet
 from sage.sets.disjoint_union_enumerated_sets import DisjointUnionEnumeratedSets as DisjointUnionEnumeratedSets

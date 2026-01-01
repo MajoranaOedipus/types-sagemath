@@ -1,11 +1,94 @@
+r"""
+Interface to MuPAD
+
+AUTHOR:
+
+- Mike Hansen
+- William Stein
+
+You must have the optional commercial MuPAD interpreter installed and
+available as the command \code{mupkern} in your PATH in order to use
+this interface.  You do not have to install any optional \sage
+packages.
+
+TESTS::
+
+    sage: # optional - mupad
+    sage: mupad.package('"MuPAD-Combinat"')
+    sage: combinat = mupad.combinat
+    sage: examples = mupad.examples
+    sage: S = examples.SymmetricFunctions()
+    sage: S.s[2,1]^2
+    s[3, 3] + s[4, 2] + s[2, 2, 1, 1] + s[2, 2, 2] + 2 s[3, 2, 1] + s[4, 1, 1] +
+    s[3, 1, 1, 1]
+    sage: S.omega( S.s[3] )
+    s[1, 1, 1]
+    sage: s = S.s
+    sage: p = S.p
+    sage: s(s[2,1] + p[2,1])
+    s[2, 1] + s[3] - s[1, 1, 1]
+    sage: s(_)
+    s[2, 1] + s[3] - s[1, 1, 1]
+
+    sage: # optional - mupad
+    sage: combinat.tableaux.list(3)
+                --                                      +---+ --
+                |                                       | 3 |  |
+                |                 +---+      +---+      +---+  |
+                |                 | 3 |      | 2 |      | 2 |  |
+                |  +---+---+---+  +---+---+  +---+---+  +---+  |
+                |  | 1 | 2 | 3 |, | 1 | 2 |, | 1 | 3 |, | 1 |  |
+                -- +---+---+---+  +---+---+  +---+---+  +---+ --
+    sage: three = mupad(3)
+    sage: three.combinat.tableaux.list()
+                --                                      +---+ --
+                |                                       | 3 |  |
+                |                 +---+      +---+      +---+  |
+                |                 | 3 |      | 2 |      | 2 |  |
+                |  +---+---+---+  +---+---+  +---+---+  +---+  |
+                |  | 1 | 2 | 3 |, | 1 | 2 |, | 1 | 3 |, | 1 |  |
+                -- +---+---+---+  +---+---+  +---+---+  +---+ --
+    sage: t = _[1]
+    sage: t
+                                 +---+---+---+
+                                 | 1 | 2 | 3 |
+                                 +---+---+---+
+    sage: combinat.tableaux.conjugate(t)
+                                     +---+
+                                     | 3 |
+                                     +---+
+                                     | 2 |
+                                     +---+
+                                     | 1 |
+                                     +---+
+
+    sage: # optional - mupad
+    sage: combinat.ribbonsTableaux.list([2,2],[1,1],2)
+                           -- +---+---+  +---+---+ --
+                           |  |   | 2 |  |     2 |  |
+                           |  +   +   +, +---+---+  |
+                           |  | 1 |   |  | 1     |  |
+                           -- +---+---+  +---+---+ --
+    sage: combinat.tableaux.kAtom([2,1],3)
+                                  -- +---+     --
+                                  |  | 2 |      |
+                                  |  +---+---+  |
+                                  |  | 1 | 1 |  |
+                                  -- +---+---+ --
+    sage: M = S.Macdonald()
+    sage: a = M.P[1]^2
+    sage: mupad.mapcoeffs(a, 'normal')
+                                 q - t + q t - 1
+                          P[2] + --------------- P[1, 1]
+                                     q t - 1
+"""
 from .expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
-from _typeshed import Incomplete
 from sage.env import DOT_SAGE as DOT_SAGE
 from sage.interfaces.interface import AsciiArtString as AsciiArtString
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
 from sage.misc.instancedoc import instancedoc as instancedoc
 
-COMMANDS_CACHE: Incomplete
+COMMANDS_CACHE: str
 PROMPT: str
 seq: int
 
@@ -177,7 +260,7 @@ class MupadElement(ExtraTabCompletion, ExpectElement):
             [1, 2, 3, 5]
         '''
 
-mupad: Incomplete
+mupad: Mupad
 
 def reduce_load_mupad():
     """

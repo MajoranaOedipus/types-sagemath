@@ -1,6 +1,133 @@
+r"""
+Interface to the GP calculator of PARI/GP
+
+Type ``gp.[tab]`` for a list of all the functions
+available from your Gp install. Type ``gp.[tab]?`` for
+Gp's help about a given function. Type ``gp(...)`` to
+create a new Gp object, and ``gp.eval(...)`` to evaluate a
+string using Gp (and get the result back as a string).
+
+EXAMPLES: We illustrate objects that wrap GP objects (gp is the
+PARI interpreter)::
+
+    sage: M = gp('[1,2;3,4]')
+    sage: M
+    [1, 2; 3, 4]
+    sage: M * M
+    [7, 10; 15, 22]
+    sage: M + M
+    [2, 4; 6, 8]
+    sage: M.matdet()
+    -2
+
+::
+
+    sage: E = gp.ellinit([1,2,3,4,5])
+    sage: E.ellglobalred()
+    [10351, [1, -1, 0, -1], 1, [11, 1; 941, 1], [[1, 5, 0, 1], [1, 5, 0, 1]]]
+    sage: E.ellan(20)
+    [1, 1, 0, -1, -3, 0, -1, -3, -3, -3, -1, 0, 1, -1, 0, -1, 5, -3, 4, 3]
+
+::
+
+    sage: primitive_root(7)
+    3
+    sage: x = gp("znlog( Mod(2,7), Mod(3,7))")
+    sage: 3^x % 7
+    2
+
+::
+
+    sage: print(gp("taylor(sin(x),x)"))
+    x - 1/6*x^3 + 1/120*x^5 - 1/5040*x^7 + 1/362880*x^9 - 1/39916800*x^11 + 1/6227020800*x^13 - 1/1307674368000*x^15 + O(x^16)
+
+GP has a powerful very efficient algorithm for numerical
+computation of integrals.
+
+::
+
+    sage: gp("a = intnum(x=0,6,sin(x))")
+    0.039829713349633979454347702077075594548
+    sage: gp("a")
+    0.039829713349633979454347702077075594548
+    sage: gp.kill("a")
+    sage: gp("a")
+    a
+
+Note that gp ASCII plots *do* work in Sage, as follows::
+
+    sage: print(gp.eval("plot(x=0,6,sin(x))"))
+    <BLANKLINE>
+    0.9988963 |''''''''''''_x...x_''''''''''''''''''''''''''''''''''''''''''|
+              |          x"        "x                                        |
+              |        _"            "_                                      |
+              |       x                x                                     |
+              |      "                  "                                    |
+              |     "                    "                                   |
+              |   _"                      "_                                 |
+              |  _                          _                                |
+              | _                            _                               |
+              |_                              _                              |
+              _                                                              |
+              `````````````````````````````````"``````````````````````````````
+              |                                 "                            |
+              |                                  "                           |
+              |                                   "                          "
+              |                                    "_                      _"|
+              |                                      _                    _  |
+              |                                       _                  _   |
+              |                                        x                x    |
+              |                                         "_            _"     |
+              |                                           x_        _x       |
+    -0.998955 |............................................."x____x".........|
+              0                                                              6
+
+The GP interface reads in even very long input (using files) in a
+robust manner, as long as you are creating a new object.
+
+::
+
+    sage: t = '"%s"'%10^10000   # ten thousand character string.
+    sage: a = gp.eval(t)
+    sage: a = gp(t)
+
+In Sage, the PARI large Galois groups datafiles should be installed
+by default::
+
+    sage: f = gp('x^9 - x - 2')
+    sage: f.polgalois()
+    [362880, -1, 34, "S9"]
+
+TESTS:
+
+Test error recovery::
+
+    sage: x = gp('1/0')
+    Traceback (most recent call last):
+    ...
+    TypeError: Error executing code in GP:
+    CODE:
+        sage[...]=1/0;
+    PARI/GP ERROR:
+      ***   at top-level: sage[...]=1/0
+      ***                          ^--
+      *** _/_: impossible inverse in gdiv: 0.
+
+AUTHORS:
+
+- William Stein
+
+- David Joyner: some examples
+
+- William Stein (2006-03-01): added tab completion for methods:
+  gp.[tab] and x = gp(blah); x.[tab]
+
+- William Stein (2006-03-01): updated to work with PARI 2.2.12-beta
+
+- William Stein (2006-05-17): updated to work with PARI 2.2.13-beta
+"""
 import sage.interfaces.abc
 from .expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
-from _typeshed import Incomplete
 from sage.env import DOT_SAGE as DOT_SAGE
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
 from sage.libs.pari import pari as pari
@@ -422,7 +549,7 @@ def is_GpElement(x):
         False
     """
 
-gp: Incomplete
+gp: Gp
 
 def reduce_load_GP():
     """

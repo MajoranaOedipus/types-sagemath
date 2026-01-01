@@ -1,4 +1,46 @@
-from _typeshed import Incomplete
+r"""
+Lisp Interface
+
+EXAMPLES::
+
+    sage: lisp.eval('(* 4 5)')
+    '20'
+    sage: a = lisp(3); b = lisp(5)
+    sage: a + b
+    8
+    sage: a * b
+    15
+    sage: a / b
+    3/5
+    sage: a - b
+    -2
+    sage: a.sin()
+    0.14112
+    sage: b.cos()
+    0.2836622
+    sage: a.exp()
+    20.085537
+    sage: lisp.eval('(+ %s %s)'%(a.name(), b.name()))
+    '8'
+
+One can define functions and the interface supports object-oriented
+notation for calling them::
+
+    sage: lisp.eval('(defun factorial (n) (if (= n 1) 1 (* n (factorial (- n 1)))))')
+    'FACTORIAL'
+    sage: lisp('(factorial 10)')
+    3628800
+    sage: lisp(10).factorial()
+    3628800
+    sage: a = lisp(17)
+    sage: a.factorial()
+    355687428096000
+
+AUTHORS:
+    -- William Stein (first version)
+    -- William Stein (2007-06-20): significant improvements.
+"""
+
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement, gc_disabled as gc_disabled
 from sage.misc.instancedoc import instancedoc as instancedoc
 from sage.structure.element import RingElement as RingElement, parent as parent
@@ -156,7 +198,7 @@ def is_LispElement(x):
         True
     """
 
-lisp: Incomplete
+lisp: Lisp
 
 def reduce_load_Lisp():
     """

@@ -1,9 +1,12 @@
+r"""
+Interface to mwrank
+"""
+from re import Pattern
 from .expect import Expect as Expect
-from _typeshed import Incomplete
 
-instances: Incomplete
+instances: dict[str, Mwrank_class]
 
-def Mwrank(options: str = '', server=None, server_tmpdir=None):
+def Mwrank(options: str = '', server=None, server_tmpdir=None) -> Mwrank_class:
     '''
     Create and return an mwrank interpreter, with given options.
 
@@ -37,8 +40,8 @@ def Mwrank(options: str = '', server=None, server_tmpdir=None):
         Regulator = 0.051...
     '''
 
-AINVS_LIST_RE: Incomplete
-AINVS_PLAIN_RE: Incomplete
+AINVS_LIST_RE: Pattern[str]
+AINVS_PLAIN_RE: Pattern[str]
 
 def validate_mwrank_input(s):
     '''
@@ -237,7 +240,7 @@ class Mwrank_class(Expect):
             Program mwrank: ...
         """
 
-mwrank: Incomplete
+mwrank =  Mwrank()
 
 def mwrank_console() -> None:
     """

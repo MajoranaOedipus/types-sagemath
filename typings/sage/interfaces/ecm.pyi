@@ -1,4 +1,42 @@
-from _typeshed import Incomplete
+r"""
+The Elliptic Curve Factorization Method
+
+The elliptic curve factorization method (ECM) is the fastest way to
+factor a **known composite** integer if one of the factors is
+relatively small (up to approximately 80 bits / 25 decimal digits). To
+factor an arbitrary integer it must be combined with a primality
+test. The :meth:`ECM.factor` method is an example for how to combine
+ECM with a primality test to compute the prime factorization of integers.
+
+Sage includes GMP-ECM, which is a highly optimized implementation of
+Lenstra's elliptic curve factorization method.  See
+https://gitlab.inria.fr/zimmerma/ecm for more about GMP-ECM.
+
+AUTHORS:
+
+These people wrote GMP-ECM:
+Pierrick Gaudry, Jim Fougeron,
+Laurent Fousse, Alexander Kruppa,
+Dave Newman, Paul Zimmermann
+
+BUGS:
+
+Output from ecm is non-deterministic. Doctests should set the random
+seed, but currently there is no facility to do so.
+
+TESTS:
+
+Check that the issues from :issue:`27199` are fixed::
+
+    sage: n = 16262093986406371
+    sage: ecm = ECM()
+    sage: ecm.factor(n, B1=10)
+    [1009, 1009, 1733, 3023, 3049]
+
+    sage: n = 1308301 * (10^499 + 153)
+    sage: ECM(B1=600).one_curve(n, c=1, sigma=10)
+    [1308301, 100...00153]
+"""
 from sage.env import SAGE_ECMBIN as SAGE_ECMBIN
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.structure.sage_object import SageObject as SageObject
@@ -404,7 +442,7 @@ class ECM(SageObject):
             Expected curves: 4911, Expected time: 32.25m
         """
 
-ecm: Incomplete
+ecm: ECM
 TEST_ECM_OUTPUT_1: str
 TEST_ECM_OUTPUT_2: str
 TEST_ECM_OUTPUT_3: str

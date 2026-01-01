@@ -1,4 +1,11 @@
-from _typeshed import Incomplete
+"""
+Tensor Product Functorial Construction
+
+AUTHORS:
+
+- Nicolas M. Thiéry (2008-2010): initial revision and refactorization
+"""
+from typing import Literal
 from sage.categories.covariant_functorial_construction import CovariantConstructionCategory as CovariantConstructionCategory, CovariantFunctorialConstruction as CovariantFunctorialConstruction
 from sage.typeset.unicode_characters import unicode_otimes as unicode_otimes
 
@@ -33,10 +40,10 @@ class TensorProductFunctor(CovariantFunctorialConstruction):
 
         sage: TestSuite(tensor).run()
     """
-    symbol: str
-    unicode_symbol: Incomplete
+    symbol: Literal[" # "]
+    unicode_symbol: Literal[" ⊗ "]
 
-tensor: Incomplete
+tensor: TensorProductFunctor
 
 class TensorProductsCategory(CovariantConstructionCategory):
     """

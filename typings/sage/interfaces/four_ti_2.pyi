@@ -1,4 +1,23 @@
-from _typeshed import Incomplete
+r"""
+Interface to 4ti2
+
+https://4ti2.github.io/
+
+You must have the 4ti2 Sage package installed on your computer
+for this interface to work.
+
+Use ``sage -i 4ti2`` to install the package.
+
+AUTHORS:
+
+- Mike Hansen (2009): Initial version.
+
+- Bjarke Hammersholt Roune (2009-06-26): Added Groebner, made code
+  usable as part of the Sage library and added documentation and some
+  doctests.
+
+- Marshall Hampton (2011): Minor fixes to documentation.
+"""
 from sage.features.four_ti_2 import FourTi2Executable as FourTi2Executable
 from sage.rings.integer_ring import ZZ as ZZ
 
@@ -299,4 +318,4 @@ class FourTi2:
             [ 2  1  0]
         """
 
-four_ti_2: Incomplete
+four_ti_2: FourTi2

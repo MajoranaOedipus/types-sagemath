@@ -1,4 +1,133 @@
-from _typeshed import Incomplete
+r"""
+Interface to GNU Octave
+
+GNU Octave is a free software (GPL) MATLAB-like program with numerical
+routines for integrating, solving systems of equations, special
+functions, and solving (numerically) differential equations. Please see
+http://octave.org/ for more details.
+
+The commands in this section only work if you have the optional
+"octave" interpreter installed and available in your PATH. It's not
+necessary to install any special Sage packages.
+
+EXAMPLES::
+
+    sage: octave.eval('2+2')    # optional - octave
+    'ans = 4'
+
+    sage: a = octave(10)        # optional - octave
+    sage: a**10                 # optional - octave
+    1e+10
+
+LOG: - creation (William Stein) - ? (David Joyner, 2005-12-18) -
+Examples (David Joyner, 2005-01-03)
+
+Computation of Special Functions
+--------------------------------
+
+Octave implements computation of the following special functions
+(see the maxima and gp interfaces for even more special
+functions)::
+
+    airy
+        Airy functions of the first and second kind, and their derivatives.
+        airy(0,x) = Ai(x), airy(1,x) = Ai'(x), airy(2,x) = Bi(x), airy(3,x) = Bi'(x)
+    besselj
+        Bessel functions of the first kind.
+    bessely
+        Bessel functions of the second kind.
+    besseli
+        Modified Bessel functions of the first kind.
+    besselk
+        Modified Bessel functions of the second kind.
+    besselh
+        Compute Hankel functions of the first (k = 1) or second (k = 2) kind.
+    beta
+        The Beta function,
+              beta (a, b) = gamma (a) * gamma (b) / gamma (a + b).
+    betainc
+        The incomplete Beta function,
+    erf
+        The error function,
+    erfinv
+        The inverse of the error function.
+    gamma
+        The Gamma function,
+    gammainc
+        The incomplete gamma function,
+
+For example,
+
+::
+
+    sage: # optional - octave
+    sage: octave("airy(3,2)")
+    4.10068
+    sage: octave("beta(2,2)")
+    0.166667
+    sage: octave("betainc(0.2,2,2)")
+    0.104
+    sage: octave("besselh(0,2)")
+    (0.223891,0.510376)
+    sage: octave("besselh(0,1)")
+    (0.765198,0.088257)
+    sage: octave("besseli(1,2)")
+    1.59064
+    sage: octave("besselj(1,2)")
+    0.576725
+    sage: octave("besselk(1,2)")
+    0.139866
+    sage: octave("erf(0)")
+    0
+    sage: octave("erf(1)")
+    0.842701
+    sage: octave("erfinv(0.842)")
+    0.998315
+    sage: octave("gamma(1.5)")
+    0.886227
+    sage: octave("gammainc(1.5,1)")
+    0.77687
+
+Tutorial
+--------
+
+EXAMPLES::
+
+    sage: # optional - octave
+    sage: octave('4+10')
+    14
+    sage: octave('date')
+    18-Oct-2007
+    sage: octave('5*10 + 6')
+    56
+    sage: octave('(6+6)/3')
+    4
+    sage: octave('9')^2
+    81
+    sage: a = octave(10); b = octave(20); c = octave(30)
+    sage: avg = (a+b+c)/3
+    sage: avg
+    20
+    sage: parent(avg)
+    Octave
+
+::
+
+    sage: # optional - octave
+    sage: my_scalar = octave('3.1415')
+    sage: my_scalar
+    3.1415
+    sage: my_vector1 = octave('[1,5,7]')
+    sage: my_vector1
+    1     5     7
+    sage: my_vector2 = octave('[1;5;7]')
+    sage: my_vector2
+    1
+    5
+    7
+    sage: my_vector1 * my_vector2
+    75
+"""
 from sage.cpython.string import bytes_to_str as bytes_to_str
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement
 from sage.misc.instancedoc import instancedoc as instancedoc
@@ -212,7 +341,7 @@ class Octave(Expect):
                        x' = x+y, x(0) = 1;\\qquad y' = x-y, y(0) = -1,                     \\quad\\text{for}\\quad 0 < t < 2.
         """
 
-octave_functions: Incomplete
+octave_functions: set
 
 def to_complex(octave_string, R):
     """
@@ -252,7 +381,7 @@ class OctaveElement(ExpectElement):
             True
         """
 
-octave: Incomplete
+octave: Octave
 
 def reduce_load_Octave():
     """

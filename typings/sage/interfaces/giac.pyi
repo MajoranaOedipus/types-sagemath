@@ -1,3 +1,230 @@
+r"""
+Pexpect Interface to Giac
+
+(You should prefer the cython interface: giacpy_sage and its libgiac command)
+
+(adapted by F. Han from William Stein and Gregg Musiker maple's interface)
+
+You must have the  Giac interpreter installed
+and available as the command ``giac`` in your PATH in
+order to use this interface. You need a giac version
+supporting "giac --sage" ( roughly after 0.9.1 ). In this case you do not have
+to install any  optional Sage packages. If giac is not already installed, you can
+download binaries or sources or spkg (follow the sources link) from the homepage:
+
+Homepage <https://www-fourier.ujf-grenoble.fr/~parisse/giac.html>
+
+Type ``giac.[tab]`` for a list of all the functions
+available from your Giac install. Type
+``giac.[tab]?`` for Giac's help about a given
+function. Type ``giac(...)`` to create a new Giac
+object, and ``giac.eval(...)`` to run a string using
+Giac (and get the result back as a string).
+
+If the giac spkg is installed, you should find the full html documentation there::
+
+    $SAGE_LOCAL/share/giac/doc/en/cascmd_local/index.html
+
+EXAMPLES::
+
+    sage: giac('3 * 5')
+    15
+    sage: giac.eval('ifactor(2005)')
+    '5*401'
+    sage: giac.ifactor(2005)
+    2005
+    sage: l=giac.ifactors(2005) ; l; l[2]
+    [5,1,401,1]
+    401
+    sage: giac.fsolve('x^2=cos(x)+4', 'x','0..5')
+    [1.9140206190...
+    sage: giac.factor('x^4 - y^4')
+    (x-y)*(x+y)*(x^2+y^2)
+    sage: R.<x,y>=QQ[];f=(x+y)^5;f2=giac(f);(f-f2).normal()
+    0
+    sage: x,y=giac('x,y'); giac.int(y/(cos(2*x)+cos(x)),x)     # random
+    y*2*((-(tan(x/2)))/6+(-2*1/6/sqrt(3))*ln(abs(6*tan(x/2)-2*sqrt(3))/abs(6*tan(x/2)+2*sqrt(3))))
+
+
+If the string "error" (case insensitive) occurs in the output of
+anything from Giac, a :exc:`RuntimeError` exception is raised.
+
+Tutorial
+--------
+
+AUTHORS:
+
+- Gregg Musiker (2006-02-02): initial version.
+
+- Frederic Han: adapted to giac.
+
+- Marcelo Forets (2017-04-06): conversions and cleanup.
+
+This tutorial is based on the Maple Tutorial for number theory from
+http://www.math.mun.ca/~drideout/m3370/numtheory.html.
+
+Syntax
+~~~~~~~
+
+There are several ways to use the Giac Interface in Sage. We will
+discuss two of those ways in this tutorial.
+
+
+#. If you have a giac expression such as
+
+   ::
+
+       factor( (x^4-1));
+
+   We can write that in sage as
+
+   ::
+
+       sage: giac('factor(x^4-1)')
+       (x-1)*(x+1)*(x^2+1)
+
+   Notice, there is no need to use a semicolon.
+
+#. Since Sage is written in Python, we can also import giac
+   commands and write our scripts in a pythonic way. For example,
+   ``factor()`` is a giac command, so we can also factor
+   in Sage using
+
+   ::
+
+       sage: giac('(x^4-1)').factor()
+       (x-1)*(x+1)*(x^2+1)
+
+   where ``expression.command()`` means the same thing as
+   ``command(expression)`` in Giac. We will use this
+   second type of syntax whenever possible, resorting to the first
+   when needed.
+
+   ::
+
+       sage: giac('(x^12-1)/(x-1)').normal()
+       x^11+x^10+x^9+x^8+x^7+x^6+x^5+x^4+x^3+x^2+x+1
+
+Some typical input
+~~~~~~~~~~~~~~~~~~
+
+The normal command will reduce a rational function to the
+lowest terms. In giac, simplify is slower than normal because it
+tries more sophisticated simplifications (ex algebraic extensions)
+The factor command will factor a polynomial with
+rational coefficients into irreducible factors over the ring of
+integers (if your default configuration of giac (cf .xcasrc) has not
+allowed square roots). So for example,
+
+
+::
+
+    sage: giac('(x^12-1)').factor( )
+    (x-1)*(x+1)*(x^2+1)*(x^2-x+1)*(x^2+x+1)*(x^4-x^2+1)
+
+::
+
+    sage: giac('(x^28-1)').factor( )
+    (x-1)*(x+1)*(x^2+1)*(x^6-x^5+x^4-x^3+x^2-x+1)*(x^6+x^5+x^4+x^3+x^2+x+1)*(x^12-x^10+x^8-x^6+x^4-x^2+1)
+
+Giac console
+~~~~~~~~~~~~~
+
+Another important feature of giac is its online help. We can
+access this through sage as well. After reading the description of
+the command, you can press :kbd:`q` to immediately get back to your
+original prompt.
+
+Incidentally you can always get into a giac console by the
+command ::
+
+    sage: giac.console()                       # not tested
+    sage: !giac                                # not tested
+
+Note that the above two commands are slightly different, and the
+first is preferred.
+
+For example, for help on the giac command factors, we type ::
+
+    sage: giac.help('factors')                     # not tested
+
+::
+
+    sage: alpha = giac((1+sqrt(5))/2)
+    sage: beta = giac(1-sqrt(5))/2
+    sage: f19  = alpha^19 - beta^19/sqrt(5)
+    sage: f19
+    (sqrt(5)/2+1/2)^19-((-sqrt(5)+1)/2)^19/sqrt(5)
+    sage: (f19-(5778*sqrt(5)+33825)/5).normal()
+    0
+
+Function definitions
+~~~~~~~~~~~~~~~~~~~~
+
+Let's say we want to write a giac program now that squares a
+number if it is positive and cubes it if it is negative. In giac,
+that would look like
+
+::
+
+    mysqcu := proc(x)
+    if x > 0 then x^2;
+    else x^3; fi;
+    end;
+
+In Sage, we write
+
+::
+
+    sage: mysqcu = giac('proc(x) if x > 0 then x^2 else x^3 fi end')
+    sage: mysqcu(5)
+    25
+    sage: mysqcu(-5)
+    -125
+
+More complicated programs should be put in a separate file and
+loaded.
+
+Conversions
+~~~~~~~~~~~~
+
+The ``GiacElement.sage()`` method tries to convert a Giac object to a Sage
+object. In many cases, it will just work. In particular, it should be able to
+convert expressions entirely consisting of:
+
+- numbers, i.e. integers, floats, complex numbers;
+- functions and named constants also present in Sage, where Sage knows how to
+  translate the function or constant's name from Giac's
+- symbolic variables whose names don't pathologically overlap with
+  objects already defined in Sage.
+
+This method will not work when Giac's output includes functions unknown to Sage.
+
+If you want to convert more complicated Giac expressions, you can
+instead call ``GiacElement._sage_()`` and supply a translation dictionary::
+
+    sage: g = giac('NewFn(x)')
+    sage: g._sage_(locals={('NewFn', 1): sin})
+    sin(x)
+
+Moreover, new conversions can be permanently added using Pynac's
+``register_symbol``, and this is the recommended approach for library code.
+For more details, see the documentation for ``._sage_()``.
+
+TESTS:
+
+Test that conversion of symbolic functions with latex names works (:issue:`31047`)::
+
+    sage: var('phi')
+    phi
+    sage: function('Cp', latex_name='C_+')
+    Cp
+    sage: test = Cp(phi)._giac_()._sage_()
+    sage: test.operator() == Cp
+    True
+    sage: test.operator()._latex_() == 'C_+'
+    True
+"""
 from _typeshed import Incomplete
 from sage.cpython.string import bytes_to_str as bytes_to_str
 from sage.env import DOT_SAGE as DOT_SAGE
@@ -6,7 +233,7 @@ from sage.misc.instancedoc import instancedoc as instancedoc
 from sage.misc.pager import pager as pager
 from sage.structure.richcmp import rich_to_bool as rich_to_bool
 
-COMMANDS_CACHE: Incomplete
+COMMANDS_CACHE: str
 
 class Giac(Expect):
     """
@@ -361,7 +588,7 @@ class GiacElement(ExpectElement):
             (pi*exp(pi)^2+pi)/(exp(pi)^2-1)
         """
 
-giac: Incomplete
+giac: Giac
 
 def reduce_load_Giac():
     """

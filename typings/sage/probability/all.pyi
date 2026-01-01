@@ -1,2 +1,9 @@
-from sage.probability.probability_distribution import GeneralDiscreteDistribution as GeneralDiscreteDistribution, RealDistribution as RealDistribution, SphericalDistribution as SphericalDistribution
-from sage.probability.random_variable import DiscreteProbabilitySpace as DiscreteProbabilitySpace, DiscreteRandomVariable as DiscreteRandomVariable
+from sage.probability.probability_distribution import (
+    GeneralDiscreteDistribution as GeneralDiscreteDistribution,
+    RealDistribution as RealDistribution,
+    SphericalDistribution as SphericalDistribution,
+)
+from sage.probability.random_variable import (
+    DiscreteProbabilitySpace as DiscreteProbabilitySpace,
+    DiscreteRandomVariable as DiscreteRandomVariable,
+)

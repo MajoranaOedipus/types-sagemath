@@ -1,5 +1,182 @@
+r"""
+Interface to GAP
+
+Sage provides an interface to the GAP system. This system provides
+extensive group theory, combinatorics, etc.
+
+The GAP interface will only work if GAP is installed on your
+computer; this should be the case, since GAP is included with Sage.
+The interface offers three pieces of functionality:
+
+
+#. ``gap_console()`` -- a function that dumps you into
+   an interactive command-line GAP session.
+
+#. ``gap(expr)`` -- evaluation of arbitrary GAP
+   expressions, with the result returned as a string.
+
+#. ``gap.new(expr)`` -- creation of a Sage object that
+   wraps a GAP object. This provides a Pythonic interface to GAP. For
+   example, if ``f=gap.new(10)``, then
+   ``f.Factors()`` returns the prime factorization of
+   `10` computed using GAP.
+
+
+First Examples
+--------------
+
+We factor an integer using GAP::
+
+    sage: n = gap(20062006); n
+    20062006
+    sage: n.parent()
+    Gap
+    sage: fac = n.Factors(); fac
+    [ 2, 17, 59, 73, 137 ]
+    sage: fac.parent()
+    Gap
+    sage: fac[1]
+    2
+
+GAP and Singular
+----------------
+
+This example illustrates conversion between Singular and GAP via
+Sage as an intermediate step. First we create and factor a Singular
+polynomial.
+
+::
+
+    sage: singular(389)
+    389
+    sage: R1 = singular.ring(0, '(x,y)', 'dp')
+    sage: f = singular('9*x^16-18*x^13*y^2-9*x^12*y^3+9*x^10*y^4-18*x^11*y^2+36*x^8*y^4+18*x^7*y^5-18*x^5*y^6+9*x^6*y^4-18*x^3*y^6-9*x^2*y^7+9*y^8')
+    sage: F = f.factorize()
+    sage: print(F)
+    [1]:
+       _[1]=9
+       _[2]=x^6-2*x^3*y^2-x^2*y^3+y^4
+       _[3]=-x^5+y^2
+    [2]:
+       1,1,2
+
+Next we convert the factor `-x^5+y^2` to a Sage
+multivariate polynomial. Note that it is important to let
+`x` and `y` be the generators of a polynomial ring,
+so the eval command works.
+
+::
+
+    sage: R.<x,y> = PolynomialRing(QQ,2)
+    sage: s = F[1][3].sage_polystring(); s
+    '-x**5+y**2'
+    sage: g = eval(s); g
+    -x^5 + y^2
+
+Next we create a polynomial ring in GAP and obtain its
+indeterminates::
+
+    sage: R = gap.PolynomialRing('Rationals', 2); R
+    PolynomialRing( Rationals, ["x_1", "x_2"] )
+    sage: I = R.IndeterminatesOfPolynomialRing(); I
+    [ x_1, x_2 ]
+
+In order to eval `g` in GAP, we need to tell GAP to view
+the variables ``x0`` and ``x1`` as the two
+generators of `R`. This is the one tricky part. In the GAP
+interpreter the object ``I`` has its own name (which
+isn't ``I``). We can access its name using
+``I.name()``.
+
+::
+
+    sage: _ = gap.eval("x := %s[1];; y := %s[2];;"%(I.name(), I.name()))
+
+Now `x_0` and `x_1` are defined, so we can
+construct the GAP polynomial `f` corresponding to
+`g`::
+
+    sage: R.<x,y> = PolynomialRing(QQ,2)
+    sage: f = gap(str(g)); f
+    -x_1^5+x_2^2
+
+We can call GAP functions on `f`. For example, we evaluate
+the GAP ``Value`` function, which evaluates `f`
+at the point `(1,2)`.
+
+::
+
+    sage: f.Value(I, [1,2])
+    3
+    sage: g(1,2)        # agrees
+    3
+
+Saving and loading objects
+--------------------------
+
+Saving and loading GAP objects (using the dumps method, etc.) is
+*not* supported, since the output string representation of Gap
+objects is sometimes not valid input to GAP. Creating classes that
+wrap GAP objects *is* supported, via simply defining the a
+_gap_init_ member function that returns a string that when
+evaluated in GAP constructs the object. See
+``groups/perm_gps/permgroup.py`` for a nontrivial
+example of this.
+
+Long Input
+----------
+
+The GAP interface reads in even very long input (using files) in a
+robust manner, as long as you are creating a new object.
+
+.. NOTE::
+
+   Using ``gap.eval`` for long input is much less robust, and is not
+   recommended.
+
+::
+
+    sage: t = '"%s"'%10^10000   # ten thousand character string.
+    sage: a = gap(t)
+
+Changing which GAP is used, and how
+-----------------------------------
+
+Set the environment variable :envvar:`SAGE_GAP_COMMAND` to specify
+how GAP executable is called. E.g.  ::
+
+  $ SAGE_GAP_COMMAND = "/usr/local/bin/gap -s 4G" ./sage
+
+will use GAP installed in `/usr/local/bin`, with 4Gb RAM.
+
+
+Set the environment variable :envvar:`SAGE_GAP_MEMORY` to specify the amount
+of RAM allocated to :mod:`~sage.libs.gap.libgap` and to the GAP executable.
+If :envvar:`SAGE_GAP_COMMAND` is set, as well, then
+:envvar:`SAGE_GAP_MEMORY` is only used for `libgap`. ::
+
+    sage: gap.eval('GAPInfo.CommandLineOptions.s') # not tested
+    '"42m"'
+
+After the GAP interface initialisation, setting :envvar:`SAGE_GAP_MEMORY`
+has no effect::
+
+    sage: os.environ['SAGE_GAP_MEMORY'] = '24M'
+    sage: gap.eval('GAPInfo.CommandLineOptions.s') # not tested
+    '"4g"'
+
+
+AUTHORS:
+
+- David Joyner and William Stein: initial version(s)
+
+- William Stein (2006-02-01): modified gap_console command so it uses
+  exactly the same startup command as Gap.__init__.
+
+- William Stein (2006-03-02): added tab completions: gap.[tab], x =
+  gap(...), x.[tab], and docs, e.g., gap.function? and x.function?
+"""
 import sage.interfaces.abc
-from _typeshed import Incomplete
 from sage.cpython.string import bytes_to_str as bytes_to_str
 from sage.env import GAP_ROOT_PATHS as GAP_ROOT_PATHS, SAGE_EXTCODE as SAGE_EXTCODE, SAGE_GAP_COMMAND as SAGE_GAP_COMMAND, SAGE_GAP_MEMORY as SAGE_GAP_MEMORY
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
@@ -10,10 +187,9 @@ from sage.misc.instancedoc import instancedoc as instancedoc
 from sage.misc.misc import is_in_string as is_in_string
 from sage.structure.element import ModuleElement as ModuleElement
 
-WORKSPACE: Incomplete
+WORKSPACE: str
 first_try: bool
-gap_cmd: Incomplete
-gap_cmd = SAGE_GAP_COMMAND
+gap_cmd: str
 
 def gap_command(use_workspace_cache: bool = True, local: bool = True): ...
 
@@ -547,7 +723,7 @@ def intmod_gap_to_sage(x):
         Ring of integers modulo 65537
     """
 
-gap: Incomplete
+gap: Gap
 
 def reduce_load_GAP():
     """

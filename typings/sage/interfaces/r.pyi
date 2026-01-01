@@ -1,4 +1,257 @@
-from _typeshed import Incomplete
+r"""
+Interfaces to R
+
+This is the reference to the Sagemath R interface, usable from any
+Sage program.
+
+The %r interface creating an R cell in the sage
+notebook is described in the Notebook manual.
+
+The %R and %%R interface creating an R line or an R cell in the
+Jupyter notebook are briefly described at the end of this page. This
+documentation will be expanded and placed in the Jupyter notebook
+manual when this manual exists.
+
+The following examples try to follow "An Introduction to R" which can
+be found at http://cran.r-project.org/doc/manuals/R-intro.html .
+
+EXAMPLES:
+
+Simple manipulations; numbers and vectors
+
+The simplest data structure in R is the numeric vector which
+consists of an ordered collection of numbers.  To create a
+vector named `x` using the R interface in Sage, you pass the
+R interpreter object a list or tuple of numbers::
+
+    sage: x = r([10.4,5.6,3.1,6.4,21.7]); x
+    [1] 10.4  5.6  3.1  6.4 21.7
+
+You can invert elements of a vector x in R by using the
+invert operator or by doing 1/x::
+
+    sage: ~x
+    [1] 0.09615385 0.17857143 0.32258065 0.15625000 0.04608295
+    sage: 1/x
+    [1] 0.09615385 0.17857143 0.32258065 0.15625000 0.04608295
+
+The following assignment creates a vector `y` with 11 entries which
+consists of two copies of `x` with a 0 in between::
+
+    sage: y = r([x,0,x]); y
+    [1] 10.4  5.6  3.1  6.4 21.7  0.0 10.4  5.6  3.1  6.4 21.7
+
+Vector Arithmetic
+
+The following command generates a new vector `v` of length 11 constructed
+by adding together (element by element) `2x` repeated 2.2 times, `y`
+repeated just once, and 1 repeated 11 times::
+
+    sage: v = 2*x+y+1; v
+    [1] 32.2 17.8 10.3 20.2 66.1 21.8 22.6 12.8 16.9 50.8 43.5
+
+One can compute the sum of the elements of an R vector in the following
+two ways::
+
+    sage: sum(x)
+    [1] 47.2
+    sage: x.sum()
+    [1] 47.2
+
+One can calculate the sample variance of a list of numbers::
+
+    sage: ((x-x.mean())^2/(x.length()-1)).sum()
+    [1] 53.853
+    sage: x.var()
+    [1] 53.853
+
+    sage: x.sort()
+    [1] 3.1  5.6  6.4 10.4 21.7
+    sage: x.min()
+    [1] 3.1
+    sage: x.max()
+    [1] 21.7
+    sage: x
+    [1] 10.4  5.6  3.1  6.4 21.7
+
+    sage: r(-17).sqrt()
+    [1] NaN
+    sage: r('-17+0i').sqrt()
+    [1] 0+4.123106i
+
+Generating an arithmetic sequence::
+
+    sage: r('1:10')
+    [1] 1  2  3  4  5  6  7  8  9 10
+
+Because ``from`` is a keyword in Python, it can't be used
+as a keyword argument.  Instead, ``from_`` can be passed, and
+R will recognize it as the correct thing::
+
+    sage: r.seq(length=10, from_=-1, by=.2)
+    [1] -1.0 -0.8 -0.6 -0.4 -0.2  0.0  0.2  0.4  0.6  0.8
+
+    sage: x = r([10.4,5.6,3.1,6.4,21.7])
+    sage: x.rep(2)
+    [1] 10.4  5.6  3.1  6.4 21.7 10.4  5.6  3.1  6.4 21.7
+    sage: x.rep(times=2)
+    [1] 10.4  5.6  3.1  6.4 21.7 10.4  5.6  3.1  6.4 21.7
+    sage: x.rep(each=2)
+    [1] 10.4 10.4  5.6  5.6  3.1  3.1  6.4  6.4 21.7 21.7
+
+Missing Values::
+
+    sage: na = r('NA')
+    sage: z = r([1,2,3,na])
+    sage: z
+    [1]  1  2  3 NA
+    sage: ind = r.is_na(z)
+    sage: ind
+    [1] FALSE FALSE FALSE  TRUE
+    sage: zero = r(0)
+    sage: zero / zero
+    [1] NaN
+    sage: inf = r('Inf')
+    sage: inf-inf
+    [1] NaN
+    sage: r.is_na(inf)
+    [1] FALSE
+    sage: r.is_na(inf-inf)
+    [1] TRUE
+    sage: r.is_na(zero/zero)
+    [1] TRUE
+    sage: r.is_na(na)
+    [1] TRUE
+    sage: r.is_nan(inf-inf)
+    [1] TRUE
+    sage: r.is_nan(zero/zero)
+    [1] TRUE
+    sage: r.is_nan(na)
+    [1] FALSE
+
+
+Character Vectors::
+
+    sage: labs = r.paste('c("X","Y")', '1:10', sep='""'); labs
+    [1] "X1"  "Y2"  "X3"  "Y4"  "X5"  "Y6"  "X7"  "Y8"  "X9"  "Y10"
+
+
+Index vectors; selecting and modifying subsets of a data set::
+
+    sage: na = r('NA')
+    sage: x = r([10.4,5.6,3.1,6.4,21.7,na]); x
+    [1] 10.4  5.6  3.1  6.4 21.7   NA
+    sage: x['!is.na(self)']
+    [1] 10.4  5.6  3.1  6.4 21.7
+
+    sage: x = r([10.4,5.6,3.1,6.4,21.7,na]); x
+    [1] 10.4  5.6  3.1  6.4 21.7   NA
+    sage: (x+1)['(!is.na(self)) & self>0']
+    [1] 11.4  6.6  4.1  7.4 22.7
+    sage: x = r([10.4,-2,3.1,-0.5,21.7,na]); x
+    [1] 10.4 -2.0  3.1 -0.5 21.7   NA
+    sage: (x+1)['(!is.na(self)) & self>0']
+    [1] 11.4  4.1  0.5 22.7
+
+Distributions::
+
+    sage: r.options(width='60')
+    $width
+    [1] 80
+
+    sage: rr = r.dnorm(r.seq(-3,3,0.1))
+    sage: rr
+     [1] 0.004431848 0.005952532 0.007915452 0.010420935
+     [5] 0.013582969 0.017528300 0.022394530 0.028327038
+     [9] 0.035474593 0.043983596 0.053990967 0.065615815
+    [13] 0.078950158 0.094049077 0.110920835 0.129517596
+    [17] 0.149727466 0.171368592 0.194186055 0.217852177
+    [21] 0.241970725 0.266085250 0.289691553 0.312253933
+    [25] 0.333224603 0.352065327 0.368270140 0.381387815
+    [29] 0.391042694 0.396952547 0.398942280 0.396952547
+    [33] 0.391042694 0.381387815 0.368270140 0.352065327
+    [37] 0.333224603 0.312253933 0.289691553 0.266085250
+    [41] 0.241970725 0.217852177 0.194186055 0.171368592
+    [45] 0.149727466 0.129517596 0.110920835 0.094049077
+    [49] 0.078950158 0.065615815 0.053990967 0.043983596
+    [53] 0.035474593 0.028327038 0.022394530 0.017528300
+    [57] 0.013582969 0.010420935 0.007915452 0.005952532
+    [61] 0.004431848
+
+Convert R Data Structures to Python/Sage::
+
+    sage: rr = r.dnorm(r.seq(-3,3,0.1))
+    sage: sum(rr._sage_())
+    9.9772125168981...
+
+Or you get a dictionary to be able to access all the information::
+
+    sage: rs = r.summary(r.c(1,4,3,4,3,2,5,1))
+    sage: rs
+       Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+      1.000   1.750   3.000   2.875   4.000   5.000
+      sage: d = rs._sage_()
+      sage: d['DATA']
+      [1, 1.75, 3, 2.875, 4, 5]
+      sage: d['_Names']
+      ['Min.', '1st Qu.', 'Median', 'Mean', '3rd Qu.', 'Max.']
+      sage: d['_r_class']
+      ['summaryDefault', 'table']
+
+It is also possible to access the plotting capabilities of R
+through Sage.  For more information see the documentation of
+r.plot() or r.png().
+
+THE JUPYTER NOTEBOOK INTERFACE (work in progress).
+
+The %r interface described in the Sage notebook manual is not useful
+in the Jupyter notebook : it creates a inferior R interpreter which
+cannot be escaped.
+
+The RPy2 library allows the creation of an R cell in the Jupyter
+notebook analogous to the %r escape in command line or %r cell in a
+Sage notebook.
+
+The interface is loaded by a cell containing the sole code:
+
+"%load_ext rpy2.ipython"
+
+After execution of this code, the %R and %%R magics are available:
+
+- %R allows the execution of a single line of R code. Data exchange is
+   possible via the -i and -o options. Do "%R?" in a standalone cell
+   to get the documentation.
+
+- %%R allows the execution in R of the whole text of a cell, with
+    similar options (do "%%R?" in a standalone cell for
+    documentation).
+
+A few important points must be noted:
+
+- The R interpreter launched by this interface IS (currently)
+  DIFFERENT from the R interpreter used br other r... functions.
+
+- Data exchanged via the -i and -o options have a format DIFFERENT
+  from the format used by the r... functions (RPy2 mostly uses arrays,
+  and bugs the user to use the pandas Python package).
+
+- R graphics are (beautifully) displayed in output cells, but are not
+  directly importable. You have to save them as .png, .pdf or .svg
+  files and import them in Sage for further use.
+
+In its current incarnation, this interface is mostly useful to
+statisticians needing Sage for a few symbolic computations but mostly
+using R for applied work.
+
+AUTHORS:
+
+- Mike Hansen (2007-11-01)
+- William Stein (2008-04-19)
+- Harald Schilly (2008-03-20)
+- Mike Hansen (2008-04-19)
+- Emmanuel Charpentier (2015-12-12, RPy2 interface)
+"""
+
 from sage.env import DOT_SAGE as DOT_SAGE
 from sage.features import PythonModule as PythonModule
 from sage.interfaces.interface import Interface as Interface, InterfaceElement as InterfaceElement, InterfaceFunction as InterfaceFunction, InterfaceFunctionElement as InterfaceFunctionElement
@@ -7,11 +260,11 @@ from sage.misc.instancedoc import instancedoc as instancedoc
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.structure.element import parent as parent
 
-rpy2_feature: Incomplete
-COMMANDS_CACHE: Incomplete
+rpy2_feature: PythonModule
+COMMANDS_CACHE: str
 RRepositoryURL: str
-RFilteredPackages: Incomplete
-RBaseCommands: Incomplete
+RFilteredPackages: list[str]
+RBaseCommands: list[str]
 
 class R(ExtraTabCompletion, Interface):
     def __init__(self, maxread=None, logfile=None, init_list_length: int = 1024, seed=None) -> None:
@@ -804,7 +1057,7 @@ def is_RElement(x):
         True
     """
 
-r: Incomplete
+r: R
 
 def reduce_load_R():
     """

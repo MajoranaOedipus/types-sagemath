@@ -1,3 +1,328 @@
+r"""
+Interface to Singular
+
+Introduction
+------------
+
+This interface is extremely flexible, since it's exactly like
+typing into the Singular interpreter, and anything that works there
+should work here.
+
+The Singular interface will only work if Singular is installed on
+your computer; this should be the case, since Singular is included
+with Sage. The interface offers three pieces of functionality:
+
+#. ``singular_console()`` -- a function that dumps you
+   into an interactive command-line Singular session.
+
+#. ``singular(expr, type='def')`` -- creation of a
+   Singular object. This provides a Pythonic interface to Singular.
+   For example, if ``f=singular(10)``, then
+   ``f.factorize()`` returns the factorization of
+   `10` computed using Singular.
+
+#. ``singular.eval(expr)`` -- evaluation of arbitrary
+   Singular expressions, with the result returned as a string.
+
+Of course, there are polynomial rings and ideals in Sage as well
+(often based on a C-library interface to Singular). One can convert
+an object in the Singular interpreter interface to Sage by the
+method ``sage()``.
+
+
+Tutorial
+--------
+
+EXAMPLES: First we illustrate multivariate polynomial
+factorization::
+
+    sage: R1 = singular.ring(0, '(x,y)', 'dp')
+    sage: R1
+    polynomial ring, over a field, global ordering
+    // coefficients: QQ...
+    // number of vars : 2
+    //        block   1 : ordering dp
+    //                  : names    x y
+    //        block   2 : ordering C
+    sage: f = singular('9x16 - 18x13y2 - 9x12y3 + 9x10y4 - 18x11y2 + 36x8y4 + 18x7y5 - 18x5y6 + 9x6y4 - 18x3y6 - 9x2y7 + 9y8')
+    sage: f
+    9*x^16-18*x^13*y^2-9*x^12*y^3+9*x^10*y^4-18*x^11*y^2+36*x^8*y^4+18*x^7*y^5-18*x^5*y^6+9*x^6*y^4-18*x^3*y^6-9*x^2*y^7+9*y^8
+    sage: f.parent()
+    Singular
+
+::
+
+    sage: F = f.factorize(); F
+    [1]:
+       _[1]=9
+       _[2]=x^6-2*x^3*y^2-x^2*y^3+y^4
+       _[3]=-x^5+y^2
+    [2]:
+       1,1,2
+
+::
+
+    sage: F[1]
+    9,
+    x^6-2*x^3*y^2-x^2*y^3+y^4,
+    -x^5+y^2
+    sage: F[1][2]
+    x^6-2*x^3*y^2-x^2*y^3+y^4
+
+We can convert `f` and each exponent back to Sage objects
+as well.
+
+::
+
+    sage: g = f.sage(); g
+    9*x^16 - 18*x^13*y^2 - 9*x^12*y^3 + 9*x^10*y^4 - 18*x^11*y^2 + 36*x^8*y^4 + 18*x^7*y^5 - 18*x^5*y^6 + 9*x^6*y^4 - 18*x^3*y^6 - 9*x^2*y^7 + 9*y^8
+    sage: F[1][2].sage()
+    x^6 - 2*x^3*y^2 - x^2*y^3 + y^4
+    sage: g.parent()
+    Multivariate Polynomial Ring in x, y over Rational Field
+
+This example illustrates polynomial GCD's::
+
+    sage: R2 = singular.ring(0, '(x,y,z)', 'lp')
+    sage: a = singular.new('3x2*(x+y)')
+    sage: b = singular.new('9x*(y2-x2)')
+    sage: g = a.gcd(b)
+    sage: g
+    x^2+x*y
+
+This example illustrates computation of a Groebner basis::
+
+    sage: R3 = singular.ring(0, '(a,b,c,d)', 'lp')
+    sage: I = singular.ideal(['a + b + c + d', 'a*b + a*d + b*c + c*d', 'a*b*c + a*b*d + a*c*d + b*c*d', 'a*b*c*d - 1'])
+    sage: I2 = I.groebner()
+    sage: I2
+    c^2*d^6-c^2*d^2-d^4+1,
+    c^3*d^2+c^2*d^3-c-d,
+    b*d^4-b+d^5-d,
+    b*c-b*d^5+c^2*d^4+c*d-d^6-d^2,
+    b^2+2*b*d+d^2,
+    a+b+c+d
+
+The following example is the same as the one in the Singular - Gap
+interface documentation::
+
+    sage: R  = singular.ring(0, '(x0,x1,x2)', 'lp')
+    sage: I1 = singular.ideal(['x0*x1*x2 -x0^2*x2', 'x0^2*x1*x2-x0*x1^2*x2-x0*x1*x2^2', 'x0*x1-x0*x2-x1*x2'])
+    sage: I2 = I1.groebner()
+    sage: I2
+    x1^2*x2^2,
+    x0*x2^3-x1^2*x2^2+x1*x2^3,
+    x0*x1-x0*x2-x1*x2,
+    x0^2*x2-x0*x2^2-x1*x2^2
+    sage: I2.sage()
+    Ideal (x1^2*x2^2, x0*x2^3 - x1^2*x2^2 + x1*x2^3, x0*x1 - x0*x2 - x1*x2, x0^2*x2 - x0*x2^2 - x1*x2^2) of Multivariate Polynomial Ring in x0, x1, x2 over Rational Field
+
+
+This example illustrates moving a polynomial from one ring to
+another. It also illustrates calling a method of an object with an
+argument.
+
+::
+
+    sage: R = singular.ring(0, '(x,y,z)', 'dp')
+    sage: f = singular('x3+y3+(x-y)*x2y2+z2')
+    sage: f
+    x^3*y^2-x^2*y^3+x^3+y^3+z^2
+    sage: R1 = singular.ring(0, '(x,y,z)', 'ds')
+    sage: f = R.fetch(f)
+    sage: f
+    z^2+x^3+y^3+x^3*y^2-x^2*y^3
+
+We can calculate the Milnor number of `f`::
+
+    sage: _=singular.LIB('sing.lib')     # assign to _ to suppress printing
+    sage: f.milnor()
+    4
+
+The Jacobian applied twice yields the Hessian matrix of
+`f`, with which we can compute.
+
+::
+
+    sage: H = f.jacob().jacob()
+    sage: H
+    6*x+6*x*y^2-2*y^3,6*x^2*y-6*x*y^2,  0,
+    6*x^2*y-6*x*y^2,  6*y+2*x^3-6*x^2*y,0,
+    0,                0,                2
+    sage: H.sage()
+    [6*x + 6*x*y^2 - 2*y^3     6*x^2*y - 6*x*y^2                     0]
+    [    6*x^2*y - 6*x*y^2 6*y + 2*x^3 - 6*x^2*y                     0]
+    [                    0                     0                     2]
+    sage: H.det()   # This is a polynomial in Singular
+    72*x*y+24*x^4-72*x^3*y+72*x*y^3-24*y^4-48*x^4*y^2+64*x^3*y^3-48*x^2*y^4
+    sage: H.det().sage()   # This is the corresponding polynomial in Sage
+    72*x*y + 24*x^4 - 72*x^3*y + 72*x*y^3 - 24*y^4 - 48*x^4*y^2 + 64*x^3*y^3 - 48*x^2*y^4
+
+The 1x1 and 2x2 minors::
+
+    sage: H.minor(1)
+    2,
+    6*y+2*x^3-6*x^2*y,
+    6*x^2*y-6*x*y^2,
+    6*x^2*y-6*x*y^2,
+    6*x+6*x*y^2-2*y^3,
+    0,
+    0,
+    0,
+    0
+    sage: H.minor(2)
+    12*y+4*x^3-12*x^2*y,
+    12*x^2*y-12*x*y^2,
+    12*x^2*y-12*x*y^2,
+    12*x+12*x*y^2-4*y^3,
+    -36*x*y-12*x^4+36*x^3*y-36*x*y^3+12*y^4+24*x^4*y^2-32*x^3*y^3+24*x^2*y^4,
+    0,
+    0,
+    0,
+    0
+
+::
+
+    sage: _=singular.eval('option(redSB)')
+    sage: H.minor(1).groebner()
+    1
+
+Computing the Genus
+-------------------
+
+We compute the projective genus of ideals that define curves over
+`\QQ`. It is *very important* to load the
+``normal.lib`` library before calling the
+``genus`` command, or you'll get an error message.
+
+EXAMPLES::
+
+    sage: singular.lib('normal.lib')
+    sage: R = singular.ring(0,'(x,y)','dp')
+    sage: i2 = singular.ideal('y9 - x2*(x-1)^9 + x')
+    sage: i2.genus()
+    40
+
+Note that the genus can be much smaller than the degree::
+
+    sage: i = singular.ideal('y9 - x2*(x-1)^9')
+    sage: i.genus()
+    0
+
+An Important Concept
+--------------------
+
+The following illustrates an important concept: how Sage interacts
+with the data being used and returned by Singular. Let's compute a
+Groebner basis for some ideal, using Singular through Sage.
+
+::
+
+    sage: singular.lib('polylib.lib')
+    sage: singular.ring(32003, '(a,b,c,d,e,f)', 'lp')
+    polynomial ring, over a field, global ordering
+    // coefficients: ZZ/32003...
+    // number of vars : 6
+    //        block   1 : ordering lp
+    //                        : names    a b c d e f
+    //        block   2 : ordering C
+    sage: I = singular.ideal('cyclic(6)')
+    sage: g = singular('groebner(I)')
+    Traceback (most recent call last):
+    ...
+    TypeError: Singular error:
+    ...
+
+We restart everything and try again, but correctly.
+
+::
+
+    sage: singular.quit()
+    sage: singular.lib('polylib.lib'); R = singular.ring(32003, '(a,b,c,d,e,f)', 'lp')
+    sage: I = singular.ideal('cyclic(6)')
+    sage: I.groebner()
+    f^48-2554*f^42-15674*f^36+12326*f^30-12326*f^18+15674*f^12+2554*f^6-1,
+    ...
+
+It's important to understand why the first attempt at computing a
+basis failed. The line where we gave singular the input
+'groebner(I)' was useless because Singular has no idea what 'I' is!
+Although 'I' is an object that we computed with calls to Singular
+functions, it actually lives in Sage. As a consequence, the name
+'I' means nothing to Singular. When we called
+``I.groebner()``, Sage was able to call the groebner
+function on 'I' in Singular, since 'I' actually means something to
+Sage.
+
+Long Input
+----------
+
+The Singular interface reads in even very long input (using files)
+in a robust manner, as long as you are creating a new object.
+
+::
+
+    sage: t = '"%s"'%10^15000   # 15 thousand character string (note that normal Singular input must be at most 10000)
+    sage: a = singular.eval(t)
+    sage: a = singular(t)
+
+TESTS:
+
+We test an automatic coercion::
+
+    sage: a = 3*singular('2'); a
+    6
+    sage: type(a)
+    <class 'sage.interfaces.singular.SingularElement'>
+    sage: a = singular('2')*3; a
+    6
+    sage: type(a)
+    <class 'sage.interfaces.singular.SingularElement'>
+
+Create a ring over GF(9) to check that ``gftables`` has been installed,
+see :issue:`11645`::
+
+    sage: singular.eval("ring testgf9 = (9,x),(a,b,c,d,e,f),(M((1,2,3,0)),wp(2,3),lp);")
+    ''
+
+Verify that :issue:`17720` is fixed::
+
+    sage: R.<p> = QQ[]
+    sage: K.<p> = QQ.extension(p^2 - p - 1)
+    sage: r.<x,z> = K[]
+    sage: I = r.ideal(z)
+    sage: I.primary_decomposition()
+    [Ideal (z) of Multivariate Polynomial Ring in x, z over Number Field in p with defining polynomial p^2 - p - 1]
+    sage: [ J.gens() for J in I.primary_decomposition("gtz")]
+    [[z]]
+
+AUTHORS:
+
+- David Joyner and William Stein (2005): first version
+
+- Neal Harris (unknown): perhaps added "An Important Concept"
+
+- Martin Albrecht (2006-03-05): code so singular.[tab] and x =
+  singular(...), x.[tab] includes all singular commands.
+
+- Martin Albrecht (2006-03-06): This patch adds the equality symbol to
+  singular. Also fix a problem in which " " as prompt means comparison
+  will break all further communication with Singular.
+
+- Martin Albrecht (2006-03-13): added current_ring() and
+  current_ring_name()
+
+- William Stein (2006-04-10): Fixed problems with ideal constructor
+
+- Martin Albrecht (2006-05-18): added sage_poly.
+
+- Simon King (2010-11-23): Reduce the overhead caused by waiting for
+  the Singular prompt by doing garbage collection differently.
+
+- Simon King (2011-06-06): Make conversion from Singular to Sage more flexible.
+
+- Simon King (2015): Extend pickling capabilities.
+"""
 import sage.interfaces.abc
 import types
 from _typeshed import Incomplete
@@ -1095,7 +1420,7 @@ def get_docstring(name, prefix: bool = False, code: bool = False):
         sage: Info().unhide()
     '''
 
-singular: Incomplete
+singular: Singular
 
 def reduce_load_Singular():
     """

@@ -1,3 +1,104 @@
+r"""
+Interface to Macaulay2
+
+.. NOTE::
+
+    You must have ``Macaulay2`` installed on your computer
+    for this interface to work. Macaulay2 is not included with Sage,
+    but you can obtain it from https://macaulay2.com/.
+    No additional optional Sage packages are required.
+
+Sage provides an interface to the Macaulay2 computational algebra
+system. This system provides extensive functionality for commutative
+algebra. You do not have to install any optional packages.
+
+The Macaulay2 interface offers three pieces of functionality:
+
+- ``macaulay2_console()`` -- a function that dumps you
+  into an interactive command-line Macaulay2 session
+
+- ``macaulay2.eval(expr)`` -- evaluation of arbitrary Macaulay2
+  expressions, with the result returned as a string
+
+- ``macaulay2(expr)`` -- creation of a Sage object that wraps a
+  Macaulay2 object.  This provides a Pythonic interface to Macaulay2.  For
+  example, if ``f = macaulay2(10)``, then ``f.gcd(25)`` returns the
+  GCD of `10` and `25` computed using Macaulay2.
+
+EXAMPLES::
+
+    sage: macaulay2('3/5 + 7/11')
+    68
+    --
+    55
+    sage: f = macaulay2('f = i -> i^3')
+    sage: f
+    f
+    sage: f(5)
+    125
+
+    sage: R = macaulay2('ZZ/5[x,y,z]')
+    sage: R
+    ZZ
+    --[x...z]
+     5
+    sage: x = macaulay2('x')
+    sage: y = macaulay2('y')
+    sage: (x+y)^5
+     5    5
+    x  + y
+    sage: parent((x+y)^5)
+    Macaulay2
+
+The name of the variable to which a Macaulay2 element is assigned internally
+can be passed as an argument. This is useful for types like polynomial rings
+which acquire that name in Macaulay2::
+
+    sage: R = macaulay2('QQ[x,y,z,w]', 'R')
+    sage: R
+    R
+
+    sage: f = macaulay2('x^4 + 2*x*y^3 + x*y^2*w + x*y*z*w + x*y*w^2'
+    ....:               '+ 2*x*z*w^2 + y^4 + y^3*w + 2*y^2*z*w + z^4 + w^4')
+    sage: f
+     4       3    4    4      2     3                2           2         2    4
+    x  + 2x*y  + y  + z  + x*y w + y w + x*y*z*w + 2y z*w + x*y*w  + 2x*z*w  + w
+    sage: g = f * macaulay2('x+y^5')
+    sage: print(g.factor())
+      4       3    4    4      2     3                2           2         2    4   5
+    (x  + 2x*y  + y  + z  + x*y w + y w + x*y*z*w + 2y z*w + x*y*w  + 2x*z*w  + w )(y  + x)
+
+Use :meth:`eval` for explicit control over what is sent to the interpreter.
+The argument is evaluated in Macaulay2 as is::
+
+    sage: macaulay2.eval('compactMatrixForm')
+    true
+    sage: macaulay2.eval('compactMatrixForm = false;')
+    sage: macaulay2.eval('matrix {{1, x^2+y}}')
+    |      2      |
+    |  1  x  + y  |
+    <BLANKLINE>
+            1      2
+    Matrix R  <-- R
+    sage: macaulay2.eval('compactMatrixForm = true;')
+
+
+AUTHORS:
+
+- Kiran Kedlaya and David Roe (2006-02-05, during Sage coding sprint)
+- William Stein (2006-02-09): inclusion in Sage; prompt uses regexp,
+  calling of Macaulay2 functions via __call__.
+- William Stein (2006-02-09): fixed bug in reading from file and
+  improved output cleaning.
+- Kiran Kedlaya (2006-02-12): added ring and ideal constructors,
+  list delimiters, is_Macaulay2Element, sage_polystring,
+  __floordiv__, __mod__, __iter__, __len__; stripped extra
+  leading space and trailing newline from output.
+
+.. TODO::
+
+    Get rid of all numbers in output, e.g., in ideal function below.
+"""
 import sage.interfaces.abc
 from _typeshed import Incomplete
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
@@ -704,7 +805,7 @@ def is_Macaulay2Element(x):
         True
     """
 
-macaulay2: Incomplete
+macaulay2: Macaulay2
 
 def macaulay2_console() -> None:
     """

@@ -1,5 +1,170 @@
+r"""
+Interface to Axiom
+
+.. TODO::
+
+    - Evaluation using a file is not done. Any input line with more than a
+      few thousand characters would hang the system, so currently it
+      automatically raises an exception.
+
+    - All completions of a given command.
+
+    - Interactive help.
+
+Axiom is a free GPL-compatible (modified BSD license) general
+purpose computer algebra system whose development started in 1973
+at IBM. It contains symbolic manipulation algorithms, as well as
+implementations of special functions, including elliptic functions
+and generalized hypergeometric functions. Moreover, Axiom has
+implementations of many functions relating to the invariant theory
+of the symmetric group `S_n.` For many links to Axiom
+documentation see http://wiki.axiom-developer.org.
+
+AUTHORS:
+
+- Bill Page (2006-10): Created this (based on Maxima interface)
+
+
+  .. NOTE::
+
+     Bill Page put a huge amount of effort into the Sage Axiom
+     interface over several days during the Sage Days 2 coding
+     sprint. This is contribution is greatly appreciated.
+
+- William Stein (2006-10): misc touchup.
+
+- Bill Page (2007-08): Minor modifications to support axiom4sage-0.3
+
+.. NOTE::
+
+   The axiom4sage-0.3.spkg is based on an experimental version of the
+   FriCAS fork of the Axiom project by Waldek Hebisch that uses
+   pre-compiled cached Lisp code to build Axiom very quickly with
+   clisp.
+
+If the string "error" (case insensitive) occurs in the output of
+anything from axiom, a :exc:`RuntimeError` exception is raised.
+
+EXAMPLES: We evaluate a very simple expression in axiom.
+
+::
+
+    sage: axiom('3 * 5')                     #optional - axiom
+    15
+    sage: a = axiom(3) * axiom(5); a         #optional - axiom
+    15
+
+The type of a is AxiomElement, i.e., an element of the axiom
+interpreter.
+
+::
+
+    sage: type(a)                            #optional - axiom
+    <class 'sage.interfaces.axiom.AxiomElement'>
+    sage: parent(a)                          #optional - axiom
+    Axiom
+
+The underlying Axiom type of a is also available, via the type
+method::
+
+    sage: a.type()                           #optional - axiom
+    PositiveInteger
+
+We factor `x^5 - y^5` in Axiom in several different ways.
+The first way yields a Axiom object.
+
+::
+
+    sage: F = axiom.factor('x^5 - y^5'); F      #optional - axiom
+               4      3    2 2    3     4
+    - (y - x)(y  + x y  + x y  + x y + x )
+    sage: type(F)                               #optional - axiom
+    <class 'sage.interfaces.axiom.AxiomElement'>
+    sage: F.type()                              #optional - axiom
+    Factored Polynomial Integer
+
+Note that Axiom objects are normally displayed using "ASCII art".
+
+::
+
+    sage: a = axiom(2/3); a          #optional - axiom
+      2
+      -
+      3
+    sage: a = axiom('x^2 + 3/7'); a      #optional - axiom
+       2   3
+      x  + -
+           7
+
+The ``axiom.eval`` command evaluates an expression in
+axiom and returns the result as a string. This is exact as if we
+typed in the given line of code to axiom; the return value is what
+Axiom would print out.
+
+::
+
+    sage: print(axiom.eval('factor(x^5 - y^5)'))   # optional - axiom
+               4      3    2 2    3     4
+    - (y - x)(y  + x y  + x y  + x y + x )
+    Type: Factored Polynomial Integer
+
+We can create the polynomial `f` as a Axiom polynomial,
+then call the factor method on it. Notice that the notation
+``f.factor()`` is consistent with how the rest of Sage
+works.
+
+::
+
+    sage: f = axiom('x^5 - y^5')                  #optional - axiom
+    sage: f^2                                     #optional - axiom
+       10     5 5    10
+      y   - 2x y  + x
+    sage: f.factor()                              #optional - axiom
+               4      3    2 2    3     4
+    - (y - x)(y  + x y  + x y  + x y + x )
+
+Control-C interruption works well with the axiom interface, because
+of the excellent implementation of axiom. For example, try the
+following sum but with a much bigger range, and hit control-C.
+
+::
+
+    sage:  f = axiom('(x^5 - y^5)^10000')       # not tested
+    Interrupting Axiom...
+    ...
+    <class 'exceptions.TypeError'>: Ctrl-c pressed while running Axiom
+
+::
+
+    sage: axiom('1/100 + 1/101')                  #optional - axiom
+       201
+      -----
+      10100
+    sage: a = axiom('(1 + sqrt(2))^5'); a         #optional - axiom
+         +-+
+      29\|2  + 41
+
+TESTS:
+
+We check to make sure the subst method works with keyword
+arguments.
+
+::
+
+    sage: a = axiom(x+2); a  #optional - axiom
+    x + 2
+    sage: a.subst(x=3)       #optional - axiom
+    5
+
+We verify that Axiom floating point numbers can be converted to
+Python floats.
+
+::
+
+    sage: float(axiom(2))     #optional - axiom
+    2.0
+"""
 import sage.interfaces.abc
-from _typeshed import Incomplete
 from sage.env import DOT_SAGE as DOT_SAGE
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
@@ -212,7 +377,7 @@ def is_AxiomElement(x):
         True
     """
 
-axiom: Incomplete
+axiom: Axiom
 
 def reduce_load_Axiom():
     """

@@ -1,4 +1,10 @@
-from _typeshed import Incomplete
+r"""
+Interface to Sage
+
+This is an expect interface to *another* copy of the Sage
+interpreter.
+"""
+
 from sage.interfaces.expect import Expect as Expect, ExpectElement as ExpectElement, FunctionElement as FunctionElement
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
 from sage.misc.instancedoc import instancedoc as instancedoc
@@ -261,7 +267,7 @@ class SageFunction(FunctionElement):
             2
         """
 
-sage0: Incomplete
+sage0: Sage
 
 def reduce_load_Sage():
     """

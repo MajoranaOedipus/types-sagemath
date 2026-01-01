@@ -1,4 +1,29 @@
-from _typeshed import Incomplete
+r"""
+Interface to Groebner Fan
+
+AUTHOR:
+
+- Anders Nedergaard Jensen: Write gfan C++ program, which implements
+  algorithms many of which were invented by Jensen, Komei
+  Fukuda, and Rekha Thomas.
+- William Stein (2006-03-18): wrote gfan interface (first version)
+- Marshall Hampton (2008-03-17): modified to use gfan-0.3, subprocess instead of os.popen2
+
+TODO -- much functionality of gfan-0.3 is still not exposed::
+
+   * at most 52 variables:
+
+       - use gfan_substitute to make easier (?)
+       MH: I think this is now irrelevant since gfan can accept the original ring variables
+
+   * --symmetry is really useful
+            - permutations are 0-based *not* cycle notation; a <---> 0
+     output is broken up much more nicely.
+
+   * -- can work in Z/pZ for p <= 32749
+
+   * -- can compute individual GB's for lex and revlex (via buchberger)
+"""
 from sage.features.gfan import GfanExecutable as GfanExecutable
 from sage.misc.decorators import rename_keyword as rename_keyword
 
@@ -46,4 +71,4 @@ class Gfan:
             See https://github.com/sagemath/sage/issues/33468 for details.
         """
 
-gfan: Incomplete
+gfan: Gfan

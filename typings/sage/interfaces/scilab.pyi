@@ -1,5 +1,185 @@
+r"""
+Interface to Scilab
+
+Scilab is a scientific software package for numerical computations
+providing a powerful open computing environment for engineering and
+scientific applications.  Scilab includes hundreds of mathematical
+functions with the possibility to add interactively programs from
+various languages (C, C++, Fortran...).  It has sophisticated data
+structures (including lists, polynomials, rational functions, linear
+systems...), an interpreter and a high level programming language.
+
+The commands in this section only work if you have the "scilab"
+interpreter installed and available in your PATH.  It's not necessary
+to install any special Sage packages.
+
+EXAMPLES::
+
+    sage: # optional - scilab
+    sage: scilab.eval('2+2')
+    'ans  =\n \n    4.'
+    sage: scilab('2+2')
+    4.
+    sage: a = scilab(10)
+    sage: a**10
+    1.000D+10
+
+Tutorial based the MATLAB interface tutorial:
+
+EXAMPLES::
+
+    sage: # optional - scilab
+    sage: scilab('4+10')
+    14.
+    sage: scilab('date')
+    15-Feb-2010
+    sage: scilab('5*10 + 6')
+    56.
+    sage: scilab('(6+6)/3')
+    4.
+    sage: scilab('9')^2
+    81.
+    sage: a = scilab(10); b = scilab(20); c = scilab(30)
+    sage: avg = (a+b+c)/3
+    sage: avg
+    20.
+    sage: parent(avg)
+    Scilab
+
+    sage: # optional - scilab
+    sage: my_scalar = scilab('3.1415')
+    sage: my_scalar
+    3.1415
+    sage: my_vector1 = scilab('[1,5,7]')
+    sage: my_vector1
+    1.    5.    7.
+    sage: my_vector2 = scilab('[1;5;7]')
+    sage: my_vector2
+    1.
+    5.
+    7.
+    sage: my_vector1 * my_vector2
+    75.
+
+    sage: # optional - scilab
+    sage: row_vector1 = scilab('[1 2 3]')
+    sage: row_vector2 = scilab('[3 2 1]')
+    sage: matrix_from_row_vec = scilab('[%s; %s]'%(row_vector1.name(), row_vector2.name()))
+    sage: matrix_from_row_vec
+    1.    2.    3.
+    3.    2.    1.
+
+    sage: # optional - scilab
+    sage: column_vector1 = scilab('[1;3]')
+    sage: column_vector2 = scilab('[2;8]')
+    sage: matrix_from_col_vec = scilab('[%s %s]'%(column_vector1.name(), column_vector2.name()))
+    sage: matrix_from_col_vec
+    1.    2.
+    3.    8.
+
+    sage: my_matrix = scilab('[8, 12, 19; 7, 3, 2; 12, 4, 23; 8, 1, 1]')    # optional - scilab
+    sage: my_matrix                                      # optional - scilab
+        8.     12.    19.
+        7.     3.     2.
+        12.    4.     23.
+        8.     1.     1.
+
+    sage: combined_matrix = scilab('[%s, %s]'%(my_matrix.name(), my_matrix.name()))                                        # optional - scilab
+    sage: combined_matrix                               # optional - scilab
+    8.     12.    19.    8.     12.    19.
+    7.     3.     2.     7.     3.     2.
+    12.    4.     23.    12.    4.     23.
+    8.     1.     1.     8.     1.     1.
+
+    sage: tm = scilab('0.5:2:10')                       # optional - scilab
+    sage: tm                                            # optional - scilab
+    0.5    2.5    4.5    6.5    8.5
+
+    sage: # optional - scilab
+    sage: my_vector1 = scilab('[1,5,7]')
+    sage: my_vector1(1)
+    1.
+    sage: my_vector1(2)
+    5.
+    sage: my_vector1(3)
+    7.
+
+Matrix indexing works as follows::
+
+    sage: my_matrix = scilab('[8, 12, 19; 7, 3, 2; 12, 4, 23; 8, 1, 1]')     # optional - scilab
+    sage: my_matrix(3,2)                                # optional - scilab
+    4.
+
+One can also use square brackets::
+
+    sage: my_matrix[3,2]                                # optional - scilab
+    4.
+
+
+Setting using parenthesis cannot work (because of how the Python
+language works).  Use square brackets or the set function::
+
+    sage: # optional - scilab
+    sage: my_matrix = scilab('[8, 12, 19; 7, 3, 2; 12, 4, 23; 8, 1, 1]')
+    sage: my_matrix.set(2,3, 1999)
+    sage: my_matrix
+           8.         12.         19.
+           7.          3.       1999.
+          12.          4.         23.
+           8.          1.          1.
+    sage: my_matrix[2,3] = -126
+    sage: my_matrix
+           8.         12.         19.
+           7.          3.      - 126.
+          12.          4.         23.
+           8.          1.          1.
+
+TESTS::
+
+    sage: # optional - scilab
+    sage: M = scilab(x)
+    Traceback (most recent call last):
+    ...
+    TypeError: ..._interface_init_() takes exactly one argument (0 given)
+    sage: M = scilab(matrix(3,range(9))); M
+        0.    1.    2.
+        3.    4.    5.
+        6.    7.    8.
+    sage: M(10)
+    Traceback (most recent call last):
+    ...
+    TypeError: Error executing code in Scilab
+    ...
+    Invalid index.
+    sage: M[10]
+    Traceback (most recent call last):
+    ...
+    TypeError: Error executing code in Scilab
+    ...
+    Invalid index.
+    sage: M(4,2)
+    Traceback (most recent call last):
+    ...
+    TypeError: Error executing code in Scilab
+    ...
+    Invalid index.
+    sage: M[2,4]
+    Traceback (most recent call last):
+    ...
+    TypeError: Error executing code in Scilab
+    ...
+    Invalid index.
+    sage: M(9) = x
+    Traceback (most recent call last):
+    ...
+    SyntaxError: can...t assign to function call (..., line 1)
+
+AUTHORS:
+
+- Ronan Paixao (2008-11-26), based on the MATLAB tutorial by
+  William Stein (2006-10-11)
+"""
 from .expect import Expect as Expect, ExpectElement as ExpectElement
-from _typeshed import Incomplete
 from sage.misc.instancedoc import instancedoc as instancedoc
 
 class Scilab(Expect):
@@ -190,7 +370,7 @@ class ScilabElement(ExpectElement):
     125.'
         """
 
-scilab: Incomplete
+scilab: Scilab
 
 def scilab_console() -> None:
     """

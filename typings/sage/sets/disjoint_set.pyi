@@ -1,13 +1,140 @@
+r"""
+Disjoint-set data structure
+
+The main entry point is :func:`DisjointSet` which chooses the appropriate
+type to return. For more on the data structure, see :func:`DisjointSet`.
+
+This module defines a class for mutable partitioning of a set, which
+cannot be used as a key of a dictionary, a vertex of a graph, etc. For
+immutable partitioning see :class:`SetPartition`.
+
+AUTHORS:
+
+- Sébastien Labbé (2008) - Initial version.
+- Sébastien Labbé (2009-11-24) - Pickling support
+- Sébastien Labbé (2010-01) - Inclusion into sage (:issue:`6775`).
+- Giorgos Mousa (2024-04-22): Optimize
+
+EXAMPLES:
+
+Disjoint set of integers from ``0`` to ``n - 1``::
+
+    sage: s = DisjointSet(6)
+    sage: s
+    {{0}, {1}, {2}, {3}, {4}, {5}}
+    sage: s.union(2, 4)
+    sage: s.union(1, 3)
+    sage: s.union(5, 1)
+    sage: s
+    {{0}, {1, 3, 5}, {2, 4}}
+    sage: s.find(3)
+    1
+    sage: s.find(5)
+    1
+    sage: list(map(s.find, range(6)))
+    [0, 1, 2, 1, 2, 1]
+
+Disjoint set of hashables objects::
+
+    sage: d = DisjointSet('abcde')
+    sage: d
+    {{'a'}, {'b'}, {'c'}, {'d'}, {'e'}}
+    sage: d.union('a', 'b')
+    sage: d.union('b', 'c')
+    sage: d.union('c', 'd')
+    sage: d
+    {{'a', 'b', 'c', 'd'}, {'e'}}
+    sage: d.find('c')
+    'a'
+"""
 import _cython_3_2_1
 import sage.structure.sage_object
 from sage.combinat.set_partition import SetPartition as SetPartition
 from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
-from sage.misc.lazy_import import LazyImport as LazyImport
+from sage.combinat.set_partition import SetPartition
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from typing import Any, ClassVar, overload
+from collections.abc import Iterable, Hashable
+from typings_sagemath import Int
 
-DisjointSet: _cython_3_2_1.cython_function_or_method
-__pyx_capi__: dict
+def DisjointSet(arg: Int | SetPartition | Iterable[Hashable]) -> DisjointSet_class:
+    r"""
+    Construct a disjoint set where each element of ``arg`` is in its
+    own set. If ``arg`` is an integer, then the disjoint set returned is
+    made of the integers from ``0`` to ``arg - 1``.
+
+    A disjoint-set data structure (sometimes called union-find data structure)
+    is a data structure that keeps track of a partitioning of a set into a
+    number of separate, nonoverlapping sets. It performs two operations:
+
+    - :meth:`~sage.sets.disjoint_set.DisjointSet_of_hashables.find` --
+      Determine which set a particular element is in.
+
+    - :meth:`~sage.sets.disjoint_set.DisjointSet_of_hashables.union` --
+      Combine or merge two sets into a single set.
+
+    REFERENCES:
+
+    - :wikipedia:`Disjoint-set_data_structure`
+
+    INPUT:
+
+    - ``arg`` -- nonnegative integer or an iterable of hashable objects
+
+    EXAMPLES:
+
+    From a nonnegative integer::
+
+        sage: DisjointSet(5)
+        {{0}, {1}, {2}, {3}, {4}}
+
+    From an iterable::
+
+        sage: DisjointSet('abcde')
+        {{'a'}, {'b'}, {'c'}, {'d'}, {'e'}}
+        sage: DisjointSet(range(6))
+        {{0}, {1}, {2}, {3}, {4}, {5}}
+        sage: DisjointSet(['yi', 45, 'cheval'])
+        {{'cheval'}, {'yi'}, {45}}
+
+    From a set partition (see :issue:`38693`)::
+
+        sage: SP = SetPartition(DisjointSet(5))
+        sage: DisjointSet(SP)
+        {{0}, {1}, {2}, {3}, {4}}
+        sage: DisjointSet(SP) == DisjointSet(5)
+        True
+
+    TESTS::
+
+        sage: DisjointSet(0)
+        {}
+        sage: DisjointSet('')
+        {}
+        sage: DisjointSet([])
+        {}
+
+    The argument must be a nonnegative integer::
+
+        sage: DisjointSet(-1)
+        Traceback (most recent call last):
+        ...
+        ValueError: arg must be a nonnegative integer (-1 given)
+
+    or an iterable::
+
+        sage: DisjointSet(4.3)                                                          # needs sage.rings.real_mpfr
+        Traceback (most recent call last):
+        ...
+        TypeError: 'sage.rings.real_mpfr.RealLiteral' object is not iterable
+
+    Moreover, the iterable must consist of hashable::
+
+        sage: DisjointSet([{}, {}])
+        Traceback (most recent call last):
+        ...
+        TypeError: ...unhashable type: 'dict'...
+    """
 
 class DisjointSet_class(sage.structure.sage_object.SageObject):
     """File: /build/sagemath/src/sage/src/sage/sets/disjoint_set.pyx (starting at line 157)
@@ -15,7 +142,6 @@ class DisjointSet_class(sage.structure.sage_object.SageObject):
         Common class and methods for :class:`DisjointSet_of_integers` and
         :class:`DisjointSet_of_hashables`.
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""

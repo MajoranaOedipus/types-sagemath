@@ -1,4 +1,4 @@
-from _typeshed import Incomplete
+"Interface to the free online MAGMA calculator"
 
 class MagmaExpr(str): ...
 
@@ -31,4 +31,4 @@ class MagmaFree:
     def eval(self, x, **kwds): ...
     def __call__(self, code, strip: bool = True, columns: int = 0): ...
 
-magma_free: Incomplete
+magma_free: MagmaFree

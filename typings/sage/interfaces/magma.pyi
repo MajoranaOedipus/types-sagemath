@@ -1,7 +1,209 @@
+r"""
+Interface to Magma
+
+Sage provides an interface to the Magma computational algebra
+system. This system provides extensive functionality for number
+theory, group theory, combinatorics and algebra.
+
+.. NOTE::
+
+   You must have Magma installed on your
+   computer for this interface to work. Magma is not free, so it is
+   not included with Sage, but you can obtain it from
+   https://magma.maths.usyd.edu.au/.
+
+The Magma interface offers three pieces of functionality:
+
+#. ``magma_console()`` -- a function that dumps you into an interactive command-line Magma session.
+
+#. ``magma.new(obj)`` and alternatively ``magma(obj)`` -- creation of a Magma object from a Sage object ``obj``.
+   This provides a Pythonic interface to Magma. For example, if ``f=magma.new(10)``, then
+   ``f.Factors()`` returns the prime factorization of 10 computed using Magma. If obj is a string containing
+   an arbitrary Magma expression, then the expression is evaluated in Magma to create a Magma object. An example
+   is ``magma.new('10 div 3')``, which returns Magma integer 3.
+
+#. ``magma.eval(expr)`` -- evaluation of the Magma expression ``expr``, with the result returned as a string.
+
+Type ``magma.[tab]`` for a list of all functions available from your Magma.
+Type ``magma.Function?`` for Magma's help about the Magma ``Function``.
+
+Parameters
+----------
+
+Some Magma functions have optional "parameters", which are
+arguments that in Magma go after a colon. In Sage, you pass these
+using named function arguments. For example,
+
+::
+
+    sage: E = magma('EllipticCurve([0,1,1,-1,0])')                 # optional - magma
+    sage: E.Rank(Bound = 5)                                        # optional - magma
+    0
+
+Multiple Return Values
+----------------------
+
+Some Magma functions return more than one value. You can control
+how many you get using the ``nvals`` named parameter to
+a function call::
+
+    sage: # optional - magma
+    sage: n = magma(100)
+    sage: n.IsSquare(nvals = 1)
+    true
+    sage: n.IsSquare(nvals = 2)
+    (true, 10)
+    sage: n = magma(-2006)
+    sage: n.Factorization()
+    [ <2, 1>, <17, 1>, <59, 1> ]
+    sage: n.Factorization(nvals=2)
+    ([ <2, 1>, <17, 1>, <59, 1> ], -1)
+
+We verify that an obviously principal ideal is principal::
+
+    sage: # optional - magma
+    sage: _ = magma.eval('R<x> := PolynomialRing(RationalField())')
+    sage: O = magma.NumberField('x^2+23').MaximalOrder()
+    sage: I = magma('ideal<%s|%s.1>'%(O.name(),O.name()))
+    sage: I.IsPrincipal(nvals=2)
+    (true, [1, 0])
+
+Long Input
+----------
+
+The Magma interface reads in even very long input (using files) in
+a robust manner.
+
+::
+
+    sage: t = '"%s"'%10^10000   # ten thousand character string.       # optional - magma
+    sage: a = magma.eval(t)                                            # optional - magma
+    sage: a = magma(t)                                                 # optional - magma
+
+Garbage Collection
+------------------
+
+There is a subtle point with the Magma interface, which arises from
+how garbage collection works.  Consider the following session:
+
+First, create a matrix m in Sage::
+
+    sage: m=matrix(ZZ,2,[1,2,3,4])                                     # optional - magma
+
+Then I create a corresponding matrix A in Magma::
+
+    sage: A = magma(m)                                                 # optional - magma
+
+It is called _sage_[...] in Magma::
+
+    sage: s = A.name(); s                                              # optional - magma
+    '_sage_[...]'
+
+It's there::
+
+    sage: magma.eval(s)                                                # optional - magma
+    '[1 2]\n[3 4]'
+
+Now I delete the reference to that matrix::
+
+    sage: del A                                                        # optional - magma
+
+Now _sage_[...] is "zeroed out" in the Magma session::
+
+    sage: magma.eval(s)                                                # optional - magma
+    '0'
+
+If Sage did not do this garbage collection, then every single time you
+ever create any magma object from a sage object, e.g., by doing
+magma(m), you would use up a lot of memory in that Magma session.
+This would lead to a horrible memory leak situation, which would make
+the Magma interface nearly useless for serious work.
+
+
+Other Examples
+--------------
+
+We compute a space of modular forms with character.
+
+::
+
+    sage: N = 20
+    sage: D = 20
+    sage: eps_top = fundamental_discriminant(D)
+    sage: eps = magma.KroneckerCharacter(eps_top, RationalField())        # optional - magma
+    sage: M2 = magma.ModularForms(eps)                                    # optional - magma
+    sage: print(M2)                                                       # optional - magma
+    Space of modular forms on Gamma_1(5) ...
+    sage: print(M2.Basis())                                               # optional - magma
+    [
+    1 + 10*q^2 + 20*q^3 + 20*q^5 + 60*q^7 + ...
+    q + q^2 + 2*q^3 + 3*q^4 + 5*q^5 + 2*q^6 + ...
+    ]
+
+In Sage/Python (and sort of C++) coercion of an element x into a
+structure S is denoted by S(x). This also works for the Magma
+interface::
+
+    sage: # optional - magma
+    sage: G = magma.DirichletGroup(20)
+    sage: G.AssignNames(['a', 'b'])
+    sage: (G.1).Modulus()
+    20
+    sage: e = magma.DirichletGroup(40)(G.1)
+    sage: print(e)
+    Kronecker character -4 in modulus 40
+    sage: print(e.Modulus())
+    40
+
+We coerce some polynomial rings into Magma::
+
+    sage: R.<y> = PolynomialRing(QQ)
+    sage: S = magma(R)                                                    # optional - magma
+    sage: print(S)                                                        # optional - magma
+    Univariate Polynomial Ring in y over Rational Field
+    sage: S.1                                                             # optional - magma
+    y
+
+This example illustrates that Sage doesn't magically extend how
+Magma implicit coercion (what there is, at least) works. The errors
+below are the result of Magma having a rather limited automatic
+coercion system compared to Sage's::
+
+    sage: R.<x> = ZZ[]
+    sage: x * 5
+    5*x
+    sage: x * 1.0
+    x
+    sage: x * (2/3)
+    2/3*x
+    sage: y = magma(x)                                                    # optional - magma
+    sage: y * 5                                                           # optional - magma
+    5*x
+    sage: y * 1.0                                                         # optional - magma
+    $.1
+    sage: y * (2/3)                                                       # optional - magma
+    Traceback (most recent call last):
+    ...
+    TypeError: Error evaluating Magma code.
+    ...
+    Argument types given: RngUPolElt[RngInt], FldRatElt
+
+
+AUTHORS:
+
+- William Stein (2005): initial version
+
+- William Stein (2006-02-28): added extensive tab completion and
+  interactive IPython documentation support.
+
+- William Stein (2006-03-09): added nvals argument for
+  magma.functions...
+"""
+from _typeshed import Incomplete
+from re import Pattern
 import sage.interfaces.abc
 import types
 from .expect import Expect as Expect, ExpectElement as ExpectElement, ExpectFunction as ExpectFunction, FunctionElement as FunctionElement
-from _typeshed import Incomplete
 from sage.env import DOT_SAGE as DOT_SAGE, SAGE_EXTCODE as SAGE_EXTCODE
 from sage.interfaces.tab_completion import ExtraTabCompletion as ExtraTabCompletion
 from sage.misc.instancedoc import instancedoc as instancedoc
@@ -9,9 +211,9 @@ from sage.structure.parent import Parent as Parent
 
 PROMPT: str
 SAGE_REF: str
-SAGE_REF_RE: Incomplete
-INTRINSIC_CACHE: Incomplete
-EXTCODE_DIR: Incomplete
+SAGE_REF_RE: Pattern[str]
+INTRINSIC_CACHE: str
+EXTCODE_DIR: str | None
 
 def extcode_dir(iface=None) -> str:
     """
@@ -1234,7 +1436,7 @@ class MagmaElement(ExtraTabCompletion, ExpectElement, sage.interfaces.abc.MagmaE
             Ideal of Univariate Polynomial Ring in x over Rational Field generated by x - 1
         """
 
-magma: Incomplete
+magma: Magma
 
 def reduce_load_Magma():
     """

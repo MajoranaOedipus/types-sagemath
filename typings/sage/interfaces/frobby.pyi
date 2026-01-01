@@ -1,4 +1,25 @@
-from _typeshed import Incomplete
+r"""
+Interface to Frobby for fast computations on monomial ideals.
+
+The software package Frobby provides a number of computations on
+monomial ideals. The current main feature is the socle of a monomial
+ideal, which is largely equivalent to computing the maximal standard
+monomials, the Alexander dual or the irreducible decomposition.
+
+Operations on monomial ideals are much faster than algorithms designed
+for ideals in general, which is what makes a specialized library for
+these operations on monomial ideals useful.
+
+AUTHORS:
+
+- Bjarke Hammersholt Roune (2008-04-25): Wrote the Frobby C++
+  program and the initial version of the Python interface.
+
+.. NOTE::
+
+    The official source for Frobby is <https://www.broune.com/frobby>,
+    which also has documentation and papers describing the algorithms used.
+"""
 from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
 from sage.misc.misc_c import prod as prod
 
@@ -199,4 +220,4 @@ class Frobby:
             True
         """
 
-frobby: Incomplete
+frobby: Frobby
