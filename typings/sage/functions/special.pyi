@@ -1,6 +1,132 @@
-from _typeshed import Incomplete
+r"""
+Miscellaneous special functions
+
+This module provides easy access to many of Maxima and PARI's
+special functions.
+
+Maxima's special functions package (which includes spherical
+harmonic functions, spherical Bessel functions (of the 1st and 2nd
+kind), and spherical Hankel functions (of the 1st and 2nd kind))
+was written by Barton Willis of the University of Nebraska at
+Kearney. It is released under the terms of the General Public
+License (GPL).
+
+Support for elliptic functions and integrals was written by Raymond
+Toy. It is placed under the terms of the General Public License
+(GPL) that governs the distribution of Maxima.
+
+Next, we summarize some of the properties of the functions
+implemented here.
+
+- **Spherical harmonics**: Laplace's equation in spherical coordinates is:
+
+    .. MATH::
+
+        \frac{1}{r^2} \frac{\partial}{\partial r}
+        \left( r^2 \frac{\partial f}{\partial r} \right) +
+        \frac{1}{r^2\sin\theta} \frac{\partial}{\partial \theta}
+        \left( \sin\theta \frac{\partial f}{\partial \theta} \right) +
+        \frac{1}{r^2\sin^2\theta} \frac{\partial^2 f}{\partial \varphi^2} = 0.
+
+  Note that the spherical coordinates `\theta` and `\varphi` are defined here
+  as follows: `\theta` is the colatitude or polar angle, ranging from
+  `0\leq\theta\leq\pi` and `\varphi` the azimuth or longitude, ranging from
+  `0\leq\varphi<2\pi`.
+
+  The general solution which remains finite towards infinity is a linear
+  combination of functions of the form
+
+    .. MATH::
+
+        r^{-1-\ell} \cos (m \varphi) P_\ell^m (\cos{\theta} )
+
+   and
+
+    .. MATH::
+
+        r^{-1-\ell} \sin (m \varphi) P_\ell^m (\cos{\theta} )
+
+  where `P_\ell^m` are the associated Legendre polynomials
+  (cf. :class:`~sage.functions.orthogonal_polys.Func_assoc_legendre_P`),
+  and with integer parameters `\ell \ge 0` and `m` from `0` to `\ell`. Put in
+  another way, the solutions with integer parameters `\ell \ge 0` and
+  `- \ell\leq m\leq \ell`, can be written as linear combinations of:
+
+    .. MATH::
+
+        U_{\ell,m}(r,\theta , \varphi ) =
+        r^{-1-\ell} Y_\ell^m( \theta , \varphi )
+
+  where the functions `Y` are the spherical harmonic functions with
+  parameters `\ell`, `m`, which can be written as:
+
+    .. MATH::
+
+        Y_\ell^m( \theta , \varphi ) =
+        \sqrt{ \frac{(2\ell+1)}{4\pi} \frac{(\ell-m)!}{(\ell+m)!} }
+        \, e^{i m \varphi } \, P_\ell^m ( \cos{\theta} ) .
+
+  The spherical harmonics obey the normalisation condition
+
+    .. MATH::
+
+        \int_{\theta=0}^\pi\int_{\varphi=0}^{2\pi}
+        Y_\ell^mY_{\ell'}^{m'*}\,d\Omega =
+        \delta_{\ell\ell'}\delta_{mm'}\quad\quad d\Omega =
+        \sin\theta\,d\varphi\,d\theta .
+
+- The **incomplete elliptic integrals** (of the first kind, etc.) are:
+
+    .. MATH::
+
+        \begin{array}{c}
+        \displaystyle\int_0^\phi \frac{1}{\sqrt{1 - m\sin(x)^2}}\, dx,\\
+        \displaystyle\int_0^\phi \sqrt{1 - m\sin(x)^2}\, dx,\\
+        \displaystyle\int_0^\phi \frac{\sqrt{1-mt^2}}{\sqrt(1 - t^2)}\, dx,\\
+        \displaystyle\int_0^\phi
+        \frac{1}{\sqrt{1 - m\sin(x)^2\sqrt{1 - n\sin(x)^2}}}\, dx,
+        \end{array}
+
+  and the complete ones are obtained by taking `\phi =\pi/2`.
+
+.. WARNING::
+
+    SciPy's versions are poorly documented and seem less accurate than the
+    Maxima and PARI versions. Typically they are limited by hardware floats
+    precision.
+
+REFERENCES:
+
+- Abramowitz and Stegun: *Handbook of Mathematical Functions* [AS1964]_
+
+- :wikipedia:`Spherical_harmonics`
+
+- :wikipedia:`Helmholtz_equation`
+
+- `Online Encyclopedia of Special Functions
+  <http://algo.inria.fr/esf/index.html>`_
+
+AUTHORS:
+
+- David Joyner (2006-13-06): initial version
+
+- David Joyner (2006-30-10): bug fixes to pari wrappers of Bessel
+  functions, hypergeometric_U
+
+- William Stein (2008-02): Impose some sanity checks.
+
+- David Joyner (2008-02-16): optional calls to scipy and replace all ``#random`` by ``...``
+
+- David Joyner (2008-04-23): addition of elliptic integrals
+
+- Eviatar Bach (2013): making elliptic integrals symbolic
+
+- Eric Gourgoulhon (2022): add Condon-Shortley phase to spherical harmonics
+"""
+from typings_sagemath import FiniteNum, Real
+from sage.rings.complex_mpfr import ComplexNumber
 from sage.misc.functional import sqrt as sqrt
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.libs.mpmath.ext_main import mpf
 from sage.rings.integer import Integer as Integer
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
@@ -92,9 +218,9 @@ class SphericalHarmonic(BuiltinFunction):
             Ynm(n, m, theta, phi)
         """
 
-spherical_harmonic: Incomplete
+spherical_harmonic: SphericalHarmonic
 
-def elliptic_j(z, prec: int = 53):
+def elliptic_j(z: FiniteNum, prec: int = 53) -> ComplexNumber:
     """
     Return the elliptic modular `j`-function evaluated at `z`.
 
@@ -221,7 +347,7 @@ class EllipticE(BuiltinFunction):
              0.000000000000000]
         '''
 
-elliptic_e: Incomplete
+elliptic_e: EllipticE
 
 class EllipticEC(BuiltinFunction):
     """
@@ -266,7 +392,7 @@ class EllipticEC(BuiltinFunction):
             1.3506438810476755025201749
         """
 
-elliptic_ec: Incomplete
+elliptic_ec: EllipticEC
 
 class EllipticEU(BuiltinFunction):
     """
@@ -305,7 +431,7 @@ class EllipticEU(BuiltinFunction):
             elliptic_eu
         """
 
-def elliptic_eu_f(u, m):
+def elliptic_eu_f(u: Real, m: Real) -> mpf:
     """
     Internal function for numeric evaluation of ``elliptic_eu``, defined as
     `E\\left(\\operatorname{am}(u, m)|m\\right)`, where `E` is the incomplete
@@ -319,7 +445,7 @@ def elliptic_eu_f(u, m):
         mpf('0.49605455128659691')
     """
 
-elliptic_eu: Incomplete
+elliptic_eu: EllipticEU
 
 class EllipticF(BuiltinFunction):
     '''
@@ -388,7 +514,7 @@ class EllipticF(BuiltinFunction):
              0.000000000000000]
         '''
 
-elliptic_f: Incomplete
+elliptic_f: EllipticF
 
 class EllipticKC(BuiltinFunction):
     """
@@ -435,7 +561,7 @@ class EllipticKC(BuiltinFunction):
             1.7138894481787910555457043
         """
 
-elliptic_kc: Incomplete
+elliptic_kc: EllipticKC
 
 class EllipticPi(BuiltinFunction):
     '''
@@ -480,4 +606,4 @@ class EllipticPi(BuiltinFunction):
             elliptic_pi(x, pi/4, 1)
         """
 
-elliptic_pi: Incomplete
+elliptic_pi: EllipticPi

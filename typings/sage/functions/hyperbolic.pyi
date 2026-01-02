@@ -1,4 +1,48 @@
-from _typeshed import Incomplete
+r"""
+Hyperbolic functions
+
+The full set of hyperbolic and inverse hyperbolic functions is
+available:
+
+ - hyperbolic sine: :class:`sinh() <Function_sinh>`
+ - hyperbolic cosine: :class:`cosh() <Function_cosh>`
+ - hyperbolic tangent: :class:`tanh() <Function_tanh>`
+ - hyperbolic cotangent: :class:`coth() <Function_coth>`
+ - hyperbolic secant: :class:`sech() <Function_sech>`
+ - hyperbolic cosecant: :class:`csch() <Function_csch>`
+ - inverse hyperbolic sine: :class:`asinh() <Function_arcsinh>`
+ - inverse hyperbolic cosine: :class:`acosh() <Function_arccosh>`
+ - inverse hyperbolic tangent: :class:`atanh() <Function_arctanh>`
+ - inverse hyperbolic cotangent: :class:`acoth() <Function_arccoth>`
+ - inverse hyperbolic secant: :class:`asech() <Function_arcsech>`
+ - inverse hyperbolic cosecant: :class:`acsch() <Function_arccsch>`
+
+REFERENCES:
+
+- :wikipedia:`Hyperbolic function`
+- :wikipedia:`Inverse hyperbolic functions`
+- R. Roy, F. W. J. Olver, Elementary Functions, https://dlmf.nist.gov/4
+
+EXAMPLES:
+
+Inverse hyperbolic functions have logarithmic expressions,
+so expressions of the form ``exp(c*f(x))`` simplify::
+
+    sage: # needs sage.symbolic
+    sage: exp(2*atanh(x))
+    -(x + 1)/(x - 1)
+    sage: exp(2*acoth(x))
+    (x + 1)/(x - 1)
+    sage: exp(2*asinh(x))
+    (x + sqrt(x^2 + 1))^2
+    sage: exp(2*acosh(x))
+    (x + sqrt(x^2 - 1))^2
+    sage: exp(2*asech(x))
+    (sqrt(-x^2 + 1)/x + 1/x)^2
+    sage: exp(2*acsch(x))
+    (sqrt(1/x^2 + 1) + 1/x)^2
+"""
+
 from sage.symbolic.function import GinacFunction as GinacFunction
 
 class Function_sinh(GinacFunction):
@@ -34,7 +78,7 @@ class Function_sinh(GinacFunction):
             sqrt(x + 1)*sqrt(x - 1)
         """
 
-sinh: Incomplete
+sinh: Function_sinh
 
 class Function_cosh(GinacFunction):
     def __init__(self) -> None:
@@ -69,7 +113,7 @@ class Function_cosh(GinacFunction):
             sqrt(x^2 + 1)
         """
 
-cosh: Incomplete
+cosh: Function_cosh
 
 class Function_tanh(GinacFunction):
     def __init__(self) -> None:
@@ -134,7 +178,7 @@ class Function_tanh(GinacFunction):
             sin(2*imag_part(x))/(cos(2*imag_part(x)) + cosh(2*real_part(x)))
         """
 
-tanh: Incomplete
+tanh: Function_tanh
 
 class Function_coth(GinacFunction):
     def __init__(self) -> None:
@@ -179,7 +223,7 @@ class Function_coth(GinacFunction):
             coth(x)
         """
 
-coth: Incomplete
+coth: Function_coth
 
 class Function_sech(GinacFunction):
     def __init__(self) -> None:
@@ -222,7 +266,7 @@ class Function_sech(GinacFunction):
             sech(x)
         """
 
-sech: Incomplete
+sech: Function_sech
 
 class Function_csch(GinacFunction):
     def __init__(self) -> None:
@@ -263,7 +307,7 @@ class Function_csch(GinacFunction):
             csch(x)
         """
 
-csch: Incomplete
+csch: Function_csch
 
 class Function_arcsinh(GinacFunction):
     def __init__(self) -> None:
@@ -320,9 +364,9 @@ class Function_arcsinh(GinacFunction):
             asinh(x)
         """
 
-arcsinh: Incomplete
+arcsinh: Function_arcsinh
 
-asinh: Incomplete
+asinh: Function_arcsinh
 
 class Function_arccosh(GinacFunction):
     def __init__(self) -> None:
@@ -407,9 +451,9 @@ class Function_arccosh(GinacFunction):
             acosh(x)
         """
 
-arccosh: Incomplete
+arccosh: Function_arccosh
 
-acosh: Incomplete
+acosh: Function_arccosh
 
 class Function_arctanh(GinacFunction):
     def __init__(self) -> None:
@@ -464,9 +508,9 @@ class Function_arctanh(GinacFunction):
             atanh(x)
         """
 
-arctanh: Incomplete
+arctanh: Function_arctanh
 
-atanh: Incomplete
+atanh: Function_arctanh
 
 class Function_arccoth(GinacFunction):
     def __init__(self) -> None:
@@ -510,9 +554,9 @@ class Function_arccoth(GinacFunction):
             1.5222612188617113
         """
 
-arccoth: Incomplete
+arccoth: Function_arccoth
 
-acoth: Incomplete
+acoth: Function_arccoth
 
 class Function_arcsech(GinacFunction):
     def __init__(self) -> None:
@@ -541,9 +585,9 @@ class Function_arcsech(GinacFunction):
             asech(x)
         """
 
-arcsech: Incomplete
+arcsech: Function_arcsech
 
-asech: Incomplete
+asech: Function_arcsech
 
 class Function_arccsch(GinacFunction):
     def __init__(self) -> None:
@@ -579,6 +623,6 @@ class Function_arccsch(GinacFunction):
             acsch(x)
         """
 
-arccsch: Incomplete
+arccsch: Function_arccsch
 
-acsch: Incomplete
+acsch: Function_arccsch

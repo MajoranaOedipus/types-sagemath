@@ -1,4 +1,382 @@
-from _typeshed import Incomplete
+r"""
+Orthogonal polynomials
+
+Chebyshev polynomials
+---------------------
+
+The Chebyshev polynomial of the first kind arises as a solution
+to the differential equation
+
+.. MATH::
+
+    (1-x^2)\,y'' - x\,y' + n^2\,y = 0
+
+and those of the second kind as a solution to
+
+.. MATH::
+
+    (1-x^2)\,y'' - 3x\,y' + n(n+2)\,y = 0.
+
+The Chebyshev polynomials of the first kind are defined by the
+recurrence relation
+
+.. MATH::
+
+    T_0(x) = 1, \qquad T_1(x) = x, \qquad T_{n+1}(x) = 2xT_n(x) - T_{n-1}(x).
+
+The Chebyshev polynomials of the second kind are defined by the
+recurrence relation
+
+.. MATH::
+
+    U_0(x) = 1, \qquad U_1(x) = 2x, \qquad U_{n+1}(x) = 2xU_n(x) - U_{n-1}(x).
+
+For integers `m,n`, they satisfy the orthogonality relations
+
+.. MATH::
+
+    \int_{-1}^1 T_n(x)T_m(x)\,\frac{dx}{\sqrt{1-x^2}} =
+    \left\{ \begin{array}{cl} 0 & \text{if } n\neq m, \\ \pi & \text{if } n=m=0, \\ \pi/2 & \text{if } n = m \neq 0, \end{array} \right.
+
+and
+
+.. MATH::
+
+    \int_{-1}^1 U_n(x)U_m(x)\sqrt{1-x^2}\,dx =\frac{\pi}{2}\delta_{m,n}.
+
+They are named after Pafnuty Chebyshev (1821-1894, alternative
+transliterations: Tchebyshef or Tschebyscheff).
+
+Hermite polynomials
+-------------------
+
+The *Hermite polynomials* are defined either by
+
+.. MATH::
+
+    H_n(x) = (-1)^n e^{x^2/2} \frac{d^n}{dx^n} e^{-x^2/2}
+
+(the "probabilists' Hermite polynomials"), or by
+
+.. MATH::
+
+    H_n(x) = (-1)^n e^{x^2}\frac{d^n}{dx^n}e^{-x^2}
+
+(the "physicists' Hermite polynomials"). Sage (via Maxima) implements
+the latter flavor. These satisfy the orthogonality relation
+
+.. MATH::
+
+    \int_{-\infty}^{\infty} H_n(x) H_m(x) \, e^{-x^2} \, dx
+    = \sqrt{\pi} n! 2^n \delta_{nm}.
+
+They are named in honor of Charles Hermite (1822-1901), but were first
+introduced by Laplace in 1810 and also studied by Chebyshev in 1859.
+
+Legendre polynomials
+--------------------
+
+Each *Legendre polynomial* `P_n(x)` is an `n`-th degree polynomial.
+It may be expressed using Rodrigues' formula:
+
+.. MATH::
+
+    P_n(x) = (2^n n!)^{-1} {\frac{d^n}{dx^n} } \left[ (x^2 -1)^n \right].
+
+These are solutions to Legendre's differential equation:
+
+.. MATH::
+
+    \frac{d}{dx} \left[ (1-x^2) {\frac{d}{dx}} P(x) \right] + n(n+1)P(x) = 0
+
+and satisfy the orthogonality relation
+
+.. MATH::
+
+    \int_{-1}^{1} P_m(x) P_n(x)\,dx = {\frac{2}{2n + 1}} \delta_{mn}.
+
+The *Legendre function of the second kind* `Q_n(x)` is another
+(linearly independent) solution to the Legendre differential equation.
+It is not an "orthogonal polynomial" however.
+
+The associated Legendre functions of the first kind `P_\ell^m(x)` can
+be given in terms of the "usual" Legendre polynomials by
+
+.. MATH::
+
+    \begin{aligned}
+    P_{\ell}^m(x) &= (-1)^m(1-x^2)^{m/2}\frac{d^m}{dx^m}P_\ell(x) \\
+    & = \frac{(-1)^m}{2^\ell \ell!} (1-x^2)^{m/2}\frac{d^{\ell+m}}{dx^{\ell+m}}(x^2-1)^{\ell}.
+    \end{aligned}
+
+Assuming `0 \le m \le \ell`, they satisfy the orthogonality relation:
+
+.. MATH::
+
+    \int_{-1}^{1} P_k^{(m)} P_{\ell}^{(m)} dx
+    = \frac{2(\ell+m)!}{(2\ell+1)(\ell-m)!}\ \delta _{k,\ell},
+
+where `\delta _{k,\ell}` is the Kronecker delta.
+
+The associated Legendre functions of the second kind
+`Q_\ell^m(x)` can be given in terms of the "usual"
+Legendre polynomials by
+
+.. MATH::
+
+    Q_{\ell}^m(x) = (-1)^m (1-x^2)^{m/2} \frac{d^m}{dx^m} Q_{\ell}(x).
+
+They are named after Adrien-Marie Legendre (1752-1833).
+
+Laguerre polynomials
+--------------------
+
+*Laguerre polynomials* may be defined by the Rodrigues formula
+
+.. MATH::
+
+    L_n(x) = \frac{e^x}{n!} \frac{d^n}{dx^n} \left( e^{-x} x^n \right).
+
+They are solutions of Laguerre's equation:
+
+.. MATH::
+
+    x\,y'' + (1 - x)\,y' + n\,y = 0
+
+and satisfy the orthogonality relation
+
+.. MATH::
+
+    \int_0^{\infty} L_m(x) L_n(x) e^{-x} \, dx = \delta_{mn}.
+
+The generalized Laguerre polynomials may be defined by the Rodrigues formula:
+
+.. MATH::
+
+   L_n^{(\alpha)}(x) = \frac{x^{-\alpha} e^x}{n!} \frac{d^n}{dx^n}
+   \left(e^{-x} x^{n+\alpha}\right).
+
+(These are also sometimes called the associated Laguerre
+polynomials.) The simple Laguerre polynomials are recovered from
+the generalized polynomials by setting `\alpha = 0`.
+
+They are named after Edmond Laguerre (1834-1886).
+
+Jacobi polynomials
+------------------
+
+*Jacobi polynomials* are a class of orthogonal polynomials. They
+are obtained from hypergeometric series in cases where the series
+is in fact finite:
+
+.. MATH::
+
+    P_n^{(\alpha,\beta)}(z) = \frac{(\alpha+1)_n}{n!}
+    \,_2F_1\left(-n,1+\alpha+\beta+n; \alpha+1; \frac{1-z}{2}\right),
+
+where `()_n` is Pochhammer's symbol (for the rising factorial),
+(Abramowitz and Stegun p561.) and thus have the explicit expression
+
+.. MATH::
+
+    P_n^{(\alpha,\beta)} (z) = \frac{\Gamma(\alpha+n+1)}{n!\Gamma(\alpha+\beta+n+1)}
+    \sum_{m=0}^n \binom{n}{m} \frac{\Gamma(\alpha+\beta+n+m+1)}{\Gamma(\alpha+m+1)}
+    \left(\frac{z-1}{2}\right)^m.
+
+They are named after Carl Gustav Jaboc Jacobi (1804-1851).
+
+Gegenbauer polynomials
+----------------------
+
+*Ultraspherical* or *Gegenbauer polynomials* are given in terms of
+the Jacobi polynomials `P_n^{(\alpha,\beta)}(x)` with
+`\alpha = \beta = a - 1/2` by
+
+.. MATH::
+
+    C_n^{(a)}(x) = \frac{\Gamma(a+1/2)}{\Gamma(2a)}
+    \frac{\Gamma(n+2a)}{\Gamma(n+a+1/2)} P_n^{(a-1/2,a-1/2)}(x).
+
+They satisfy the orthogonality relation
+
+.. MATH::
+
+    \int_{-1}^1(1-x^2)^{a-1/2}C_m^{(a)}(x)C_n^{(a)}(x)\, dx
+    = \delta_{mn}2^{1-2a}\pi \frac{\Gamma(n+2a)}{(n+a)\Gamma^2(a)\Gamma(n+1)},
+
+for `a > -1/2`. They are obtained from hypergeometric series
+in cases where the series is in fact finite:
+
+.. MATH::
+
+    C_n^{(a)}(z) = \frac{(2a)^{\underline{n}}}{n!}
+    \,_2F_1\left(-n,2a+n; a+\frac{1}{2}; \frac{1-z}{2}\right)
+
+where `\underline{n}` is the falling factorial. (See
+Abramowitz and Stegun p561.)
+
+They are named for Leopold Gegenbauer (1849-1903).
+
+Krawtchouk polynomials
+----------------------
+
+The *Krawtchouk polynomials* are discrete orthogonal polynomials that
+are given by the hypergeometric series
+
+.. MATH::
+
+    K_j(x; n, p) = (-1)^j \binom{n}{j} p^j
+    \,_{2}F_1\left(-j,-x; -n; p^{-1}\right).
+
+Since they are discrete orthogonal polynomials, they satisfy an orthogonality
+relation defined on a discrete (in this case finite) set of points:
+
+.. MATH::
+
+    \sum_{m=0}^n K_i(m; n, p) K_j(m; n, p) \, \binom{n}{m} p^m q^{n-m}
+    = \binom{n}{j} (pq)^j \delta_{ij},
+
+where `q = 1 - p`. They can also be described by the recurrence relation
+
+.. MATH::
+
+    j K_j(x; n, p) = (x - (n-j+1) p - (j-1) q) K_{j-1}(x; n, p)
+    - p q (n - j + 2) K_{j-2}(x; n, p),
+
+where `K_0(x; n, p) = 1` and `K_1(x; n, p) = x - n p`.
+
+They are named for Mykhailo Krawtchouk (1892-1942).
+
+
+Meixner polynomials
+-------------------
+
+The *Meixner polynomials* are discrete orthogonal polynomials that
+are given by the hypergeometric series
+
+.. MATH::
+
+    M_n(x; n, p) = (-1)^j \binom{n}{j} p^j
+    \,_{2}F_1\left(-j,-x; -n; p^{-1}\right).
+
+They satisfy an orthogonality relation:
+
+.. MATH::
+
+    \sum_{k=0}^{\infty} \tilde{M}_n(k; b, c) \tilde{M}_m(k; b, c) \, \frac{(b)_k}{k!} c^k
+    = \frac{c^{-n} n!}{(b)_n (1-c)^b} \delta_{mn},
+
+where `\tilde{M}_n(x; b, c) = M_n(x; b, c) / (b)_x`, for `b > 0 ` and
+`0 < c < 1`. They can also be described by the recurrence relation
+
+.. MATH::
+
+   \begin{aligned}
+    c (n-1+b) M_n(x; b, c) & = ((c-1) x + n-1 + c (n-1+b)) (b+n-1) M_{n-1}(x; b, c)
+    \\ & \qquad - (b+n-1) (b+n-2) (n-1) M_{n-2}(x; b, c),
+    \end{aligned}
+
+where `M_0(x; b, c) = 0` and `M_1(x; b, c) = (1 - c^{-1}) x + b`.
+
+They are named for Josef Meixner (1908-1994).
+
+Hahn polynomials
+----------------
+
+The *Hahn polynomials* are discrete orthogonal polynomials that
+are given by the hypergeometric series
+
+.. MATH::
+
+    Q_k(x; a, b, n) = \,_{3}F_2\left(-k,k+a+b+1,-x; a+1,-n; 1\right).
+
+They satisfy an orthogonality relation:
+
+.. MATH::
+
+    \sum_{k=0}^{n-1} Q_i(k; a, b, n) Q_j(k; a, b, n) \, \rho(k)
+    = \frac{\delta_{ij}}{\pi_i},
+
+where
+
+.. MATH::
+
+    \begin{aligned}
+    \rho(k) &= \binom{a+k}{k} \binom{b+n-k}{n-k},
+    \\
+    \pi_i &= \delta_{ij} \frac{(-1)^i i! (b+1)_i (i+a+b+1)_{n+1}}{n! (2i+a+b+1) (-n)_i (a+1)_i}.
+    \end{aligned}
+
+They can also be described by the recurrence relation
+
+.. MATH::
+
+    A Q_k(x; a,b,n) = (-x + A + C) Q_{k-1}(x; a,b,n) - C Q_{k-2}(x; a,b,n),
+
+where `Q_0(x; a,b,n) = 1` and `Q_1(x; a,b,n) = 1 - \frac{a+b+2}{(a+1)n} x` and
+
+.. MATH::
+
+    A = \frac{(k+a+b) (k+a) (n-k+1)}{(2k+a+b-1) (2k+a+b)},
+    \qquad
+    C = \frac{(k-1) (k+b-1) (k+a+b+n)}{(2k+a+b-2) (2k+a+b-1)}.
+
+They are named for Wolfgang Hahn (1911-1998), although they were first
+introduced by Chebyshev in 1875.
+
+
+Pochhammer symbol
+-----------------
+
+For completeness, the *Pochhammer symbol*, introduced by Leo August
+Pochhammer, `(x)_n`, is used in the theory of special
+functions to represent the "rising factorial" or "upper factorial"
+
+.. MATH::
+
+    (x)_n = x(x+1)(x+2) \cdots (x+n-1) = \frac{(x+n-1)!}{(x-1)!}.
+
+On the other hand, the *falling factorial* or *lower factorial* is
+
+.. MATH::
+
+    x^{\underline{n}} = \frac{x!}{(x-n)!},
+
+in the notation of Ronald L. Graham, Donald E. Knuth and Oren Patashnik
+in their book Concrete Mathematics.
+
+.. TODO::
+
+    Implement Zernike polynomials.
+    :wikipedia:`Zernike_polynomials`
+
+REFERENCES:
+
+- [AS1964]_
+- :wikipedia:`Chebyshev_polynomials`
+- :wikipedia:`Legendre_polynomials`
+- :wikipedia:`Hermite_polynomials`
+- https://mathworld.wolfram.com/GegenbauerPolynomial.html
+- :wikipedia:`Jacobi_polynomials`
+- :wikipedia:`Laguerre_polynomials`
+- :wikipedia:`Associated_Legendre_polynomials`
+- :wikipedia:`Kravchuk_polynomials`
+- :wikipedia:`Meixner_polynomials`
+- :wikipedia:`Hahn_polynomials`
+- Roelof Koekeok and René F. Swarttouw, :arxiv:`math/9602214`
+- [Koe1999]_
+
+AUTHORS:
+
+- David Joyner (2006-06)
+- Stefan Reiterer (2010-)
+- Ralf Stephan (2015-)
+
+The original module wrapped some of the orthogonal/special functions
+in the Maxima package "orthopoly" and was written by Barton
+Willis of the University of Nebraska at Kearney.
+"""
+
 from sage.arith.misc import rising_factorial as rising_factorial
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.superseded import deprecated_function_alias as deprecated_function_alias
@@ -213,7 +591,7 @@ class Func_chebyshev_T(ChebyshevFunction):
              + (1 + 2^6 + O(2^8))*t + O(2^8)
         """
 
-chebyshev_T: Incomplete
+chebyshev_T: Func_chebyshev_T
 
 class Func_chebyshev_U(ChebyshevFunction):
     """
@@ -326,7 +704,7 @@ class Func_chebyshev_U(ChebyshevFunction):
             (2 + O(2^6))*t + O(2^6)
         """
 
-chebyshev_U: Incomplete
+chebyshev_U: Func_chebyshev_U
 
 class Func_legendre_P(GinacFunction):
     '''
@@ -423,7 +801,7 @@ class Func_legendre_P(GinacFunction):
             legendre_P
         """
 
-legendre_P: Incomplete
+legendre_P: Func_legendre_P
 
 class Func_legendre_Q(BuiltinFunction):
     def __init__(self) -> None:
@@ -470,7 +848,7 @@ class Func_legendre_Q(BuiltinFunction):
             0.549306144334055 - 1.57079632679490*I
         """
 
-legendre_Q: Incomplete
+legendre_Q: Func_legendre_Q
 
 class Func_assoc_legendre_P(BuiltinFunction):
     '''
@@ -636,7 +1014,7 @@ class Func_assoc_legendre_P(BuiltinFunction):
         """
     eval_poly: Incomplete
 
-gen_legendre_P: Incomplete
+gen_legendre_P: Func_assoc_legendre_P
 
 class Func_assoc_legendre_Q(BuiltinFunction):
     def __init__(self) -> None:
@@ -667,7 +1045,7 @@ class Func_assoc_legendre_Q(BuiltinFunction):
             9/2*I*pi - 9/2*log(3) + 14/3
         """
 
-gen_legendre_Q: Incomplete
+gen_legendre_Q: Func_assoc_legendre_Q
 
 class Func_hermite(GinacFunction):
     """
@@ -744,7 +1122,7 @@ class Func_hermite(GinacFunction):
             32 x  - 160 x  + 120 x
         """
 
-hermite: Incomplete
+hermite: Func_hermite
 
 class Func_jacobi_P(OrthogonalFunction):
     """
@@ -794,7 +1172,7 @@ class Func_jacobi_P(OrthogonalFunction):
                2
         """
 
-jacobi_P: Incomplete
+jacobi_P: Func_jacobi_P
 
 class Func_ultraspherical(GinacFunction):
     '''
@@ -921,8 +1299,8 @@ class Func_ultraspherical(GinacFunction):
             gegenbauer(x, x, x)
         """
 
-ultraspherical: Incomplete
-gegenbauer: Incomplete
+ultraspherical: Func_ultraspherical
+gegenbauer: Func_ultraspherical
 
 class Func_laguerre(OrthogonalFunction):
     """
@@ -951,7 +1329,7 @@ class Func_laguerre(OrthogonalFunction):
             laguerre
         """
 
-laguerre: Incomplete
+laguerre: Func_laguerre
 
 class Func_gen_laguerre(OrthogonalFunction):
     """
@@ -980,7 +1358,7 @@ class Func_gen_laguerre(OrthogonalFunction):
             gen_laguerre
         """
 
-gen_laguerre: Incomplete
+gen_laguerre: Func_gen_laguerre
 
 class Func_krawtchouk(OrthogonalFunction):
     """
@@ -1076,7 +1454,7 @@ class Func_krawtchouk(OrthogonalFunction):
             [-7/4  1/4]
         """
 
-krawtchouk: Incomplete
+krawtchouk: Func_krawtchouk
 
 class Func_meixner(OrthogonalFunction):
     """
@@ -1142,7 +1520,7 @@ class Func_meixner(OrthogonalFunction):
             [    2*b - (2*b - 1)/c - 3/2/c^2 + 1/2             b^2 + b + 2/c - 1/c^2 - 1]
         """
 
-meixner: Incomplete
+meixner: Func_meixner
 
 class Func_hahn(OrthogonalFunction):
     """
@@ -1231,4 +1609,4 @@ class Func_hahn(OrthogonalFunction):
             [        -3/2*(4*n + 3)/((n - 1)*n)          (n^2 - n - 7)/((n - 1)*n)]
         """
 
-hahn: Incomplete
+hahn: Func_hahn

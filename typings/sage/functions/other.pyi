@@ -1,4 +1,17 @@
-from _typeshed import Incomplete
+"""
+Other functions
+
+TESTS:
+
+Check that gamma function imports are deprecated (:issue:`24411`)::
+
+    sage: from sage.functions.other import beta
+    sage: beta(x, x)                                                                    # needs sage.symbolic
+    doctest:warning...: DeprecationWarning:
+    Importing beta from here is deprecated; please use "from sage.functions.gamma import beta" instead.
+    See https://github.com/sagemath/sage/issues/24411 for details.
+    beta(x, x)
+"""
 from sage.functions.trig import arctan2 as arctan2
 from sage.misc.functional import sqrt as sqrt
 from sage.misc.lazy_import import lazy_import as lazy_import
@@ -92,9 +105,9 @@ class Function_abs(GinacFunction):
             1/2*(x + conjugate(x))/abs(x)
         """
 
-abs: Incomplete
+abs: Function_abs
 
-abs_symbolic: Incomplete
+abs_symbolic: Function_abs
 
 class Function_ceil(BuiltinFunction):
     def __init__(self) -> None:
@@ -215,7 +228,7 @@ class Function_ceil(BuiltinFunction):
             -2
         """
 
-ceil: Incomplete
+ceil: Function_ceil
 
 class Function_floor(BuiltinFunction):
     def __init__(self) -> None:
@@ -333,7 +346,7 @@ class Function_floor(BuiltinFunction):
             -3
         """
 
-floor: Incomplete
+floor: Function_floor
 
 class Function_Order(GinacFunction):
     def __init__(self) -> None:
@@ -364,7 +377,7 @@ class Function_Order(GinacFunction):
             Order
         """
 
-Order: Incomplete
+Order: Function_Order
 
 class Function_frac(BuiltinFunction):
     def __init__(self) -> None:
@@ -400,8 +413,8 @@ class Function_frac(BuiltinFunction):
             floor
         """
 
-frac: Incomplete
-Function_sqrt: Incomplete
+frac: Function_frac
+Function_sqrt: Function_frac
 
 class Function_real_nth_root(BuiltinFunction):
     """
@@ -463,7 +476,7 @@ class Function_real_nth_root(BuiltinFunction):
             Piecewise((Abs(x)**(1/3)*sign(x), Eq(im(x), 0)), (x**(1/3), True))
         """
 
-real_nth_root: Incomplete
+real_nth_root: Function_real_nth_root
 
 class Function_arg(BuiltinFunction):
     def __init__(self) -> None:
@@ -521,7 +534,7 @@ class Function_arg(BuiltinFunction):
             0.982793723247329
         """
 
-arg: Incomplete
+arg: Function_arg
 
 class Function_real_part(GinacFunction):
     def __init__(self) -> None:
@@ -605,9 +618,9 @@ class Function_real_part(GinacFunction):
             <... 'float'>
         """
 
-real: Incomplete
+real: Function_real_part
 
-real_part: Incomplete
+real_part: Function_real_part
 
 class Function_imag_part(GinacFunction):
     def __init__(self) -> None:
@@ -657,11 +670,11 @@ class Function_imag_part(GinacFunction):
             <... 'float'>
         """
 
-imag: Incomplete
+imag: Function_imag_part
 
-imag_part: Incomplete
+imag_part: Function_imag_part
 
-imaginary: Incomplete
+imaginary: Function_imag_part
 
 class Function_conjugate(GinacFunction):
     def __init__(self) -> None:
@@ -743,7 +756,7 @@ class Function_conjugate(GinacFunction):
             conjugate
         """
 
-conjugate: Incomplete
+conjugate: Function_conjugate
 
 class Function_factorial(GinacFunction):
     def __init__(self) -> None:
@@ -877,7 +890,7 @@ class Function_factorial(GinacFunction):
             factorial
         """
 
-factorial: Incomplete
+factorial: Function_factorial
 
 class Function_binomial(GinacFunction):
     def __init__(self) -> None:
@@ -983,7 +996,7 @@ class Function_binomial(GinacFunction):
             binomial(n, k)
         """
 
-binomial: Incomplete
+binomial: Function_binomial
 
 class Function_sum(BuiltinFunction):
     """
@@ -1006,7 +1019,7 @@ class Function_sum(BuiltinFunction):
             55
         """
 
-symbolic_sum: Incomplete
+symbolic_sum: Function_sum
 
 class Function_prod(BuiltinFunction):
     """
@@ -1040,7 +1053,7 @@ class Function_prod(BuiltinFunction):
             factorial(n)
         """
 
-symbolic_product: Incomplete
+symbolic_product: Function_prod
 
 class Function_limit(BuiltinFunction):
     """
@@ -1076,7 +1089,7 @@ class Function_limit(BuiltinFunction):
             0
         """
 
-symbolic_limit: Incomplete
+symbolic_limit: Function_limit
 
 class Function_cases(GinacFunction):
     """
@@ -1143,7 +1156,7 @@ class Function_cases(GinacFunction):
             RuntimeError: cases argument not a sequence
         """
 
-cases: Incomplete
+cases: Function_cases
 
 class Function_crootof(BuiltinFunction):
     """
@@ -1176,7 +1189,7 @@ class Function_crootof(BuiltinFunction):
             complex_root_of
         """
 
-complex_root_of: Incomplete
+complex_root_of: Function_crootof
 
 class Function_elementof(BuiltinFunction):
     """
@@ -1209,4 +1222,4 @@ class Function_elementof(BuiltinFunction):
             element_of
         """
 
-element_of: Incomplete
+element_of: Function_elementof

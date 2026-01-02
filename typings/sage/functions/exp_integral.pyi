@@ -1,9 +1,46 @@
+r"""
+Exponential integrals
+
+AUTHORS:
+
+- Benjamin Jones (2011-06-12)
+
+This module provides easy access to many exponential integral
+special functions. It utilizes Maxima's `special functions package`_ and
+the `mpmath library`_.
+
+REFERENCES:
+
+- [AS1964]_ Abramowitz and Stegun: *Handbook of Mathematical Functions*
+- :wikipedia:`Exponential_integral`
+- Online Encyclopedia of Special Function: http://algo.inria.fr/esf/index.html
+- NIST Digital Library of Mathematical Functions: https://dlmf.nist.gov/
+- Maxima `special functions package`_
+- `mpmath library`_
+
+.. _`special functions package`: http://maxima.sourceforge.net/docs/manual/en/maxima_15.html
+.. _`mpmath library`: https://github.com/fredrik-johansson/mpmath/
+
+AUTHORS:
+
+- Benjamin Jones
+
+    Implementations of the classes ``Function_exp_integral_*``.
+
+- David Joyner and William Stein
+
+    Authors of the code which was moved from special.py and trans.py.
+    Implementation of :meth:`exp_int` (from sage/functions/special.py).
+    Implementation of :meth:`exponential_integral_1` (from
+    sage/functions/transcendental.py).
+"""
 from _typeshed import Incomplete
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.infinity import Infinity as Infinity
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.structure.element import Expression as Expression, parent as parent
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
+from typings_sagemath import Real, Int
 
 class Function_exp_integral_e(BuiltinFunction):
     """
@@ -97,7 +134,7 @@ class Function_exp_integral_e(BuiltinFunction):
             expint(1, x)
         """
 
-exp_integral_e: Incomplete
+exp_integral_e: Function_exp_integral_e
 
 class Function_exp_integral_e1(BuiltinFunction):
     """
@@ -158,7 +195,7 @@ class Function_exp_integral_e1(BuiltinFunction):
             expint(1, x)
         """
 
-exp_integral_e1: Incomplete
+exp_integral_e1: Function_exp_integral_e1
 
 class Function_log_integral(BuiltinFunction):
     """
@@ -233,9 +270,9 @@ class Function_log_integral(BuiltinFunction):
             \\operatorname{log\\_integral}\\left(x\\right)
         """
 
-li: Incomplete
+li: Function_log_integral
 
-log_integral: Incomplete
+log_integral: Function_log_integral
 
 class Function_log_integral_offset(BuiltinFunction):
     '''
@@ -373,9 +410,9 @@ class Function_log_integral_offset(BuiltinFunction):
             \\operatorname{log\\_integral\\_offset}
         """
 
-Li: Incomplete
+Li: Function_log_integral_offset
 
-log_integral_offset: Incomplete
+log_integral_offset: Function_log_integral_offset
 
 class Function_sin_integral(BuiltinFunction):
     """
@@ -493,9 +530,9 @@ class Function_sin_integral(BuiltinFunction):
             Si(sageVARx)
         """
 
-Si: Incomplete
+Si: Function_sin_integral
 
-sin_integral: Incomplete
+sin_integral: Function_sin_integral
 
 class Function_cos_integral(BuiltinFunction):
     """
@@ -597,9 +634,9 @@ class Function_cos_integral(BuiltinFunction):
             Ci(sageVARx)
         """
 
-Ci: Incomplete
+Ci: Function_cos_integral
 
-cos_integral: Incomplete
+cos_integral: Function_cos_integral
 
 class Function_sinh_integral(BuiltinFunction):
     """
@@ -692,9 +729,9 @@ class Function_sinh_integral(BuiltinFunction):
             Shi(x)
         """
 
-Shi: Incomplete
+Shi: Function_sinh_integral
 
-sinh_integral: Incomplete
+sinh_integral: Function_sinh_integral
 
 class Function_cosh_integral(BuiltinFunction):
     """
@@ -783,9 +820,9 @@ class Function_cosh_integral(BuiltinFunction):
             Chi(x)
         """
 
-Chi: Incomplete
+Chi: Function_cosh_integral
 
-cosh_integral: Incomplete
+cosh_integral: Function_cosh_integral
 
 class Function_exp_integral(BuiltinFunction):
     """
@@ -855,11 +892,12 @@ class Function_exp_integral(BuiltinFunction):
             Ei(x)
         """
 
-Ei: Incomplete
+Ei: Function_exp_integral
 
-exp_integral_ei: Incomplete
+exp_integral_ei: Function_exp_integral
 
-def exponential_integral_1(x, n: int = 0):
+
+def exponential_integral_1(x: Real | Expression, n: Int = 0) -> Real :
     '''
     Return the exponential integral `E_1(x)`. If the optional
     argument `n` is given, computes list of the first

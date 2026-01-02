@@ -1,4 +1,13 @@
-from _typeshed import Incomplete
+"""
+Logarithmic functions
+
+AUTHORS:
+
+- Yoora Yi Tenen (2012-11-16): Add documentation for :meth:`log()` (:issue:`12113`)
+
+- Tomas Kalvoda (2015-04-01): Add :meth:`exp_polar()` (:issue:`18085`)
+"""
+
 from sage.misc.functional import log as log
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.integer import Integer as Integer
@@ -146,7 +155,7 @@ class Function_exp(GinacFunction):
             e^x
         """
 
-exp: Incomplete
+exp: Function_exp
 
 class Function_log1(GinacFunction):
     """
@@ -223,9 +232,9 @@ class Function_log1(GinacFunction):
             log(x)
         """
 
-ln: Incomplete
+ln: Function_log1
 
-function_log: Incomplete
+function_log: Function_log1
 
 class Function_log2(GinacFunction):
     """
@@ -255,7 +264,7 @@ class Function_log2(GinacFunction):
             log
         """
 
-logb: Incomplete
+logb: Function_log2
 
 class Function_polylog(GinacFunction):
     def __init__(self) -> None:
@@ -360,7 +369,7 @@ class Function_polylog(GinacFunction):
             False
         """
 
-polylog: Incomplete
+polylog: Function_polylog
 
 class Function_dilog(GinacFunction):
     def __init__(self) -> None:
@@ -454,7 +463,7 @@ class Function_dilog(GinacFunction):
             Complex Field with 13 bits of precision
         """
 
-dilog: Incomplete
+dilog: Function_dilog
 
 class Function_lambert_w(BuiltinFunction):
     """
@@ -580,7 +589,7 @@ class Function_lambert_w(BuiltinFunction):
             lambert_w(1, 2)
         """
 
-lambert_w: Incomplete
+lambert_w: Function_lambert_w
 
 class Function_exp_polar(BuiltinFunction):
     def __init__(self) -> None:
@@ -633,7 +642,7 @@ class Function_exp_polar(BuiltinFunction):
             :wikipedia:`Complex_number#Polar_form`
         """
 
-exp_polar: Incomplete
+exp_polar: Function_exp_polar
 
 class Function_harmonic_number_generalized(BuiltinFunction):
     """
@@ -733,7 +742,7 @@ class Function_harmonic_number_generalized(BuiltinFunction):
             harmonic_number(x, 2)
         """
 
-harmonic_number: Incomplete
+harmonic_number: Function_harmonic_number_generalized
 
 class _Function_swap_harmonic(BuiltinFunction):
     """
@@ -780,4 +789,4 @@ class Function_harmonic_number(BuiltinFunction):
             harmonic(x)
         """
 
-harmonic_m1: Incomplete
+harmonic_m1: Function_harmonic_number

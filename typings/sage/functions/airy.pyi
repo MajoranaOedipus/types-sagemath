@@ -1,6 +1,42 @@
-from _typeshed import Incomplete
+r"""
+Airy functions
+
+This module implements Airy functions and their generalized derivatives. It
+supports symbolic functionality through Maxima and numeric evaluation through
+mpmath and scipy.
+
+Airy functions are solutions to the differential equation
+`f''(x) - x f(x) = 0`.
+
+Four global function symbols are immediately available, please see
+
+- :func:`airy_ai`: for the Airy Ai function
+
+- :func:`airy_ai_prime()<FunctionAiryAiPrime>`: for the first differential
+  of the Airy Ai function
+
+- :func:`airy_bi`: for the Airy Bi function
+
+- :func:`airy_bi_prime()<FunctionAiryBiPrime>`: for the first differential
+   of the Airy Bi function
+
+AUTHORS:
+
+- Oscar Gerardo Lazo Arjona (2010): initial version
+
+- Douglas McNeil (2012): rewrite
+
+EXAMPLES:
+
+Verify that the Airy functions are solutions to the differential equation::
+
+    sage: diff(airy_ai(x), x, 2) - x * airy_ai(x)                                       # needs sage.symbolic
+    0
+    sage: diff(airy_bi(x), x, 2) - x * airy_bi(x)                                       # needs sage.symbolic
+    0
+"""
+
 from sage.calculus.functional import derivative as derivative
-from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.structure.element import Expression as Expression
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
@@ -73,9 +109,9 @@ class FunctionAiryAiPrime(BuiltinFunction):
             airyaiprime(x)
         """
 
-airy_ai_general: Incomplete
-airy_ai_simple: Incomplete
-airy_ai_prime: Incomplete
+airy_ai_general: FunctionAiryAiGeneral
+airy_ai_simple: FunctionAiryAiSimple
+airy_ai_prime: FunctionAiryAiPrime
 
 def airy_ai(alpha, x=None, hold_derivative: bool = True, **kwds):
     '''
@@ -251,9 +287,9 @@ class FunctionAiryBiPrime(BuiltinFunction):
             airybiprime(x)
         """
 
-airy_bi_general: Incomplete
-airy_bi_simple: Incomplete
-airy_bi_prime: Incomplete
+airy_bi_general: FunctionAiryBiGeneral
+airy_bi_simple: FunctionAiryBiSimple
+airy_bi_prime: FunctionAiryBiPrime
 
 def airy_bi(alpha, x=None, hold_derivative: bool = True, **kwds):
     '''

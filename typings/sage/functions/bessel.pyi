@@ -1,3 +1,204 @@
+r"""
+Bessel functions
+
+This module provides symbolic Bessel and Hankel functions, and their
+spherical versions. These functions use the `mpmath library`_ for numerical
+evaluation and Maxima, GiNaC, Pynac for symbolics.
+
+The main objects which are exported from this module are:
+
+ * :meth:`bessel_J(n, x) <Function_Bessel_J>` -- the Bessel J function
+ * :meth:`bessel_Y(n, x) <Function_Bessel_Y>` -- the Bessel Y function
+ * :meth:`bessel_I(n, x) <Function_Bessel_I>` -- the Bessel I function
+ * :meth:`bessel_K(n, x) <Function_Bessel_K>` -- the Bessel K function
+ * :meth:`Bessel(...) <Bessel>` -- a factory function for producing Bessel functions of
+   various kinds and orders
+ * :meth:`hankel1(nu, z) <Function_Hankel1>` -- the Hankel function of the first kind
+ * :meth:`hankel2(nu, z) <Function_Hankel2>` -- the Hankel function of the second kind
+ * :meth:`struve_H(nu, z) <Function_Struve_H>` -- the Struve function
+ * :meth:`struve_L(nu, z) <Function_Struve_L>` -- the modified Struve function
+ * :meth:`spherical_bessel_J(n, z) <SphericalBesselJ>` -- the Spherical Bessel J function
+ * :meth:`spherical_bessel_Y(n, z) <SphericalBesselY>` -- the Spherical Bessel J function
+ * :meth:`spherical_hankel1(n, z) <SphericalHankel1>` -- the Spherical Hankel function of the first kind
+ * :meth:`spherical_hankel2(n, z) <SphericalHankel2>` -- the Spherical Hankel function of the second kind
+
+-  Bessel functions, first defined by the Swiss mathematician
+   Daniel Bernoulli and named after Friedrich Bessel, are canonical
+   solutions y(x) of Bessel's differential equation:
+
+   .. MATH::
+
+         x^2 \frac{d^2 y}{dx^2} + x \frac{dy}{dx} + \left(x^2 - \nu^2\right)y =
+         0,
+
+   for an arbitrary complex number `\nu` (the order).
+
+-  In this module, `J_\nu` denotes the unique solution of Bessel's equation
+   which is non-singular at `x = 0`. This function is known as the Bessel
+   Function of the First Kind. This function also arises as a special case
+   of the hypergeometric function `{}_0F_1`:
+
+   .. MATH::
+
+        J_\nu(x) = \frac{x^n}{2^\nu \Gamma(\nu + 1)} {}_0F_1(\nu +
+        1, -\frac{x^2}{4}).
+
+-  The second linearly independent solution to Bessel's equation (which is
+   singular at `x=0`) is denoted by `Y_\nu` and is called the Bessel
+   Function of the Second Kind:
+
+   .. MATH::
+
+        Y_\nu(x) = \frac{ J_\nu(x) \cos(\pi \nu) -
+        J_{-\nu}(x)}{\sin(\pi \nu)}.
+
+-  There are also two commonly used combinations of the Bessel J and Y
+   Functions. The Bessel I Function, or the Modified Bessel Function of the
+   First Kind, is defined by:
+
+   .. MATH::
+
+       I_\nu(x) = i^{-\nu} J_\nu(ix).
+
+   The Bessel K Function, or the Modified Bessel Function of the Second Kind,
+   is defined by:
+
+   .. MATH::
+
+       K_\nu(x) = \frac{\pi}{2} \cdot \frac{I_{-\nu}(x) -
+       I_n(x)}{\sin(\pi \nu)}.
+
+   We should note here that the above formulas for Bessel Y and K functions
+   should be understood as limits when `\nu` is an integer.
+
+-  It follows from Bessel's differential equation that the derivative of
+   `J_n(x)` with respect to `x` is:
+
+   .. MATH::
+
+       \frac{d}{dx} J_n(x) = \frac{1}{x^n} \left(x^n J_{n-1}(x) - n x^{n-1}
+       J_n(z) \right)
+
+-  Another important formulation of the two linearly independent
+   solutions to Bessel's equation are the Hankel functions
+   `H_\nu^{(1)}(x)` and `H_\nu^{(2)}(x)`,
+   defined by:
+
+   .. MATH::
+
+         H_\nu^{(1)}(x) = J_\nu(x) + i Y_\nu(x)
+
+   .. MATH::
+
+         H_\nu^{(2)}(x) = J_\nu(x) - i Y_\nu(x)
+
+   where `i` is the imaginary unit (and `J_*` and
+   `Y_*` are the usual J- and Y-Bessel functions). These
+   linear combinations are also known as Bessel functions of the third
+   kind; they are also two linearly independent solutions of Bessel's
+   differential equation. They are named for Hermann Hankel.
+
+-  When solving for separable solutions of Laplace's equation in
+   spherical coordinates, the radial equation has the form:
+
+   .. MATH::
+
+         x^2 \frac{d^2 y}{dx^2} + 2x \frac{dy}{dx} + [x^2 - n(n+1)]y = 0.
+
+   The spherical Bessel functions `j_n` and `y_n`,
+   are two linearly independent solutions to this equation. They are
+   related to the ordinary Bessel functions `J_n` and
+   `Y_n` by:
+
+   .. MATH::
+
+         j_n(x) = \sqrt{\frac{\pi}{2x}} J_{n+1/2}(x),
+
+   .. MATH::
+
+         y_n(x) = \sqrt{\frac{\pi}{2x}} Y_{n+1/2}(x) = (-1)^{n+1} \sqrt{\frac{\pi}{2x}} J_{-n-1/2}(x).
+
+EXAMPLES:
+
+    Evaluate the Bessel J function symbolically and numerically::
+
+        sage: # needs sage.symbolic
+        sage: bessel_J(0, x)
+        bessel_J(0, x)
+        sage: bessel_J(0, 0)
+        1
+        sage: bessel_J(0, x).diff(x)
+        -1/2*bessel_J(1, x) + 1/2*bessel_J(-1, x)
+        sage: N(bessel_J(0, 0), digits=20)
+        1.0000000000000000000
+        sage: find_root(bessel_J(0,x), 0, 5)                                            # needs scipy
+        2.404825557695773
+
+    Plot the Bessel J function::
+
+        sage: f(x) = Bessel(0)(x); f                                                    # needs sage.symbolic
+        x |--> bessel_J(0, x)
+        sage: plot(f, (x, 1, 10))                                                       # needs sage.plot sage.symbolic
+        Graphics object consisting of 1 graphics primitive
+
+    Visualize the Bessel Y function on the complex plane
+    (set plot_points to a higher value to get more detail)::
+
+        sage: complex_plot(bessel_Y(0, x), (-5, 5), (-5, 5), plot_points=20)            # needs sage.plot sage.symbolic
+        Graphics object consisting of 1 graphics primitive
+
+    Evaluate a combination of Bessel functions::
+
+        sage: # needs sage.symbolic
+        sage: f(x) = bessel_J(1, x) - bessel_Y(0, x)
+        sage: f(pi)
+        bessel_J(1, pi) - bessel_Y(0, pi)
+        sage: f(pi).n()
+        -0.0437509653365599
+        sage: f(pi).n(digits=50)
+        -0.043750965336559909054985168023342675387737118378169
+
+    Symbolically solve a second order differential equation with initial
+    conditions `y(1) = a` and `y'(1) = b` in terms of Bessel functions::
+
+        sage: # needs sage.symbolic
+        sage: y = function('y')(x)
+        sage: a, b = var('a, b')
+        sage: diffeq = x^2*diff(y,x,x) + x*diff(y,x) + x^2*y == 0
+        sage: f = desolve(diffeq, y, [1, a, b]); f
+        (a*bessel_Y(1, 1) + b*bessel_Y(0, 1))*bessel_J(0, x)/(bessel_J(0,
+        1)*bessel_Y(1, 1) - bessel_J(1, 1)*bessel_Y(0, 1)) -
+        (a*bessel_J(1, 1) + b*bessel_J(0, 1))*bessel_Y(0, x)/(bessel_J(0,
+        1)*bessel_Y(1, 1) - bessel_J(1, 1)*bessel_Y(0, 1))
+
+
+    For more examples, see the docstring for :meth:`Bessel`.
+
+AUTHORS:
+
+    - Some of the documentation here has been adapted from David Joyner's
+      original documentation of Sage's special functions module (2006).
+
+REFERENCES:
+
+- [AS-Bessel]_
+
+- [AS-Spherical]_
+
+- [AS-Struve]_
+
+- [DLMF-Bessel]_
+
+- [DLMF-Struve]_
+
+.. _`mpmath library`: http://mpmath.org
+
+- [WP-Bessel]_
+
+- [WP-Struve]_
+"""
+
+from typing import Callable, Literal, overload
 from _typeshed import Incomplete
 from sage.functions.gamma import gamma as gamma
 from sage.functions.hyperbolic import cosh as cosh, sinh as sinh
@@ -117,8 +318,8 @@ class Function_Bessel_J(BuiltinFunction):
             sage: bessel_J(x, x)._sympy_()                                              # needs sympy sage.symbolic
             besselj(x, x)
         """
-
-bessel_J: Incomplete
+        
+bessel_J: Function_Bessel_J
 
 class Function_Bessel_Y(BuiltinFunction):
     """
@@ -233,7 +434,7 @@ class Function_Bessel_Y(BuiltinFunction):
             bessely(x, x)
         """
 
-bessel_Y: Incomplete
+bessel_Y: Function_Bessel_Y
 
 class Function_Bessel_I(BuiltinFunction):
     """
@@ -342,7 +543,7 @@ class Function_Bessel_I(BuiltinFunction):
             besseli(x, x)
         """
 
-bessel_I: Incomplete
+bessel_I: Function_Bessel_I
 
 class Function_Bessel_K(BuiltinFunction):
     """
@@ -460,10 +661,18 @@ class Function_Bessel_K(BuiltinFunction):
             besselk(x, x)
         """
 
-bessel_K: Incomplete
-bessel_type_dict: Incomplete
+bessel_K: Function_Bessel_K
+bessel_type_dict: dict[str, BuiltinFunction] = {'I': bessel_I, 'J': bessel_J, 'K': bessel_K, 'Y': bessel_Y}
 
-def Bessel(*args, **kwds):
+@overload
+def Bessel(order, type) -> Callable[[Incomplete], Incomplete]:
+    ...
+@overload
+def Bessel(order, *, typ: Literal["J", "I", "K", "Y"] = "J") -> Callable[[Incomplete], Incomplete]:
+    ...
+@overload
+def Bessel(*, typ: Literal["J", "I", "K", "Y"]="J") -> Callable[[Incomplete, Incomplete], Incomplete]:
+    ...
     """
     A function factory that produces symbolic I, J, K, and Y Bessel functions.
     There are several ways to call this function:
@@ -640,7 +849,7 @@ class Function_Struve_H(BuiltinFunction):
             struve_H(n, x)
         '''
 
-struve_H: Incomplete
+struve_H: Function_Struve_H
 
 class Function_Struve_L(BuiltinFunction):
     """
@@ -681,7 +890,7 @@ class Function_Struve_L(BuiltinFunction):
             struve_L(n, x)
         '''
 
-struve_L: Incomplete
+struve_L: Function_Struve_L
 
 class Function_Hankel1(BuiltinFunction):
     """
@@ -718,7 +927,7 @@ class Function_Hankel1(BuiltinFunction):
             hankel1(3, x)
         """
 
-hankel1: Incomplete
+hankel1: Function_Hankel1
 
 class Function_Hankel2(BuiltinFunction):
     """
@@ -755,7 +964,7 @@ class Function_Hankel2(BuiltinFunction):
             hankel2(3, x)
         """
 
-hankel2: Incomplete
+hankel2: Function_Hankel2
 
 class SphericalBesselJ(BuiltinFunction):
     """
@@ -804,7 +1013,7 @@ class SphericalBesselJ(BuiltinFunction):
             jn(3, x)
         """
 
-spherical_bessel_J: Incomplete
+spherical_bessel_J: SphericalBesselJ
 
 class SphericalBesselY(BuiltinFunction):
     """
@@ -850,7 +1059,7 @@ class SphericalBesselY(BuiltinFunction):
             yn(3, x)
         """
 
-spherical_bessel_Y: Incomplete
+spherical_bessel_Y: SphericalBesselY
 
 class SphericalHankel1(BuiltinFunction):
     """
@@ -894,7 +1103,7 @@ class SphericalHankel1(BuiltinFunction):
             spherical_hankel1
         """
 
-spherical_hankel1: Incomplete
+spherical_hankel1: SphericalHankel1
 
 class SphericalHankel2(BuiltinFunction):
     """
@@ -942,7 +1151,7 @@ class SphericalHankel2(BuiltinFunction):
             spherical_hankel2
         """
 
-spherical_hankel2: Incomplete
+spherical_hankel2: SphericalHankel2
 
 def spherical_bessel_f(F, n, z):
     """

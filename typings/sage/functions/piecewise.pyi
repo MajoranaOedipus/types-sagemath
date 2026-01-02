@@ -1,5 +1,64 @@
+r"""
+Piecewise functions
+
+This module implement piecewise functions in a single variable. See
+:mod:`sage.sets.real_set` for more information about how to construct
+subsets of the real line for the domains.
+
+EXAMPLES::
+
+    sage: f = piecewise([((0,1), x^3), ([-1,0], -x^2)]);  f
+    piecewise(x|-->x^3 on (0, 1), x|-->-x^2 on [-1, 0]; x)
+    sage: 2*f
+    2*piecewise(x|-->x^3 on (0, 1), x|-->-x^2 on [-1, 0]; x)
+    sage: f(x=1/2)
+    1/8
+    sage: plot(f)    # not tested
+
+.. TODO::
+
+    Implement max/min location and values,
+
+AUTHORS:
+
+- David Joyner (2006-04): initial version
+
+- David Joyner (2006-09): added __eq__, extend_by_zero_to, unextend,
+  convolution, trapezoid, trapezoid_integral_approximation,
+  riemann_sum, riemann_sum_integral_approximation, tangent_line fixed
+  bugs in __mul__, __add__
+
+- David Joyner (2007-03): adding Hann filter for FS, added general FS
+  filter methods for computing and plotting, added options to plotting
+  of FS (eg, specifying rgb values are now allowed). Fixed bug in
+  documentation reported by Pablo De Napoli.
+
+- David Joyner (2007-09): bug fixes due to behaviour of
+  SymbolicArithmetic
+
+- David Joyner (2008-04): fixed docstring bugs reported by J Morrow; added
+  support for Laplace transform of functions with infinite support.
+
+- David Joyner (2008-07): fixed a left multiplication bug reported by
+  C. Boncelet (by defining __rmul__ = __mul__).
+
+- Paul Butler (2009-01): added indefinite integration and default_variable
+
+- Volker Braun (2013): Complete rewrite
+
+- Ralf Stephan (2015): Rewrite of convolution() and other calculus
+  functions; many doctest adaptations
+
+- Eric Gourgoulhon (2017): Improve documentation and user interface of
+  Fourier series
+
+TESTS::
+
+    sage: fast_callable(f, vars=[x])(0.5)
+    0.125000000000...
+"""
 from _typeshed import Incomplete
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.infinity import infinity as infinity, minus_infinity as minus_infinity
 from sage.sets.real_set import RealSet as RealSet
@@ -21,7 +80,10 @@ class PiecewiseFunction(BuiltinFunction):
             sage: f(-1/2)
             1/2*y^2
         """
-    def __call__(self, function_pieces, **kwds):
+    type Domain = Incomplete
+    type Func = Incomplete
+    def __call__(self, function_piecesL: Sequence[tuple[Domain, Func]],  # pyright: ignore[reportIncompatibleMethodOverride]
+                 var = None, **kwds):
         """
         Piecewise functions.
 
@@ -58,7 +120,7 @@ class PiecewiseFunction(BuiltinFunction):
             (-1, 0, 1)
         """
     @staticmethod
-    def in_operands(ex):
+    def in_operands(ex) -> bool:
         """
         Return whether a symbolic expression contains a piecewise
         function as operand.
@@ -868,4 +930,4 @@ class PiecewiseFunction(BuiltinFunction):
                  - 4/9*sin(3*pi*x)/pi^2 + 4*sin(pi*x)/pi^2 + 1/4
             """
 
-piecewise: Incomplete
+piecewise: PiecewiseFunction

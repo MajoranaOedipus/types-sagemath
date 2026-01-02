@@ -1,5 +1,45 @@
-from _typeshed import Incomplete
-from sage.misc.lazy_import import lazy_import as lazy_import
+r"""
+Generalized functions
+
+Sage implements several generalized functions (also known as
+distributions) such as Dirac delta, Heaviside step functions. These
+generalized functions can be manipulated within Sage like any other
+symbolic functions.
+
+
+AUTHORS:
+
+- Golam Mortuza Hossain (2009-06-26): initial version
+
+EXAMPLES:
+
+Dirac delta function::
+
+    sage: dirac_delta(x)                                                                # needs sage.symbolic
+    dirac_delta(x)
+
+Heaviside step function::
+
+    sage: heaviside(x)                                                                  # needs sage.symbolic
+    heaviside(x)
+
+Unit step function::
+
+    sage: unit_step(x)                                                                  # needs sage.symbolic
+    unit_step(x)
+
+Signum (sgn) function::
+
+    sage: sgn(x)                                                                        # needs sage.symbolic
+    sgn(x)
+
+Kronecker delta function::
+
+    sage: m, n = var('m,n')                                                             # needs sage.symbolic
+    sage: kronecker_delta(m, n)                                                         # needs sage.symbolic
+    kronecker_delta(m, n)
+"""
+
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction, GinacFunction as GinacFunction
 
@@ -65,7 +105,7 @@ class FunctionDiracDelta(BuiltinFunction):
             DiracDelta(x)
         """
 
-dirac_delta: Incomplete
+dirac_delta: FunctionDiracDelta
 
 class FunctionHeaviside(GinacFunction):
     """
@@ -154,7 +194,7 @@ class FunctionHeaviside(GinacFunction):
             1.00000000000000
         """
 
-heaviside: Incomplete
+heaviside: FunctionHeaviside
 
 class FunctionUnitStep(GinacFunction):
     """
@@ -227,7 +267,7 @@ class FunctionUnitStep(GinacFunction):
             2
         """
 
-unit_step: Incomplete
+unit_step: FunctionUnitStep
 
 class FunctionSignum(BuiltinFunction):
     """
@@ -304,7 +344,7 @@ class FunctionSignum(BuiltinFunction):
             sign(x)
         """
 
-sgn: Incomplete
+sgn: FunctionSignum
 sign = sgn
 
 class FunctionKroneckerDelta(BuiltinFunction):
@@ -352,4 +392,4 @@ class FunctionKroneckerDelta(BuiltinFunction):
             KroneckerDelta(x, y)
         """
 
-kronecker_delta: Incomplete
+kronecker_delta: FunctionKroneckerDelta

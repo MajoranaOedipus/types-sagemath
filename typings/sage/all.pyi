@@ -14,9 +14,6 @@ from sage.cpython.all import *
 
 from copy import copy, deepcopy
 
-true = True
-false = False
-
 from sage.env import SAGE_ROOT, SAGE_SRC, SAGE_DOC_SRC, SAGE_LOCAL, DOT_SAGE, SAGE_ENV
 
 from sage.misc.all import *
@@ -24,11 +21,11 @@ from sage.misc.all import *
 from sage.doctest.all import *
 from sage.repl.all import *
 
-from functools import reduce  # in order to keep reduce in python3
+from functools import reduce
 
 import sage.misc.lazy_import
 
-from sage.misc.all import *         # takes a while
+from sage.misc.all import *
 from sage.typeset.all import *
 
 from sage.misc.sh import sh

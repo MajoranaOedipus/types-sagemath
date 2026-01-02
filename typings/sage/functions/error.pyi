@@ -1,4 +1,35 @@
-from _typeshed import Incomplete
+r"""
+Error functions
+
+This module provides symbolic error functions. These functions use the
+`mpmath library` for numerical evaluation and Maxima, Pynac for
+symbolics.
+
+The main objects which are exported from this module are:
+
+ * :meth:`erf <Function_erf>` -- the error function
+ * :meth:`erfc <Function_erfc>` -- the complementary error function
+ * :meth:`erfi <Function_erfi>` -- the imaginary error function
+ * :meth:`erfinv <Function_erfinv>` -- the inverse error function
+ * :meth:`fresnel_sin <Function_Fresnel_sin>` -- the Fresnel integral `S(x)`
+ * :meth:`fresnel_cos <Function_Fresnel_cos>` -- the Fresnel integral `C(x)`
+
+AUTHORS:
+
+ * Original authors ``erf``/``error_fcn`` (c) 2006-2014:
+   Karl-Dieter Crisman, Benjamin Jones, Mike Hansen, William Stein,
+   Burcin Erocal, Jeroen Demeyer, W. D. Joyner, R. Andrew Ohana
+ * Reorganisation in new file, addition of ``erfi``/``erfinv``/``erfc``
+   (c) 2016: Ralf Stephan
+ * Fresnel integrals (c) 2017 Marcelo Forets
+
+REFERENCES:
+
+- [DLMF-Error]_
+
+- [WP-Error]_
+"""
+
 from sage.misc.functional import sqrt as sqrt
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.persist import register_unpickle_override as register_unpickle_override
@@ -141,7 +172,7 @@ class Function_erf(BuiltinFunction):
             erf(2)
         """
 
-erf: Incomplete
+erf: Function_erf
 
 class Function_erfi(BuiltinFunction):
     """
@@ -165,7 +196,7 @@ class Function_erfi(BuiltinFunction):
             erfi(2)
         """
 
-erfi: Incomplete
+erfi: Function_erfi
 
 class Function_erfc(BuiltinFunction):
     """
@@ -208,7 +239,7 @@ class Function_erfc(BuiltinFunction):
             erfc(2)
         """
 
-erfc: Incomplete
+erfc: Function_erfc
 
 class Function_erfinv(BuiltinFunction):
     """
@@ -246,7 +277,7 @@ class Function_erfinv(BuiltinFunction):
             1.96303108415826
         """
 
-erfinv: Incomplete
+erfinv: Function_erfinv
 
 class Function_Fresnel_sin(BuiltinFunction):
     def __init__(self) -> None:
@@ -280,7 +311,7 @@ class Function_Fresnel_sin(BuiltinFunction):
             fresnels(x)
         """
 
-fresnel_sin: Incomplete
+fresnel_sin: Function_Fresnel_sin
 
 class Function_Fresnel_cos(BuiltinFunction):
     def __init__(self) -> None:
@@ -314,4 +345,4 @@ class Function_Fresnel_cos(BuiltinFunction):
             fresnelc(x)
         """
 
-fresnel_cos: Incomplete
+fresnel_cos: Function_Fresnel_cos

@@ -1,4 +1,165 @@
-from _typeshed import Incomplete
+r"""
+Hypergeometric functions
+
+This module implements manipulation of infinite hypergeometric series
+represented in standard parametric form (as `\,_pF_q` functions).
+
+AUTHORS:
+
+- Fredrik Johansson (2010): initial version
+
+- Eviatar Bach (2013): major changes
+
+EXAMPLES:
+
+Examples from :issue:`9908`::
+
+    sage: # needs sage.symbolic
+    sage: maxima('integrate(bessel_j(2, x), x)').sage()
+    1/24*x^3*hypergeometric((3/2,), (5/2, 3), -1/4*x^2)
+    sage: sum(((2*I)^x/(x^3 + 1)*(1/4)^x), x, 0, oo)
+    hypergeometric((1, 1, -1/2*I*sqrt(3) - 1/2, 1/2*I*sqrt(3) - 1/2),...
+    (2, -1/2*I*sqrt(3) + 1/2, 1/2*I*sqrt(3) + 1/2), 1/2*I)
+    sage: res = sum((-1)^x/((2*x + 1)*factorial(2*x + 1)), x, 0, oo)
+    sage: res                                   # not tested (depends on maxima version)
+    hypergeometric((1/2,), (3/2, 3/2), -1/4)
+    sage: res in [hypergeometric((1/2,), (3/2, 3/2), -1/4), sin_integral(1)]
+    True
+
+Simplification (note that ``simplify_full`` does not yet call
+``simplify_hypergeometric``)::
+
+    sage: # needs sage.symbolic
+    sage: hypergeometric([-2], [], x).simplify_hypergeometric()
+    x^2 - 2*x + 1
+    sage: hypergeometric([], [], x).simplify_hypergeometric()
+    e^x
+    sage: a = hypergeometric((hypergeometric((), (), x),), (),
+    ....:                    hypergeometric((), (), x))
+    sage: a.simplify_hypergeometric()
+    1/((-e^x + 1)^e^x)
+    sage: a.simplify_hypergeometric(algorithm='sage')
+    1/((-e^x + 1)^e^x)
+
+Equality testing::
+
+    sage: bool(hypergeometric([], [], x).derivative(x) ==                               # needs sage.symbolic
+    ....:      hypergeometric([], [], x))  # diff(e^x, x) == e^x
+    True
+    sage: bool(hypergeometric([], [], x) == hypergeometric([], [1], x))                 # needs sage.symbolic
+    False
+
+Computing terms and series::
+
+    sage: # needs sage.symbolic
+    sage: var('z')
+    z
+    sage: hypergeometric([], [], z).series(z, 0)
+    Order(1)
+    sage: hypergeometric([], [], z).series(z, 1)
+    1 + Order(z)
+    sage: hypergeometric([], [], z).series(z, 2)
+    1 + 1*z + Order(z^2)
+    sage: hypergeometric([], [], z).series(z, 3)
+    1 + 1*z + 1/2*z^2 + Order(z^3)
+
+    sage: # needs sage.symbolic
+    sage: hypergeometric([-2], [], z).series(z, 3)
+    1 + (-2)*z + 1*z^2
+    sage: hypergeometric([-2], [], z).series(z, 6)
+    1 + (-2)*z + 1*z^2
+    sage: hypergeometric([-2], [], z).series(z, 6).is_terminating_series()
+    True
+    sage: hypergeometric([-2], [], z).series(z, 2)
+    1 + (-2)*z + Order(z^2)
+    sage: hypergeometric([-2], [], z).series(z, 2).is_terminating_series()
+    False
+
+    sage: hypergeometric([1], [], z).series(z, 6)                                       # needs sage.symbolic
+    1 + 1*z + 1*z^2 + 1*z^3 + 1*z^4 + 1*z^5 + Order(z^6)
+    sage: hypergeometric([], [1/2], -z^2/4).series(z, 11)                               # needs sage.symbolic
+    1 + (-1/2)*z^2 + 1/24*z^4 + (-1/720)*z^6 + 1/40320*z^8 +...
+    (-1/3628800)*z^10 + Order(z^11)
+
+    sage: hypergeometric([1], [5], x).series(x, 5)                                      # needs sage.symbolic
+    1 + 1/5*x + 1/30*x^2 + 1/210*x^3 + 1/1680*x^4 + Order(x^5)
+
+    sage: sum(hypergeometric([1, 2], [3], 1/3).terms(6)).n()                            # needs sage.symbolic
+    1.29788359788360
+    sage: hypergeometric([1, 2], [3], 1/3).n()                                          # needs sage.symbolic
+    1.29837194594696
+    sage: hypergeometric([], [], x).series(x, 20)(x=1).n() == e.n()                     # needs sage.symbolic
+    True
+
+Plotting::
+
+    sage: # needs sage.symbolic
+    sage: f(x) = hypergeometric([1, 1], [3, 3, 3], x)
+    sage: plot(f, x, -30, 30)                                                           # needs sage.plot
+    Graphics object consisting of 1 graphics primitive
+    sage: g(x) = hypergeometric([x], [], 2)
+    sage: complex_plot(g, (-1, 1), (-1, 1))                                             # needs sage.plot
+    Graphics object consisting of 1 graphics primitive
+
+Numeric evaluation::
+
+    sage: # needs sage.symbolic
+    sage: hypergeometric([1], [], 1/10).n()  # geometric series
+    1.11111111111111
+    sage: hypergeometric([], [], 1).n()  # e
+    2.71828182845905
+    sage: hypergeometric([], [], 3., hold=True)
+    hypergeometric((), (), 3.00000000000000)
+    sage: hypergeometric([1, 2, 3], [4, 5, 6], 1/2).n()
+    1.02573619590134
+    sage: hypergeometric([1, 2, 3], [4, 5, 6], 1/2).n(digits=30)
+    1.02573619590133865036584139535
+    sage: hypergeometric([5 - 3*I], [3/2, 2 + I, sqrt(2)], 4 + I).n()
+    5.52605111678803 - 7.86331357527540*I
+    sage: hypergeometric((10, 10), (50,), 2.)
+    -1705.75733163554 - 356.749986056024*I
+
+Conversions::
+
+    sage: maxima(hypergeometric([1, 1, 1], [3, 3, 3], x))                               # needs sage.symbolic
+    hypergeometric([1,1,1],[3,3,3],_SAGE_VAR_x)
+    sage: hypergeometric((5,), (4,), 3)._sympy_()                                   # needs sympy sage.symbolic
+    hyper((5,), (4,), 3)
+    sage: hypergeometric((5, 4), (4, 4), 3)._mathematica_init_()                        # needs sage.symbolic
+    'HypergeometricPFQ[{5,4},{4,4},3]'
+
+Arbitrary level of nesting for conversions::
+
+    sage: maxima(nest(lambda y: hypergeometric([y], [], x), 3, 1))                      # needs sage.symbolic
+    1/(1-_SAGE_VAR_x)^(1/(1-_SAGE_VAR_x)^(1/(1-_SAGE_VAR_x)))
+    sage: maxima(nest(lambda y: hypergeometric([y], [3], x), 3, 1))._sage_()            # needs sage.symbolic
+    hypergeometric((hypergeometric((hypergeometric((1,), (3,), x),), (3,),...
+    x),), (3,), x)
+    sage: nest(lambda y: hypergeometric([y], [], x), 3, 1)._mathematica_init_()         # needs sage.symbolic
+    'HypergeometricPFQ[{HypergeometricPFQ[{HypergeometricPFQ[{1},{},x]},...
+
+The confluent hypergeometric functions can arise as solutions to second-order
+differential equations (example from `here <http://ask.sagemath.org/question/
+1168/how-can-one-use-maxima-kummer-confluent-functions>`_)::
+
+    sage: var('m')                                                                      # needs sage.symbolic
+    m
+    sage: y = function('y')(x)                                                          # needs sage.symbolic
+    sage: desolve(diff(y, x, 2) + 2*x*diff(y, x) - 4*m*y, y,                            # needs sage.symbolic
+    ....:         contrib_ode=true, ivar=x)
+    [y(x) == _K1*hypergeometric_M(-m, 1/2, -x^2) +...
+     _K2*hypergeometric_U(-m, 1/2, -x^2)]
+
+Series expansions of confluent hypergeometric functions::
+
+    sage: hypergeometric_M(2, 2, x).series(x, 3)                                        # needs sage.symbolic
+    1 + 1*x + 1/2*x^2 + Order(x^3)
+    sage: hypergeometric_U(2, 2, x).series(x == 3, 100).subs(x=1).n()                   # needs sage.symbolic
+    0.403652637676806
+    sage: hypergeometric_U(2, 2, 1).n()                                                 # needs mpmath sage.symbolic
+    0.403652637676806
+"""
+
 from collections.abc import Generator
 from sage.arith.misc import binomial as binomial, factorial as factorial, rising_factorial as rising_factorial
 from sage.calculus.functional import derivative as derivative
@@ -16,7 +177,7 @@ from sage.rings.rational_field import QQ as QQ
 from sage.structure.element import Expression as Expression, get_coercion_model as get_coercion_model
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
 
-def rational_param_as_tuple(x):
+def rational_param_as_tuple(x) -> tuple[int, int]:
     """
     Utility function for converting rational `\\,_pF_q` parameters to
     tuples (which mpmath handles more efficiently).
@@ -296,7 +457,7 @@ class Hypergeometric(BuiltinFunction):
                 63.0734110716969
             """
 
-hypergeometric: Incomplete
+hypergeometric: Hypergeometric
 
 def closed_form(hyp):
     """
@@ -412,7 +573,7 @@ class Hypergeometric_M(BuiltinFunction):
                 hypergeometric((a,), (b,), z)
             """
 
-hypergeometric_M: Incomplete
+hypergeometric_M: Hypergeometric_M
 
 class Hypergeometric_U(BuiltinFunction):
     '''
@@ -484,4 +645,4 @@ class Hypergeometric_U(BuiltinFunction):
                 1/8*hypergeometric((3, -I + 4), (), -1/2)
             """
 
-hypergeometric_U: Incomplete
+hypergeometric_U: Hypergeometric_U

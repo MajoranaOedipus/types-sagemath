@@ -1,4 +1,24 @@
-from _typeshed import Incomplete
+r"""
+Trigonometric functions
+
+TESTS:
+
+Check that :issue:`35696` is fixed::
+
+    sage: sin(x*(x+1)-x^2-x)
+    0
+    sage: cos(x*(x+1)-x^2-x)
+    1
+    sage: tan(x*(x+1)-x^2-x)
+    0
+    sage: csc(x*(x+1)-x^2-x)
+    Infinity
+    sage: sec(x*(x+1)-x^2-x)
+    1
+    sage: cot(x*(x+1)-x^2-x)
+    Infinity
+"""
+
 from sage.symbolic.function import GinacFunction as GinacFunction
 
 class Function_sin(GinacFunction):
@@ -123,7 +143,7 @@ class Function_sin(GinacFunction):
             sin(1/42*pi)
         """
 
-sin: Incomplete
+sin: Function_sin
 
 class Function_cos(GinacFunction):
     def __init__(self) -> None:
@@ -186,7 +206,7 @@ class Function_cos(GinacFunction):
             -cos(1/42*pi)
         """
 
-cos: Incomplete
+cos: Function_cos
 
 class Function_tan(GinacFunction):
     def __init__(self) -> None:
@@ -247,7 +267,7 @@ class Function_tan(GinacFunction):
             1.16673625724092
         """
 
-tan: Incomplete
+tan: Function_tan
 
 class Function_cot(GinacFunction):
     def __init__(self) -> None:
@@ -332,7 +352,7 @@ class Function_cot(GinacFunction):
             0.217621561854403 - 0.868014142895925*I
         """
 
-cot: Incomplete
+cot: Function_cot
 
 class Function_sec(GinacFunction):
     def __init__(self) -> None:
@@ -390,7 +410,7 @@ class Function_sec(GinacFunction):
             (0.49833703055518686+0.5910838417210451j)
         """
 
-sec: Incomplete
+sec: Function_sec
 
 class Function_csc(GinacFunction):
     def __init__(self) -> None:
@@ -448,7 +468,7 @@ class Function_csc(GinacFunction):
             (0.6215180171704284-0.30393100162842646j)
         """
 
-csc: Incomplete
+csc: Function_csc
 
 class Function_arcsin(GinacFunction):
     def __init__(self) -> None:
@@ -506,9 +526,9 @@ class Function_arcsin(GinacFunction):
             1.57079632679490 - 1.37285914424258*I
         """
 
-arcsin: Incomplete
+arcsin: Function_arcsin
 
-asin: Incomplete
+asin: Function_arcsin
 
 class Function_arccos(GinacFunction):
     def __init__(self) -> None:
@@ -571,9 +591,9 @@ class Function_arccos(GinacFunction):
             1/4*pi
         """
 
-arccos: Incomplete
+arccos: Function_arccos
 
-acos: Incomplete
+acos: Function_arccos
 
 class Function_arctan(GinacFunction):
     def __init__(self) -> None:
@@ -641,9 +661,9 @@ class Function_arctan(GinacFunction):
             1/2*pi
         """
 
-arctan: Incomplete
+arctan: Function_arctan
 
-atan: Incomplete
+atan: Function_arctan
 
 class Function_arccot(GinacFunction):
     def __init__(self) -> None:
@@ -691,9 +711,9 @@ class Function_arccot(GinacFunction):
             0.553574358897045 - 0.402359478108525*I
         """
 
-arccot: Incomplete
+arccot: Function_arccot
 
-acot: Incomplete
+acot: Function_arccot
 
 class Function_arccsc(GinacFunction):
     def __init__(self) -> None:
@@ -737,9 +757,9 @@ class Function_arccsc(GinacFunction):
             (0.45227844715119064-0.5306375309525178j)
         """
 
-arccsc: Incomplete
+arccsc: Function_arccsc
 
-acsc: Incomplete
+acsc: Function_arccsc
 
 class Function_arcsec(GinacFunction):
     def __init__(self) -> None:
@@ -785,9 +805,9 @@ class Function_arcsec(GinacFunction):
             (1.118517879643706+0.5306375309525178j)
         """
 
-arcsec: Incomplete
+arcsec: Function_arcsec
 
-asec: Incomplete
+asec: Function_arcsec
 
 class Function_arctan2(GinacFunction):
     def __init__(self) -> None:
@@ -908,6 +928,6 @@ class Function_arctan2(GinacFunction):
             pi
         """
 
-arctan2: Incomplete
+arctan2: Function_arctan2
 
-atan2: Incomplete
+atan2: Function_arctan2

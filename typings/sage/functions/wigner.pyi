@@ -1,4 +1,21 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+r"""
+Wigner, Clebsch-Gordan, Racah, and Gaunt coefficients
+
+Collection of functions for calculating Wigner 3-`j`, 6-`j`, 9-`j`,
+Clebsch-Gordan, Racah as well as Gaunt coefficients exactly, all
+evaluating to a rational number times the square root of a rational
+number [RH2003]_.
+
+Please see the description of the individual functions for further
+details and examples.
+
+AUTHORS:
+
+- Jens Rasch (2009-03-24): initial version for Sage
+
+- Jens Rasch (2009-05-31): updated to sage-4.0
+"""
+
 from sage.rings.finite_rings.integer_mod import Mod as Mod
 from sage.rings.integer import Integer as Integer
 

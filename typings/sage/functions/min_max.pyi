@@ -1,5 +1,31 @@
-from _typeshed import Incomplete
-from sage.misc.lazy_import import lazy_import as lazy_import
+r"""
+Symbolic minimum and maximum
+
+Sage provides a symbolic maximum and minimum due to the fact that the
+Python builtin :func:`max` and :func:`min` are not able to deal with variables
+as users might expect. These functions wait to evaluate if there are variables.
+
+Here you can see some differences::
+
+   sage: max(x, x^2)
+   x
+   sage: max_symbolic(x, x^2)
+   max(x, x^2)
+   sage: f(x) = max_symbolic(x, x^2); f(1/2)
+   1/2
+
+This works as expected for more than two entries::
+
+   sage: max(3, 5, x)
+   5
+   sage: min(3, 5, x)
+   3
+   sage: max_symbolic(3, 5, x)
+   max(x, 5)
+   sage: min_symbolic(3, 5, x)
+   min(x, 3)
+"""
+
 from sage.structure.element import Expression as Expression
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
 
@@ -103,7 +129,7 @@ class MaxSymbolic(MinMax_base):
             Max(5, x)
         """
 
-max_symbolic: Incomplete
+max_symbolic: MaxSymbolic
 
 class MinSymbolic(MinMax_base):
     def __init__(self) -> None:
@@ -136,4 +162,4 @@ class MinSymbolic(MinMax_base):
             Min(5, x)
         """
 
-min_symbolic: Incomplete
+min_symbolic: MinSymbolic

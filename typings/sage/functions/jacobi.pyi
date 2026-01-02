@@ -1,21 +1,195 @@
-from _typeshed import Incomplete
-from sage.functions.hyperbolic import arccosh as arccosh, arccoth as arccoth, arccsch as arccsch, arcsech as arcsech, arcsinh as arcsinh, arctanh as arctanh, cosh as cosh, coth as coth, csch as csch, sech as sech, sinh as sinh, tanh as tanh
+r"""
+Jacobi elliptic functions
+
+This module implements the 12 Jacobi elliptic functions, along with their
+inverses and the Jacobi amplitude function.
+
+Jacobi elliptic functions can be thought of as generalizations
+of both ordinary and hyperbolic trig functions. There are twelve
+Jacobian elliptic functions. Each of the twelve corresponds to an
+arrow drawn from one corner of a rectangle to another.
+
+::
+
+                n ------------------- d
+                |                     |
+                |                     |
+                |                     |
+                s ------------------- c
+
+Each of the corners of the rectangle are labeled, by convention, ``s``,
+``c``, ``d``, and ``n``. The rectangle is understood to be lying on the complex
+plane, so that ``s`` is at the origin, ``c`` is on the real axis, and ``n`` is
+on the imaginary axis. The twelve Jacobian elliptic functions are
+then `\operatorname{pq}(x)`, where ``p`` and ``q`` are one of the letters
+``s``, ``c``, ``d``, ``n``.
+
+The Jacobian elliptic functions are then the unique
+doubly-periodic, meromorphic functions satisfying the following
+three properties:
+
+#. There is a simple zero at the corner ``p``, and a simple pole at the
+   corner ``q``.
+#. The step from ``p`` to ``q`` is equal to half the period of the function
+   `\operatorname{pq}(x)`; that is, the function `\operatorname{pq}(x)` is
+   periodic in the direction ``pq``, with the period being twice the distance
+   from ``p`` to ``q``. `\operatorname{pq}(x)` is periodic in the other two
+   directions as well, with a period such that the distance from ``p`` to one
+   of the other corners is a quarter period.
+#. If the function `\operatorname{pq}(x)` is expanded in terms of `x` at one of
+   the corners, the leading term in the expansion has a coefficient of 1.
+   In other words, the leading term of the expansion of `\operatorname{pq}(x)`
+   at the corner ``p`` is `x`; the leading term of the expansion at the corner
+   ``q`` is `1/x`, and the leading term of an expansion at the other two
+   corners is 1.
+
+We can write
+
+.. MATH::
+
+    \operatorname{pq}(x) = \frac{\operatorname{pr}(x)}{\operatorname{qr}(x)}
+
+where ``p``, ``q``, and ``r`` are any of the
+letters ``s``, ``c``, ``d``, ``n``, with
+the understanding that `\mathrm{ss} = \mathrm{cc} = \mathrm{dd}
+= \mathrm{nn} = 1`.
+
+Let
+
+.. MATH::
+
+    u = \int_0^{\phi} \frac{d\theta} {\sqrt {1-m \sin^2 \theta}},
+
+then the *Jacobi elliptic function* `\operatorname{sn}(u)` is given by
+
+.. MATH::
+
+    \operatorname{sn}{u} = \sin{\phi}
+
+and `\operatorname{cn}(u)` is given by
+
+.. MATH::
+
+    \operatorname{cn}{u} = \cos{\phi}
+
+and
+
+.. MATH::
+
+    \operatorname{dn}{u} = \sqrt{1 - m\sin^2 \phi}.
+
+To emphasize the dependence on `m`, one can write
+`\operatorname{sn}(u|m)` for example (and similarly for `\mathrm{cn}` and
+`\mathrm{dn}`). This is the notation used below.
+
+For a given `k` with `0 < k < 1` they therefore are
+solutions to the following nonlinear ordinary differential
+equations:
+
+- `\operatorname{sn}\,(x;k)` solves the differential equations
+
+  .. MATH::
+
+      \frac{d^2 y}{dx^2} + (1+k^2) y - 2 k^2 y^3 = 0
+      \quad \text{ and } \quad
+      \left(\frac{dy}{dx}\right)^2 = (1-y^2) (1-k^2 y^2).
+
+- `\operatorname{cn}(x;k)` solves the differential equations
+
+  .. MATH::
+
+      \frac{d^2 y}{dx^2} + (1-2k^2) y + 2 k^2 y^3 = 0
+      \quad \text{ and } \quad
+      \left(\frac{dy}{dx}\right)^2 = (1-y^2)(1-k^2 + k^2 y^2).
+
+- `\operatorname{dn}(x;k)` solves the differential equations
+
+  .. MATH::
+
+      \frac{d^2 y}{dx^2} - (2 - k^2) y + 2 y^3 = 0
+      \quad \text{ and } \quad
+      \left(\frac{dy}{dx}\right)^2 = y^2 (1 - k^2 - y^2).
+
+  If `K(m)` denotes the complete elliptic integral of the
+  first kind (named ``elliptic_kc`` in Sage), the elliptic functions
+  `\operatorname{sn}(x|m)` and `\operatorname{cn}(x|m)` have real periods
+  `4K(m)`, whereas `\operatorname{dn}(x|m)` has a period
+  `2K(m)`. The limit `m \rightarrow 0` gives
+  `K(0) = \pi/2` and trigonometric functions:
+  `\operatorname{sn}(x|0) = \sin{x}`, `\operatorname{cn}(x|0) = \cos{x}`,
+  `\operatorname{dn}(x|0) = 1`. The limit `m \rightarrow 1` gives
+  `K(1) \rightarrow \infty` and hyperbolic functions:
+  `\operatorname{sn}(x|1) = \tanh{x}`,
+  `\operatorname{cn}(x|1) = \operatorname{sech}{x}`,
+  `\operatorname{dn}(x|1) = \operatorname{sech}{x}`.
+
+REFERENCES:
+
+- :wikipedia:`Jacobi%27s_elliptic_functions`
+
+- [KS2002]_
+
+AUTHORS:
+
+- David Joyner (2006): initial version
+
+- Eviatar Bach (2013): complete rewrite, new numerical evaluation, and
+  addition of the Jacobi amplitude function
+"""
+
+from typing import Literal
+from sage.rings.rational import Rational
+from sage.functions.hyperbolic import (
+    arccosh as arccosh,
+    arccoth as arccoth,
+    arccsch as arccsch,
+    arcsech as arcsech,
+    arcsinh as arcsinh,
+    arctanh as arctanh,
+    cosh as cosh,
+    coth as coth,
+    csch as csch,
+    sech as sech,
+    sinh as sinh,
+    tanh as tanh,
+)
 from sage.functions.special import elliptic_e as elliptic_e, elliptic_kc as elliptic_kc
-from sage.functions.trig import arccos as arccos, arccot as arccot, arccsc as arccsc, arcsec as arcsec, arcsin as arcsin, arctan as arctan, cos as cos, cot as cot, csc as csc, sec as sec, sin as sin, tan as tan
+from sage.functions.trig import (
+    arccos as arccos,
+    arccot as arccot,
+    arccsc as arccsc,
+    arcsec as arcsec,
+    arcsin as arcsin,
+    arctan as arctan,
+    cos as cos,
+    cot as cot,
+    csc as csc,
+    sec as sec,
+    sin as sin,
+    tan as tan,
+)
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.integer import Integer as Integer
 from sage.rings.rational_field import QQ as QQ
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
 
-HALF: Incomplete
+HALF: Rational
 
-class Jacobi(BuiltinFunction):
+type JacobiKind = Literal[
+        "nd", "ns", "nc", "dn", "ds", "dc", "sn", "sd", "sc", "cn", "cd", "cs"
+    ]
+
+class Jacobi[K: JacobiKind](BuiltinFunction):
     """
     Base class for the Jacobi elliptic functions.
     """
-    kind: Incomplete
-    def __init__(self, kind) -> None:
-        '''
+
+    kind: K
+    def __init__(
+        self,
+        kind: K,
+    ) -> None:
+        """
         Initialize ``self``.
 
         EXAMPLES::
@@ -40,27 +214,28 @@ class Jacobi(BuiltinFunction):
             jacobiSn(x,2)
             sage: fricas(jacobi(\'dn\',x, 2))
             jacobiDn(x,2)
-        '''
+        """
 
-jacobi_nd: Incomplete
-jacobi_ns: Incomplete
-jacobi_nc: Incomplete
-jacobi_dn: Incomplete
-jacobi_ds: Incomplete
-jacobi_dc: Incomplete
-jacobi_sn: Incomplete
-jacobi_sd: Incomplete
-jacobi_sc: Incomplete
-jacobi_cn: Incomplete
-jacobi_cd: Incomplete
-jacobi_cs: Incomplete
+jacobi_nd: Jacobi[Literal["nd"]]
+jacobi_ns: Jacobi[Literal["ns"]]
+jacobi_nc: Jacobi[Literal["nc"]]
+jacobi_dn: Jacobi[Literal["dn"]]
+jacobi_ds: Jacobi[Literal["ds"]]
+jacobi_dc: Jacobi[Literal["dc"]]
+jacobi_sn: Jacobi[Literal["sn"]]
+jacobi_sd: Jacobi[Literal["sd"]]
+jacobi_sc: Jacobi[Literal["sc"]]
+jacobi_cn: Jacobi[Literal["cn"]]
+jacobi_cd: Jacobi[Literal["cd"]]
+jacobi_cs: Jacobi[Literal["cs"]]
 
-class InverseJacobi(BuiltinFunction):
+class InverseJacobi[K: JacobiKind](BuiltinFunction):
     """
     Base class for the inverse Jacobi elliptic functions.
     """
-    kind: Incomplete
-    def __init__(self, kind) -> None:
+
+    kind: K
+    def __init__(self, kind: K) -> None:
         """
         Initialize ``self``.
 
@@ -71,20 +246,21 @@ class InverseJacobi(BuiltinFunction):
             inverse_jacobi_sn
         """
 
-inverse_jacobi_nd: Incomplete
-inverse_jacobi_ns: Incomplete
-inverse_jacobi_nc: Incomplete
-inverse_jacobi_dn: Incomplete
-inverse_jacobi_ds: Incomplete
-inverse_jacobi_dc: Incomplete
-inverse_jacobi_sn: Incomplete
-inverse_jacobi_sd: Incomplete
-inverse_jacobi_sc: Incomplete
-inverse_jacobi_cn: Incomplete
-inverse_jacobi_cd: Incomplete
-inverse_jacobi_cs: Incomplete
+inverse_jacobi_nd: InverseJacobi[Literal["nd"]]
+inverse_jacobi_ns: InverseJacobi[Literal["ns"]]
+inverse_jacobi_nc: InverseJacobi[Literal["nc"]]
+inverse_jacobi_dn: InverseJacobi[Literal["dn"]]
+inverse_jacobi_ds: InverseJacobi[Literal["ds"]]
+inverse_jacobi_dc: InverseJacobi[Literal["dc"]]
+inverse_jacobi_sn: InverseJacobi[Literal["sn"]]
+inverse_jacobi_sd: InverseJacobi[Literal["sd"]]
+inverse_jacobi_sc: InverseJacobi[Literal["sc"]]
+inverse_jacobi_cn: InverseJacobi[Literal["cn"]]
+inverse_jacobi_cd: InverseJacobi[Literal["cd"]]
+inverse_jacobi_cs: InverseJacobi[Literal["cs"]]
 
-def jacobi(kind, z, m, **kwargs):
+
+def jacobi(kind: JacobiKind, z, m, **kwargs):
     """
     The 12 Jacobi elliptic functions.
 
@@ -112,7 +288,8 @@ def jacobi(kind, z, m, **kwargs):
         sage: jsn = jacobi('sn', x, 1)                                                  # needs sage.symbolic
         sage: P = plot(jsn, 0, 1)                                                       # needs sage.plot sage.symbolic
     """
-def inverse_jacobi(kind, x, m, **kwargs):
+
+def inverse_jacobi(kind: JacobiKind, x, m, **kwargs):
     """
     The inverses of the 12 Jacobi elliptic functions. They have the property
     that
@@ -171,6 +348,7 @@ class JacobiAmplitude(BuiltinFunction):
     `\\operatorname{am}(x|m) = \\int_0^x \\operatorname{dn}(t|m) dt` for
     `-K(m) \\leq x \\leq K(m)`, `F(\\operatorname{am}(x|m)|m) = x`.
     """
+
     def __init__(self) -> None:
         """
         TESTS::
@@ -180,7 +358,7 @@ class JacobiAmplitude(BuiltinFunction):
             jacobi_am
         """
 
-jacobi_am: Incomplete
+jacobi_am: JacobiAmplitude
 
 def inverse_jacobi_f(kind, x, m):
     """
@@ -324,6 +502,7 @@ def inverse_jacobi_f(kind, x, m):
         sage: chop(ellipfun('ds', inverse_jacobi_f('ds', 4, 0.25), 0.25))               # needs mpmath
         mpf('4.0')
     """
+
 def jacobi_am_f(x, m):
     """
     Internal function for numeric evaluation of the Jacobi amplitude function

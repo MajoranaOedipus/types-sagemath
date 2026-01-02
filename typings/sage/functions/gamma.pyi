@@ -1,5 +1,7 @@
-from _typeshed import Incomplete
-from sage.misc.lazy_import import lazy_import as lazy_import
+"""
+Gamma and related functions
+"""
+from typing import overload
 from sage.rings.infinity import Infinity as Infinity
 from sage.rings.rational import Rational as Rational
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction, GinacFunction as GinacFunction
@@ -160,7 +162,7 @@ class Function_gamma(GinacFunction):
             :meth:`gamma`
         """
 
-gamma1: Incomplete
+gamma1: Function_gamma
 
 class Function_log_gamma(GinacFunction):
     def __init__(self) -> None:
@@ -270,7 +272,7 @@ class Function_log_gamma(GinacFunction):
             +Infinity
         """
 
-log_gamma: Incomplete
+log_gamma: Function_log_gamma
 
 class Function_gamma_inc(BuiltinFunction):
     def __init__(self) -> None:
@@ -335,7 +337,7 @@ class Function_gamma_inc(BuiltinFunction):
             :meth:`gamma`
         """
 
-gamma_inc: Incomplete
+gamma_inc: Function_gamma_inc
 
 class Function_gamma_inc_lower(BuiltinFunction):
     def __init__(self) -> None:
@@ -384,9 +386,13 @@ class Function_gamma_inc_lower(BuiltinFunction):
         :class:`Function_gamma_inc`
         """
 
-gamma_inc_lower: Incomplete
+gamma_inc_lower: Function_gamma_inc_lower
 
-def gamma(a, *args, **kwds):
+@overload
+def gamma(z, **kwds):
+    ...
+@overload
+def gamma(a, z, **kwds):
     """
     Gamma and upper incomplete gamma functions in one symbol.
 
@@ -563,10 +569,14 @@ class Function_psi2(GinacFunction):
             'Psi(2,x)'
         """
 
-psi1: Incomplete
-psi2: Incomplete
+psi1: Function_psi1
+psi2: Function_psi2
 
-def psi(x, *args, **kwds):
+@overload
+def psi(x, **kwds):
+    ...
+@overload
+def psi(n, x, **kwds):
     """
     The digamma function, `\\psi(x)`, is the logarithmic derivative of the
     gamma function.
@@ -710,4 +720,4 @@ class Function_beta(GinacFunction):
             -4.92909641669610
         """
 
-beta: Incomplete
+beta: Function_beta
