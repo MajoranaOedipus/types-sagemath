@@ -1,4 +1,6 @@
+from typing import SupportsInt, Protocol, Self
 from sage.rings.integer import Integer
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
 from sage.symbolic.expression import Expression
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_arb import RealBall
@@ -16,7 +18,7 @@ from sage.rings.infinity import PlusInfinity, MinusInfinity
 
 
 
-type Int = int | Integer
+type Int = int | Integer | IntegerMod_int
 
 type RealInexact = float | RealNumber | RealBall | RealIntervalFieldElement | RealDoubleElement | RealDoubleElement_gsl | RealIntervalAbsoluteElement
 type ComplexInexact = complex | ComplexNumber | ComplexBall | ComplexIntervalFieldElement | ComplexDoubleElement | MPComplexNumber
@@ -33,4 +35,20 @@ type Num = Real | Complex
 type Inf = PlusInfinity | MinusInfinity
 
 type Expr = Expression
+
+class StrictlyComparable(Protocol):
+    def __lt__(self, other: Self) -> bool: ...
+    def __gt__(self, other: Self) -> bool: ...
+
+class NonStrictlyComparable(Protocol):
+    def __le__(self, other: Self) -> bool: ...
+    def __ge__(self, other: Self) -> bool: ...
+
+class Comparable(NonStrictlyComparable, StrictlyComparable):
+    ...
+
+from sage.structure.parent_gens import ParentWithGens
+
+class ElementWithGens(Protocol):
+    def parent(self) -> ParentWithGens: ...
 

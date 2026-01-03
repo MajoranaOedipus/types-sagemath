@@ -1,3 +1,9 @@
+r"""
+Parallelogram polyominoes
+
+The goal of this module is to give some tools to manipulate the
+parallelogram polyominoes.
+"""
 from _typeshed import Incomplete
 from sage.categories.finite_enumerated_sets import FiniteEnumeratedSets as FiniteEnumeratedSets
 from sage.combinat.combinat import catalan_number as catalan_number
@@ -310,8 +316,108 @@ class LocalOptions:
             [\'display\', \'tikz_options\']
         '''
 
-default_tikz_options: Incomplete
-ParallelogramPolyominoesOptions: Incomplete
+default_tikz_options = dict(
+    scale=1, line_size=1, point_size=3.5, color_line='black',
+    color_point='black', color_bounce_0='red', color_bounce_1='blue',
+    translation=[0, 0], rotation=0, mirror=None
+)
+r"""
+This is the default TIKZ options.
+
+This option is used to configurate element of a drawing to allow
+TIKZ code generation.
+"""
+
+ParallelogramPolyominoesOptions = LocalOptions(
+    'ParallelogramPolyominoes_size',
+    #    module='sage.combinat.parallelogram_polyomino',
+    #    doc=r"""
+    #    """,
+    #    end_doc=r"""
+    #    """,
+    tikz_options=dict(
+        default=default_tikz_options,
+        description='the tikz options',
+        checker=lambda x: Set(x.keys()).issubset(
+            Set(
+                [
+                    'scale', 'line_size', 'point_size',
+                    'color_line', 'color_point', 'translation', 'mirror',
+                    'rotation', 'color_bounce_0', 'color_bounce_1',
+                ]
+            )
+        )
+    ),
+    drawing_components=dict(
+        default=dict(diagram=True, tree=False, bounce_0=False, bounce_1=False, bounce_values=False),
+        description='Different tree-like tableaux components to draw',
+        checker=lambda x: Set(x.keys()).issubset(
+            Set(['diagram', 'tree', 'bounce_0', 'bounce_1', 'bounce_values', ])
+        )
+    ),
+    display=dict(
+        default='list',
+        values=dict(
+            list='displayed as list',
+            drawing='as a drawing',
+        )
+    ),
+    latex=dict(
+        default='drawing',
+        values=dict(
+            list='displayed as list',
+            drawing='as a drawing',
+        )
+    )
+)
+r"""
+This global option contains all the data needed by the Parallelogram classes
+to draw, display in ASCII, compile in latex a parallelogram polyomino.
+
+The available options are:
+
+- tikz_options : this option configurate all the information useful to
+  generate TIKZ code. For example, color, line size, etc ...
+
+- drawing_components : this option is used to explain to the system
+  which component of the drawing you want to draw. For example,
+  you can ask to draw some elements of the following list:
+  - the diagram,
+  - the tree inside the parallelogram polyomino,
+  - the bounce paths inside the parallelogram polyomino,
+  - the value of the bounce on each square of a bounce path.
+
+- display : this option is used to configurate the ASCII display.
+  The available options are:
+  - list : (this is the default value) is used to represent PP as a list
+  containing the upper and lower path.
+  - drawing : this value is used to explain we want to display an array with
+  the PP drawn inside (with connected 1).
+
+- latex : Same as display. The default is "drawing".
+
+See :meth:`ParallelogramPolyomino.get_options` for more details and for an
+user use of options.
+
+EXAMPLES::
+
+    sage: from sage.combinat.parallelogram_polyomino import (
+    ....:     ParallelogramPolyominoesOptions
+    ....: )
+    sage: opt = ParallelogramPolyominoesOptions['tikz_options']
+    sage: opt
+    {'color_bounce_0': 'red',
+     'color_bounce_1': 'blue',
+     'color_line': 'black',
+     'color_point': 'black',
+     'line_size': 1,
+     'mirror': None,
+     'point_size': 3.5,
+     'rotation': 0,
+     'scale': 1,
+     'translation': [0, 0]}
+"""
+
 
 class _drawing_tool:
     """
@@ -2065,7 +2171,7 @@ class ParallelogramPolyominoesFactory(SetFactory):
             +Infinity
         """
 
-ParallelogramPolyominoes: Incomplete
+ParallelogramPolyominoes: ParallelogramPolyominoesFactory
 
 class ParallelogramPolyominoes_size(ParentWithSetFactory, UniqueRepresentation):
     """

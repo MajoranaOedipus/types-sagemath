@@ -1,5 +1,86 @@
+r"""
+Functions that compute some of the sequences in Sloane's tables
+
+EXAMPLES:
+
+Type ``sloane.[tab]`` to see a list of the sequences that are defined.
+
+::
+
+    sage: a = sloane.A000005; a
+    The integer sequence tau(n), which is the number of divisors of n.
+    sage: a(1)
+    1
+    sage: a(6)
+    4
+    sage: a(100)
+    9
+
+Type ``d._eval??`` to see how the function that
+computes an individual term of the sequence is implemented.
+
+The input must be a positive integer::
+
+    sage: a(0)
+    Traceback (most recent call last):
+    ...
+    ValueError: input n (=0) must be a positive integer
+    sage: a(1/3)
+    Traceback (most recent call last):
+    ...
+    TypeError: input must be an int or Integer
+
+You can also change how a sequence prints::
+
+    sage: a = sloane.A000005; a
+    The integer sequence tau(n), which is the number of divisors of n.
+    sage: a.rename('(..., tau(n), ...)')
+    sage: a
+    (..., tau(n), ...)
+    sage: a.reset_name()
+    sage: a
+    The integer sequence tau(n), which is the number of divisors of n.
+
+TESTS::
+
+    sage: a = sloane.A000001
+    sage: a == loads(dumps(a))
+    True
+
+We agree with the online database::
+
+    sage: for t in sloane.__dir__():    # long time; optional -- internet; known bug
+    ....:     online_list = list(oeis(t).first_terms())
+    ....:     L = max(2, len(online_list) // 2)
+    ....:     sage_list = sloane.__getattribute__(t).list(L)
+    ....:     if online_list[:L] != sage_list:
+    ....:         print('{} seems wrong'.format(t))
+
+.. SEEALSO::
+
+    - If you want to get more informations relative to a sequence (references,
+      links, examples, programs, ...), you can use the On-Line Encyclopedia of
+      Integer Sequences provided by the :mod:`OEIS <sage.databases.oeis>`
+      module.
+    - If you plan to do a lot of automatic searches for subsequences, you
+      should consider installing :mod:`SloaneEncyclopedia
+      <sage.databases.sloane>`, a local partial copy of the OEIS.
+
+
+AUTHORS:
+
+- William Stein: framework
+
+- Jaap Spies: most sequences
+
+- Nick Alexander: updated framework
+"""
 from _typeshed import Incomplete
-from collections.abc import Generator
+from typing import Any
+from typings_sagemath import Int
+from sage.rings.integer import Integer
+
+from collections.abc import Callable, Generator
 from sage.arith.srange import srange as srange
 from sage.combinat import combinat as combinat
 from sage.misc.lazy_import import lazy_import as lazy_import
@@ -12,8 +93,8 @@ class SloaneSequence(SageObject):
     """
     Base class for a Sloane integer sequence.
     """
-    offset: Incomplete
-    def __init__(self, offset: int = 1) -> None:
+    offset: Integer
+    def __init__(self, offset: Int = 1) -> None:
         """
         A sequence starting at offset (=1 by default).
 
@@ -3609,7 +3690,8 @@ class A002275(SloaneSequence):
         - Jaap Spies (2007-01-25)
         """
 
-def recur_gen2b(a0, a1, a2, a3, b) -> Generator[Incomplete]:
+def recur_gen2b(a0: Int, a1: Int, a2: Any, a3: Any, b: Callable[[int], Any]
+                ) -> Generator[Integer | Any]:
     """
     Inhomogeneous second-order linear recurrence generator with fixed
     coefficients and `b = f(n)`
@@ -4041,7 +4123,7 @@ class A001836(SloaneSequence):
             [53, 83, 158, 263, 293, 368, 578, 683, 743]
         """
 
-def recur_gen2(a0, a1, a2, a3) -> Generator[Incomplete]:
+def recur_gen2(a0: Int, a1: Int, a2: Any, a3: Any) -> Generator[Integer | Any]:
     """
     Homogeneous general second-order linear recurrence generator with
     fixed coefficients.
@@ -4635,7 +4717,7 @@ class A061084(SloaneSequence):
         """
     keyword: Incomplete
 
-def recur_gen3(a0, a1, a2, a3, a4, a5) -> Generator[Incomplete]:
+def recur_gen3(a0: Int, a1: Int, a2: Int, a3: Any, a4: Any, a5: Any) -> Generator[Integer | Any]:
     """
     Homogeneous general third-order linear recurrence generator with
     fixed coefficients
@@ -4729,7 +4811,7 @@ class A000073(SloaneSequence):
             [0, 0, 1, 1, 2, 4, 7, 13, 24, 44]
         """
 
-def perm_mh(m, h):
+def perm_mh(m: Int, h: Int) -> Integer:
     """
     This functions calculates `f(g,h)` from Sloane's sequences
     A079908-A079928
@@ -5313,4 +5395,4 @@ class Sloane(SageObject):
             AttributeError: __name__
         """
 
-sloane: Incomplete
+sloane: Sloane

@@ -1,2 +1,15 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
-from sage.misc.namespace_package import install_doc as install_doc
+"""
+Combinatorial Hopf algebras
+
+- :ref:`sage.combinat.sf.all`
+- :ref:`sage.combinat.ncsf_qsym.all`
+- :ref:`sage.combinat.ncsym.all`
+- :ref:`sage.combinat.schubert_polynomial`
+- :ref:`sage.combinat.chas.fsym`
+- :ref:`sage.combinat.fqsym`
+- :ref:`sage.combinat.grossman_larson_algebras`
+- :ref:`sage.combinat.chas.wqsym`
+"""
+
+from sage.combinat.chas.fsym import FreeSymmetricFunctions as FreeSymmetricFunctions
+from sage.combinat.chas.wqsym import WordQuasiSymmetricFunctions as WordQuasiSymmetricFunctions

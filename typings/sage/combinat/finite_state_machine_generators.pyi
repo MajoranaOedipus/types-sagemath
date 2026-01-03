@@ -1,3 +1,80 @@
+r"""
+Common automata and transducers (finite state machines generators)
+
+Automata and transducers in Sage can be built through the
+:class:`automata <AutomatonGenerators>`
+and :class:`transducers <TransducerGenerators>` objects, respectively.
+It contains generators for
+common finite state machines. For example,
+
+::
+
+    sage: I = transducers.Identity([0, 1, 2])
+
+generates an identity transducer on the alphabet `\{0, 1, 2\}`.
+
+To construct automata and transducers manually, you can use the
+classes :class:`Automaton` and :class:`Transducer`, respectively. See
+:doc:`finite_state_machine` for more details and a lot
+of :ref:`examples <finite_state_machine_examples>`.
+
+**Automata**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~AutomatonGenerators.AnyLetter` | Return an automaton recognizing any letter.
+    :meth:`~AutomatonGenerators.AnyWord` | Return an automaton recognizing any word.
+    :meth:`~AutomatonGenerators.EmptyWord` | Return an automaton recognizing the empty word.
+    :meth:`~AutomatonGenerators.Word` | Return an automaton recognizing the given word.
+    :meth:`~AutomatonGenerators.ContainsWord` | Return an automaton recognizing words containing the given word.
+
+**Transducers**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~TransducerGenerators.Identity` | Return a transducer realizing the identity map.
+    :meth:`~TransducerGenerators.abs` | Return a transducer realizing absolute value.
+    :meth:`~TransducerGenerators.map` | Return a transducer realizing a function.
+    :meth:`~TransducerGenerators.operator` | Return a transducer realizing a binary operation.
+    :meth:`~TransducerGenerators.all` | Return a transducer realizing logical ``and``.
+    :meth:`~TransducerGenerators.any` | Return a transducer realizing logical ``or``.
+    :meth:`~TransducerGenerators.add` | Return a transducer realizing addition.
+    :meth:`~TransducerGenerators.sub` | Return a transducer realizing subtraction.
+    :meth:`~TransducerGenerators.CountSubblockOccurrences` | Return a transducer counting the occurrences of a subblock.
+    :meth:`~TransducerGenerators.Wait` | Return a transducer writing ``False`` until first (or `k`-th) true input is read.
+    :meth:`~TransducerGenerators.weight` | Return a transducer realizing the Hamming weight.
+    :meth:`~TransducerGenerators.GrayCode` | Return a transducer realizing binary Gray code.
+    :meth:`~TransducerGenerators.Recursion` | Return a transducer defined by recursions.
+
+AUTHORS:
+
+- Clemens Heuberger (2014-04-07): initial version
+- Sara Kropf (2014-04-10): some changes in TransducerGenerator
+- Daniel Krenn (2014-04-15): improved common docstring during review
+- Clemens Heuberger, Daniel Krenn, Sara Kropf (2014-04-16--2014-05-02):
+  A couple of improvements. Details see
+  :issue:`16141`, :issue:`16142`, :issue:`16143`, :issue:`16186`.
+- Sara Kropf (2014-04-29): weight transducer
+- Clemens Heuberger, Daniel Krenn (2014-07-18): transducers Wait, all,
+  any
+- Clemens Heuberger (2014-08-10): transducer Recursion
+- Clemens Heuberger (2015-07-31): automaton word
+- Daniel Krenn (2015-09-14): cleanup :issue:`18227`
+
+ACKNOWLEDGEMENT:
+
+- Clemens Heuberger, Daniel Krenn and Sara Kropf are supported by the
+  Austrian Science Fund (FWF): P 24644-N26.
+
+Functions and methods
+---------------------
+"""
 from _typeshed import Incomplete
 from sage.combinat.finite_state_machine import Automaton as Automaton, Transducer as Transducer
 from sage.rings.integer_ring import ZZ as ZZ
@@ -1219,5 +1296,5 @@ class TransducerGenerators:
                 ValueError: Conflicting recursion for [0].
         '''
 
-automata: Incomplete
-transducers: Incomplete
+automata: AutomatonGenerators
+transducers: TransducerGenerators

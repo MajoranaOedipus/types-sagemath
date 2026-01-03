@@ -1,2 +1,25 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
-from sage.misc.namespace_package import install_doc as install_doc
+r"""
+Crystals
+
+Introductory material
+---------------------
+
+- :ref:`sage.combinat.crystals.crystals`
+- The `Lie Methods and Related Combinatorics <../../../../../thematic_tutorials/lie.html>`_ thematic tutorial
+
+Catalogs of crystals
+--------------------
+
+- :ref:`sage.combinat.crystals.catalog`
+
+See also
+--------
+
+- The categories for crystals: :class:`Crystals`, :class:`HighestWeightCrystals`,
+  :class:`FiniteCrystals`, :class:`ClassicalCrystals`, :class:`RegularCrystals`,
+  :class:`~sage.categories.regular_supercrystals.RegularSuperCrystals`
+  -- The categories for crystals
+- :ref:`sage.combinat.root_system.all`
+"""
+
+from sage.combinat.crystals import catalog as crystals
