@@ -1,2 +1,9 @@
 from sage.calculus.transforms.dft import IndexedSequence as IndexedSequence
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.calculus.transforms.fft import (
+    FastFourierTransform as FastFourierTransform,
+    FFT as FFT 
+)
+from sage.calculus.transforms.dwt import (
+    WaveletTransform as WaveletTransform,
+    DWT as DWT
+)

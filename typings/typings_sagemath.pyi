@@ -26,10 +26,11 @@ type Real = RealInexact | Rational | Int
 type Complex = ComplexInexact
 type FiniteNum = Real | Complex
 
-
 type Floating =  RealInexact | ComplexInexact
 
 type Num = Real | Complex
+
+type Inf = PlusInfinity | MinusInfinity
 
 type Expr = Expression
 

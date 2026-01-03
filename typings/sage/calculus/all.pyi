@@ -9,6 +9,10 @@ from .interpolation import Spline as Spline, spline as spline
 from .ode import ode_solver as ode_solver, ode_system as ode_system
 from sage.calculus.expr import symbolic_expression as symbolic_expression
 from sage.calculus.var import clear_vars as clear_vars, function as function, var as var
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.calculus.riemann import Riemann_Map as Riemann_Map
+from sage.calculus.interpolators import (
+    polygon_spline as polygon_spline,
+    complex_cubic_spline as complex_cubic_spline
+)
 
 integral_numerical = numerical_integral

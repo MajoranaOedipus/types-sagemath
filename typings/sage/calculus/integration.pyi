@@ -1,18 +1,207 @@
-import _cython_3_2_1
+"""
+Numerical Integration
+
+AUTHORS:
+
+- Josh Kantor (2007-02): first version
+
+- William Stein (2007-02): rewrite of docs, conventions, etc.
+
+- Robert Bradshaw (2008-08): fast float integration
+
+- Jeroen Demeyer (2011-11-23): :issue:`12047`: return 0 when the
+  integration interval is a point; reformat documentation and add to
+  the reference manual.
+"""
 from sage.categories.category import RDF as RDF
 from sage.ext.fast_callable import fast_callable as fast_callable
 from sage.misc.sageinspect import sage_getargspec as sage_getargspec
-from typing import ClassVar
+from typing import Literal, SupportsFloat, overload, Any
+from typings_sagemath import Inf
+from collections.abc import Callable, Sequence
 
-monte_carlo_integral: _cython_3_2_1.cython_function_or_method
+type size_t = int
+type IntegralLimit = SupportsFloat | Inf
+@overload
+def monte_carlo_integral(
+        func: SupportsFloat, 
+        xl: tuple[IntegralLimit, ...] | list[IntegralLimit], 
+        xu: tuple[IntegralLimit, ...] | list[IntegralLimit], 
+        calls: size_t, 
+        algorithm : Literal["plain", "miser", "vegas"] = 'plain'
+    ) -> tuple[float, float]:
+    ...
+@overload
+def monte_carlo_integral(
+        func: Callable[..., Any], 
+        xl: tuple[IntegralLimit, ...] | list[IntegralLimit], 
+        xu: tuple[IntegralLimit, ...] | list[IntegralLimit], 
+        calls: size_t, 
+        algorithm : Literal["plain", "miser", "vegas"] = 'plain',
+        params: Sequence | None = None) -> tuple[float, float]:
+    """
+    Integrate ``func`` by Monte-Carlo method.
 
+    Integrate ``func`` over the ``dim``-dimensional hypercubic region
+    defined by the lower and upper limits in the arrays ``xl`` and
+    ``xu``, each of size ``dim``.
+
+    The integration uses a fixed number of function calls and obtains
+    random sampling points using the default gsl's random number generator.
+
+    ALGORITHM: Uses calls to the GSL (GNU Scientific Library) C library.
+    Documentation can be found in [GSL]_ chapter "Monte Carlo Integration".
+
+    INPUT:
+
+    - ``func`` -- the function to integrate
+    - ``params`` -- used to pass parameters to your function
+    - ``xl`` -- list of lower limits
+    - ``xu`` -- list of upper limits
+    - ``calls`` -- number of functions calls used
+    - ``algorithm`` -- valid choices are:
+
+      * 'plain' -- The plain Monte Carlo algorithm samples points randomly
+        from the integration region to estimate the integral and its error.
+      * 'miser' -- The MISER algorithm of Press and Farrar is based on
+        recursive stratified sampling
+      * 'vegas' -- The VEGAS algorithm of Lepage is based on importance
+        sampling.
+
+    OUTPUT:
+
+    A tuple whose first component is the approximated integral and whose second
+    component is an error estimate.
+
+    EXAMPLES::
+
+        sage: x, y = SR.var('x,y')
+        sage: monte_carlo_integral(x*y, [0,0], [2,2], 10000)   # abs tol 0.1
+        (4.0, 0.0)
+        sage: integral(integral(x*y, (x,0,2)), (y,0,2))
+        4
+
+    An example with a parameter::
+
+        sage: x, y, z = SR.var('x,y,z')
+        sage: monte_carlo_integral(x*y*z, [0,0], [2,2], 10000, params=[1.2])   # abs tol 0.1
+        (4.8, 0.0)
+
+    Integral of a constant::
+
+        sage: monte_carlo_integral(3, [0,0], [2,2], 10000)   # abs tol 0.1
+        (12, 0.0)
+
+    Test different algorithms::
+
+        sage: x, y, z = SR.var('x,y,z')
+        sage: f(x,y,z) = exp(z) * cos(x + sin(y))
+        sage: for algo in ['plain', 'miser', 'vegas']:  # abs tol 0.01
+        ....:   monte_carlo_integral(f, [0,0,-1], [2,2,1], 10^6, algorithm=algo)
+        (-1.06, 0.01)
+        (-1.06, 0.01)
+        (-1.06, 0.01)
+
+    Tests with Python functions::
+
+        sage: def f(u, v): return u * v
+        sage: monte_carlo_integral(f, [0,0], [2,2], 10000)  # abs tol 0.1
+        (4.0, 0.0)
+        sage: monte_carlo_integral(lambda u,v: u*v, [0,0], [2,2], 10000)  # abs tol 0.1
+        (4.0, 0.0)
+        sage: def f(x1, x2, x3, x4): return x1*x2*x3*x4
+        sage: monte_carlo_integral(f, [0,0], [2,2], 1000, params=[0.6,2])  # abs tol 0.2
+        (4.8, 0.0)
+
+    TESTS::
+
+        sage: monte_carlo_integral(f, [0,0,0], [2,2], 10)
+        Traceback (most recent call last):
+        ...
+        TypeError: xl and xu must be lists of floating point values of identical lengths
+        sage: monte_carlo_integral(f, [0,0], [2,2], 1, algorithm='unicorn')
+        Traceback (most recent call last):
+        ...
+        ValueError: 'unicorn' is an invalid value for algorithm
+        sage: monte_carlo_integral(lambda x,y: y*x, [], [], 1)
+        Traceback (most recent call last):
+        ...
+        NotImplementedError: 0 dimensional integration not available
+        sage: monte_carlo_integral(x*y, [0,0,0], [2,2,2], 1)
+        Traceback (most recent call last):
+        ...
+        ValueError: The function to be integrated depends on 2 variables (x, y),
+        and so cannot be integrated in 3 dimensions. Please fix additional
+        variables with the 'params' argument
+        sage: def f(x, y): return x*y
+        sage: monte_carlo_integral(f, [0,0,0], [2,2,2], 100)
+        Traceback (most recent call last):
+        ...
+        ValueError: The function to be integrated depends on 2 variables ('x', 'y'),
+        and so cannot be integrated in 3 dimensions. Please fix additional
+        variables with the 'params' argument
+        sage: monte_carlo_integral(x*y, [0], [2], 1)
+        Traceback (most recent call last):
+        ...
+        ValueError: The function to be integrated depends on 2 variables (x, y),
+        and so cannot be integrated in 1 dimensions. Please add more items in
+        upper and lower limits
+        sage: monte_carlo_integral(f, [0], [2], 100)
+        Traceback (most recent call last):
+        ...
+        ValueError: The function to be integrated depends on 2 variables ('x', 'y'),
+        and so cannot be integrated in 1 dimensions. Please add more items in
+        upper and lower limits
+
+    AUTHORS:
+
+    - Vincent Delecroix
+    - Vincent Klein
+    """
+
+@overload
 def numerical_integral(
-    func,
-    a,
-    b=None,
-    algorithm='qag',
+    func: SupportsFloat,
+    a: tuple[IntegralLimit, IntegralLimit] | list[IntegralLimit],
+    algorithm: Literal["qag", "qags", "qng"] = 'qag',
     max_points=87,
-    params=None,
+    eps_abs=1e-06,
+    eps_rel=1e-06,
+    rule=6
+) -> tuple[float, float]: 
+    ...
+@overload
+def numerical_integral(
+    func: Callable[..., Any],
+    a: tuple[IntegralLimit, IntegralLimit] | list[IntegralLimit],
+    algorithm: Literal["qag", "qags", "qng"] = 'qag',
+    max_points=87,
+    params: Sequence | None = None,
+    eps_abs=1e-06,
+    eps_rel=1e-06,
+    rule=6
+) -> tuple[float, float]: 
+    ...
+@overload
+def numerical_integral(
+    func: SupportsFloat,
+    a: IntegralLimit,
+    b: IntegralLimit,
+    algorithm: Literal["qag", "qags", "qng"] = 'qag',
+    max_points=87,
+    eps_abs=1e-06,
+    eps_rel=1e-06,
+    rule=6
+) -> tuple[float, float]: 
+    ...
+@overload
+def numerical_integral(
+    func: Callable[..., Any],
+    a: IntegralLimit,
+    b: IntegralLimit,
+    algorithm: Literal["qag", "qags", "qng"] = 'qag',
+    max_points=87,
+    params: Sequence | None = None,
     eps_abs=1e-06,
     eps_rel=1e-06,
     rule=6
@@ -214,12 +403,9 @@ expressions, as in :issue:`15219`::
 integral_numerical = numerical_integral
 
 class PyFunctionWrapper:
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+    the_function: object
+    the_parameters: object
+    ls: list
 
 class compiled_integrand:
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+    def c_f(self, t: float) -> int: ...
