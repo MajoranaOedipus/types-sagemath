@@ -1,4 +1,3 @@
-from typing import SupportsInt, Protocol, Self
 from sage.rings.integer import Integer
 from sage.rings.finite_rings.integer_mod import IntegerMod_int
 from sage.symbolic.expression import Expression
@@ -36,19 +35,5 @@ type Inf = PlusInfinity | MinusInfinity
 
 type Expr = Expression
 
-class StrictlyComparable(Protocol):
-    def __lt__(self, other: Self) -> bool: ...
-    def __gt__(self, other: Self) -> bool: ...
 
-class NonStrictlyComparable(Protocol):
-    def __le__(self, other: Self) -> bool: ...
-    def __ge__(self, other: Self) -> bool: ...
-
-class Comparable(NonStrictlyComparable, StrictlyComparable):
-    ...
-
-from sage.structure.parent_gens import ParentWithGens
-
-class ElementWithGens(Protocol):
-    def parent(self) -> ParentWithGens: ...
 
