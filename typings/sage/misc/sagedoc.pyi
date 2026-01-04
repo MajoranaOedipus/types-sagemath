@@ -1,15 +1,50 @@
-from _typeshed import Incomplete
+r"""
+Format Sage documentation for viewing with IPython and the notebook
+
+AUTHORS:
+
+- William Stein (2005): initial version.
+- Nick Alexander (2007): nodetex functions
+- Nick Alexander (2008): search_src, search_def improvements
+- Martin Albrecht (2008-03-21): parse LaTeX description environments in sagedoc
+- John Palmieri (2009-04-11): fix for #5754 plus doctests
+- Dan Drake (2009-05-21): refactor search_* functions, use system 'find' instead of sage -grep
+- John Palmieri (2009-06-28): don't use 'find' -- use Python (os.walk, re.search) instead.
+- Simon King (2011-09): Use os.linesep, avoid destruction of embedding information,
+  enable nodetex in a docstring. Consequently use sage_getdoc.
+
+TESTS:
+
+Check that argspecs of extension function/methods appear correctly,
+see :issue:`12849`::
+
+    sage: from sage.env import SAGE_DOC
+    sage: docfilename = os.path.join(SAGE_DOC, 'html', 'en', 'reference', 'calculus', 'sage', 'symbolic', 'expression.html')
+    sage: with open(docfilename) as fobj:                                               # needs sagemath_doc_html
+    ....:     for line in fobj:
+    ....:         if "#sage.symbolic.expression.Expression.numerical_approx" in line:
+    ....:             print(line)
+    <span class="sig-name descname"><span class="pre">numerical_approx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">digits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algorithm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span>...
+
+Check that sphinx is not imported at Sage start-up::
+
+    sage: os.system("sage -c \"if 'sphinx' in sys.modules: sys.exit(1)\"")
+    0
+"""
+
+import re
+import pydoc
 from sage.env import SAGE_DOC as SAGE_DOC, SAGE_SRC as SAGE_SRC
 from sage.misc import sageinspect as sageinspect
 from sage.misc.temporary_file import tmp_dir as tmp_dir
 from sage.misc.viewer import browser as browser
 
-math_substitutes: Incomplete
-nonmath_substitutes: Incomplete
-itempattern: Incomplete
+math_substitutes: list[tuple[str, str]]
+nonmath_substitutes: list[tuple[str, str]]
+itempattern: re.Pattern
 itemreplace: str
 
-def detex(s, embedded: bool = False):
+def detex(s: str, embedded: bool = False) -> str:
     """nodetex
     This strips LaTeX commands from a string; it is used by the
     ``format`` function to process docstrings for display from the
@@ -42,7 +77,7 @@ def detex(s, embedded: bool = False):
         sage: detex(r'`\\left(\\leq\\le\\leftarrow \\rightarrow\\unknownmacro\\to`')
         '(<=<=<-- -->\\\\unknownmacro-->\\n'
     """
-def skip_TESTS_block(docstring):
+def skip_TESTS_block(docstring: str) -> str:
     '''
     Remove blocks labeled "TESTS:" from ``docstring``.
 
@@ -129,7 +164,7 @@ def skip_TESTS_block(docstring):
         sage: skip_TESTS_block(start + test2 + colons).rstrip() == start.rstrip()
         True
     '''
-def process_dollars(s):
+def process_dollars(s: str) -> str:
     '''nodetex
     Replace dollar signs with backticks.
 
@@ -183,10 +218,10 @@ def process_dollars(s):
     expression in the Sage library, as of this writing.
     '''
 
-pythonversion: Incomplete
-extlinks: Incomplete
+pythonversion: str
+extlinks: dict[str, tuple[str, str|None]]
 
-def process_extlinks(s, embedded: bool = False):
+def process_extlinks(s: str, embedded: bool = False) -> str:
     """nodetex
 
     In docstrings at the command line, process markup related to the
@@ -217,7 +252,7 @@ def process_extlinks(s, embedded: bool = False):
         sage: process_extlinks('see :python:`Implementing Descriptors <reference/datamodel.html#implementing-descriptors>` ...')
         'see https://docs.python.org/release/.../reference/datamodel.html#implementing-descriptors ...'
     """
-def process_mathtt(s):
+def process_mathtt(s: str) -> str:
     """nodetex
     Replace \\\\mathtt{BLAH} with BLAH in the command line.
 
@@ -233,7 +268,7 @@ def process_mathtt(s):
         sage: process_mathtt(r'e^\\mathtt{self}')
         'e^self'
     """
-def process_optional_doctest_tags(s):
+def process_optional_doctest_tags(s: str) -> str:
     '''
     Remove ``# optional/needs`` doctest tags for present features from docstring ``s``.
 
@@ -243,7 +278,7 @@ def process_optional_doctest_tags(s):
         sage: process_optional_doctest_tags("sage: # needs sage.rings.finite_rings\\nsage: K.<x> = FunctionField(GF(5^2,\'a\')); K\\nRational function field in x over Finite Field in a of size 5^2")  # needs sage.rings.finite_rings
         "sage: K.<x> = FunctionField(GF(5^2,\'a\')); K\\nRational function field in x over Finite Field in a of size 5^2"
     '''
-def format(s, embedded: bool = False):
+def format(s: str, embedded: bool = False) -> str:
     '''noreplace
     Format Sage documentation ``s`` for viewing with IPython.
 
@@ -353,7 +388,7 @@ def format(s, embedded: bool = False):
         sage: format(r\'inline code ``\\\\\\\\.``\')
         \'inline code "\\\\\\\\\\\\\\\\."\\n\'
     '''
-def format_src(s):
+def format_src(s: str) -> str:
     '''
     Format Sage source code ``s`` for viewing with IPython.
 
@@ -374,7 +409,7 @@ def format_src(s):
         sage: format_src(\'<<<Sq>>>\')[5:15]                                              # needs sage.combinat sage.modules
         \'Sq(*nums):\'
     '''
-def search_src(string, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds):
+def search_src(string: str, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds) -> str | None:
     '''
     Search Sage library source code for lines containing ``string``.
     The search is case-insensitive by default.
@@ -549,7 +584,7 @@ def search_src(string, extra1: str = '', extra2: str = '', extra3: str = '', ext
         matrix/matrix0.pyx:924:        Set the 2 x 2 submatrix of M, starting at row index and column
         matrix/matrix0.pyx:933:        Set the 2 x 3 submatrix of M starting at row index and column
     '''
-def search_doc(string, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds):
+def search_doc(string: str, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds) -> str | None:
     """
     Search Sage HTML documentation for lines containing ``string``. The
     search is case-insensitive by default.
@@ -586,7 +621,7 @@ def search_doc(string, extra1: str = '', extra2: str = '', extra3: str = '', ext
         sage: all(tree_re.search(l) for l in L)
         True
     """
-def search_def(name, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds):
+def search_def(name: str, extra1: str = '', extra2: str = '', extra3: str = '', extra4: str = '', extra5: str = '', **kwds) -> str | None:
     '''
     Search Sage library source code for function definitions containing
     ``name``. The search is case-insensitive by default.
@@ -613,7 +648,7 @@ def search_def(name, extra1: str = '', extra2: str = '', extra3: str = '', extra
         sage: print(search_def("fetch", path_re="pyx", interact=False))  # random # long time
         matrix/matrix0.pyx:    cdef fetch(self, key):
     '''
-def format_search_as_html(what, results, search):
+def format_search_as_html(what: str, results: str | list[str], search: str | list[str]):
     '''
     Format the output from ``search_src``, ``search_def``, or
     ``search_doc`` as html, for use in the notebook.
@@ -653,7 +688,7 @@ def format_search_as_html(what, results, search):
             ....:                       \'format_search_as_html\')
             \'<html><font color="black"><h2>Search Source: "format_search_as_html"</h2></font><font color="darkpurple"><ol><li><a href="/src/misc/sagedoc.py" target="_blank"><tt>misc/sagedoc.py</tt></a>\\n</ol></font></html>\'
     '''
-def my_getsource(obj, oname: str = ''):
+def my_getsource(obj: object, oname: str = '') -> str | None:
     """
     Retrieve the source code for ``obj``.
 
@@ -713,7 +748,7 @@ class _sage_doc:
             sage: browse_sage_doc._base_url
             'http://localhost:8000/doc/live/'
         """
-    def __call__(self, obj, output: str = 'html', view: bool = True):
+    def __call__(self, obj: object, output: str = 'html', view: bool = True) -> str:
         '''
         Return the documentation for ``obj``.
 
@@ -779,15 +814,15 @@ class _sage_doc:
             sage: constructions()  # indirect doctest, not tested
         '''
 
-browse_sage_doc: Incomplete
-tutorial: Incomplete
-reference: Incomplete
-manual: Incomplete
-developer: Incomplete
-constructions: Incomplete
-python_help: Incomplete
+browse_sage_doc: _sage_doc
+tutorial = browse_sage_doc.tutorial
+reference = browse_sage_doc.reference
+manual = browse_sage_doc.reference
+developer = browse_sage_doc.developer
+constructions = browse_sage_doc.constructions
+python_help = pydoc.help
 
-def help(module=None) -> None:
+def help(module: object = None) -> None:
     """
     If there is an argument ``module``, print the Python help message
     for ``module``.  With no argument, print a help message about

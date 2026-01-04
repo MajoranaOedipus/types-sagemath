@@ -1,4 +1,74 @@
-from _typeshed import Incomplete
+"""
+The Unknown truth value
+
+The ``Unknown`` object is used in Sage in several places as return value
+in addition to ``True`` and ``False``, in order to signal uncertainty
+about or inability to compute the result. ``Unknown`` can be identified
+using ``is``, or by catching :exc:`UnknownError` from a boolean operation.
+
+.. WARNING::
+
+    Calling ``bool()`` with ``Unknown`` as argument will throw an
+    :exc:`UnknownError`. This also means that in the following cases,
+    ``and``, ``not``, and ``or`` fail or return a somewhat wrong value::
+
+        sage: not Unknown         # should return Unknown
+        Traceback (most recent call last):
+        ...
+        UnknownError: Unknown does not evaluate in boolean context
+        sage: Unknown and False   # should return False
+        Traceback (most recent call last):
+        ...
+        UnknownError: Unknown does not evaluate in boolean context
+        sage: Unknown or False    # should return Unknown
+        Traceback (most recent call last):
+        ...
+        UnknownError: Unknown does not evaluate in boolean context
+
+EXAMPLES::
+
+    sage: def func(n):
+    ....:     if n > 0:
+    ....:         return True
+    ....:     elif n < 0:
+    ....:         return False
+    ....:     else:
+    ....:         return Unknown
+
+Using direct identification::
+
+    sage: for n in [-3, 0, 12]:
+    ....:    res = func(n)
+    ....:    if res is True:
+    ....:        print("n={} is positive".format(n))
+    ....:    elif res is False:
+    ....:        print("n={} is negative".format(n))
+    ....:    else:
+    ....:        print("n={} is neither positive nor negative".format(n))
+    n=-3 is negative
+    n=0 is neither positive nor negative
+    n=12 is positive
+
+Using :exc:`UnknownError`::
+
+    sage: for n in [-3, 0, 12]:
+    ....:    try:
+    ....:        if func(n):
+    ....:            print("n={} is positive".format(n))
+    ....:        else:
+    ....:            print("n={} is negative".format(n))
+    ....:    except UnknownError:
+    ....:        print("n={} is neither positive nor negative".format(n))
+    n=-3 is negative
+    n=0 is neither positive nor negative
+    n=12 is positive
+
+AUTHORS:
+
+- Florent Hivert (2010): initial version.
+- Ralf Stephan, Vincent Delecroix (2018-2020): redesign
+"""
+
 from sage.structure.richcmp import rich_to_bool as rich_to_bool, richcmp_method as richcmp_method
 from sage.structure.unique_representation import UniqueRepresentation as UniqueRepresentation
 
@@ -99,4 +169,4 @@ class UnknownClass(UniqueRepresentation):
             [False, False, True]
         """
 
-Unknown: Incomplete
+Unknown: UnknownClass

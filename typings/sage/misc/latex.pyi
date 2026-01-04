@@ -1,11 +1,29 @@
-from _typeshed import Incomplete
+"""
+LaTeX printing support
+
+In order to support latex formatting, an object should define a
+special method ``_latex_(self)`` that returns a string, which will be typeset
+in a mathematical mode (the exact mode depends on circumstances).
+
+This module focuses on using LaTeX for printing. For the use of LaTeX for
+rendering math in HTML by MathJax, see :class:`~sage.misc.html.MathJax` defined in
+:mod:`sage.misc.html`.
+
+AUTHORS:
+
+- William Stein: original implementation
+
+- Joel B. Mohler: latex_variable_name() drastic rewrite and many doc-tests
+"""
+
+from collections.abc import Callable
 from sage.misc.cachefunc import cached_function as cached_function, cached_method as cached_method
 from sage.misc.lazy_attribute import lazy_attribute as lazy_attribute
 from sage.structure.sage_object import SageObject as SageObject
 
 COMMON_HEADER: str
-LATEX_HEADER: Incomplete
-SLIDE_HEADER: Incomplete
+LATEX_HEADER: str
+SLIDE_HEADER: str
 
 def list_function(x):
     """
@@ -196,7 +214,7 @@ def float_function(x):
         2 \\times 10^{-13}
     """
 
-latex_table: Incomplete
+latex_table: dict[type, Callable[..., str]]
 
 class LatexExpr(str):
     '''
@@ -907,7 +925,7 @@ class Latex(LatexCall):
             \'pdflatex\'
         '''
 
-latex: Incomplete
+latex: Latex
 
 def view(objects, title: str = 'Sage', debug: bool = False, sep: str = '', tiny: bool = False, engine=None, viewer=None, tightpage: bool = True, margin=None, mode: str = 'inline', combine_all: bool = False, **kwds) -> None:
     '''nodetex
@@ -1177,7 +1195,7 @@ def repr_lincomb(symbols, coeffs):
         \\text{\\texttt{x}} + 2\\text{\\texttt{y}}
     """
 
-common_varnames: Incomplete
+common_varnames: list[str]
 
 def latex_varify(a, is_fname: bool = False):
     '''
@@ -1350,4 +1368,4 @@ class LatexExamples:
             LaTeX example for testing display of a commutative diagram...
         """
 
-latex_examples: Incomplete
+latex_examples: LatexExamples

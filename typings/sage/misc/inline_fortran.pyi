@@ -1,14 +1,19 @@
-from _typeshed import Incomplete
+"""
+Fortran compiler
+"""
+from typing import Any
+from collections.abc import Callable
 from sage.misc.temporary_file import tmp_dir as tmp_dir
 
 class InlineFortran:
-    globs: Incomplete
-    library_paths: Incomplete
-    libraries: Incomplete
+    globs: Callable[[], dict[str, Any]]
+    
+    library_paths: list[str]
+    libraries: list[str]
     verbose: bool
     def __init__(self, globals=None) -> None: ...
     def __call__(self, *args, **kwds): ...
-    def eval(self, x, globals=None, locals=None) -> None:
+    def eval(self, x: str, globals=None, locals=None) -> None:
         '''
         Compile fortran code ``x`` and adds the functions in it to ``globals``.
 
@@ -64,4 +69,4 @@ class InlineFortran:
     def add_library(self, s) -> None: ...
     def add_library_path(self, s) -> None: ...
 
-fortran: Incomplete
+fortran: InlineFortran

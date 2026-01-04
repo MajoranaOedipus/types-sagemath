@@ -1,9 +1,21 @@
-from _typeshed import Incomplete
+"""
+HTML Fragments
+
+This module defines a HTML fragment class, which holds a piece of
+HTML. This is primarily used in browser-based notebooks, though it
+might be useful for creating static pages as well.
+
+This module defines :class:`MathJax`, an object of which performs the task of
+producing an HTML representation of any object. The produced HTML is
+renderable in a browser-based notebook with the help of MathJax.
+"""
+
+import re
 from sage.misc.latex import latex as latex
 from sage.misc.sage_eval import sage_eval as sage_eval
 from sage.structure.sage_object import SageObject as SageObject
 
-macro_regex: Incomplete
+macro_regex: re.Pattern
 
 class HtmlFragment(str, SageObject):
     """
@@ -290,7 +302,7 @@ class HTMLFragmentFactory(SageObject):
             src="http://data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==""></iframe>
         '''
 
-html: Incomplete
+html: HTMLFragmentFactory
 
 def pretty_print_default(enable: bool = True) -> None:
     """
