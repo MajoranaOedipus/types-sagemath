@@ -2,7 +2,7 @@ from sage.categories.category import Category as Category, CategoryWithParameter
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.unknown import Unknown as Unknown
 
-class Elements(Category):
+class Elements[P](Category):
     """
     The category of all elements of a given parent.
 
@@ -18,7 +18,7 @@ class Elements(Category):
         sage: loads(C.dumps()) == C
         True
     """
-    def __init__(self, object) -> None:
+    def __init__(self, object: P) -> None:
         """
         EXAMPLES::
 

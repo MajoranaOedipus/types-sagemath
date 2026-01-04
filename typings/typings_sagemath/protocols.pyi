@@ -1,5 +1,6 @@
-from typing import Protocol, Self
+from typing import Literal, Protocol, Self
 from sage.structure.parent_gens import ParentWithGens
+from sage.structure.sage_object import SageObject
 
 class ElementWithGens(Protocol):
     def parent(self) -> ParentWithGens: ...
@@ -19,6 +20,11 @@ class NonStrictlyComparable(Protocol):
 class Comparable(NonStrictlyComparable, StrictlyComparable):
     ...
 
+class ComparableWithZero(Protocol):
+    def __lt__(self, zero: Literal[0]) -> bool: ...
+    def __gt__(self, zero: Literal[0]) -> bool: ...
+    def __le__(self, zero: Literal[0]) -> bool: ...
+    def __ge__(self, zero: Literal[0]) -> bool: ...
 
 class Addable(Protocol):
     def __add__(self, other: Self) -> Self:
@@ -43,3 +49,6 @@ class MultiplicableWith[M](Protocol):
 class MultiplicableWithExt[M, P](Protocol):
     def __mul__(self, a: M) -> P:
         ...
+
+class SupportsSage(Protocol):
+    def _sage_(self) -> SageObject: ...

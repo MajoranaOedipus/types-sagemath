@@ -271,2932 +271,33 @@ In case that Python code calls ``x._add_(y)`` directly,
 continue down the MRO and find the ``_add_`` method in the category.
 """
 
+from collections.abc import Callable
+from typing import (
+    Any, TypeGuard, overload, Self, SupportsFloat, 
+    Literal, SupportsIndex, Protocol
+)
+from typings_sagemath import Int, ComparableWithZero, SupportsSage
+from sage.structure.sage_object import SageObject
+from sage.misc.inherit_comparison import InheritComparisonMetaclass
+from sage.categories.category_types import Elements
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.integer import Integer
+from numpy import number as NumPyNumber
+
 import _cython_3_2_1
 import sage.structure.coerce
-import sage.structure.sage_object
 from sage.structure.parent import Parent
 from sage.arith.numerical_approx import digits_to_bits as digits_to_bits
 from sage.misc.decorators import sage_wraps as sage_wraps
 from sage.misc.lazy_format import LazyFormat as LazyFormat
 from sage.misc.superseded import deprecation as deprecation
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, TypeVar, overload
 
-__pyx_capi__: dict
-bin_op: _cython_3_2_1.cython_function_or_method
-def canonical_coercion(x, y) -> tuple:
-    """``canonical_coercion(x,y)`` is what is called before doing an
-arithmetic operation between ``x`` and ``y``.  It returns a pair ``(z,w)``
-such that ``z`` is got from ``x`` and ``w`` from ``y`` via canonical coercion and
-the parents of ``z`` and ``w`` are identical.
-
-EXAMPLES::
-
-    sage: A = Matrix([[0, 1], [1, 0]])                                              # needs sage.modules
-    sage: canonical_coercion(A, 1)                                                  # needs sage.modules
-    (
-    [0 1]  [1 0]
-    [1 0], [0 1]
-    )
-"""
-
-coerce_binop: _cython_3_2_1.cython_function_or_method
-coercion_model: sage.structure.coerce.CoercionModel
-coercion_traceback: _cython_3_2_1.cython_function_or_method
-def get_coercion_model() -> sage.structure.coerce.CoercionModel: 
+# __getattr__ will look into its parent's _abstract_element_class
+# so concrete elements should include that as base?
+class Element[P: Parent | SageObject](SageObject):
     """
-    Return the global coercion model.
-
-    EXAMPLES::
-
-       sage: import sage.structure.element as e
-       sage: cm = e.get_coercion_model()
-       sage: cm
-       <sage.structure.coerce.CoercionModel object at ...>
-       sage: cm is coercion_model
-       True
-    """
-    ...
-have_same_parent: _cython_3_2_1.cython_function_or_method
-is_AdditiveGroupElement: _cython_3_2_1.cython_function_or_method
-is_AlgebraElement: _cython_3_2_1.cython_function_or_method
-is_CommutativeAlgebraElement: _cython_3_2_1.cython_function_or_method
-is_CommutativeRingElement: _cython_3_2_1.cython_function_or_method
-is_DedekindDomainElement: _cython_3_2_1.cython_function_or_method
-is_Element: _cython_3_2_1.cython_function_or_method
-is_EuclideanDomainElement: _cython_3_2_1.cython_function_or_method
-is_FieldElement: _cython_3_2_1.cython_function_or_method
-is_InfinityElement: _cython_3_2_1.cython_function_or_method
-is_IntegralDomainElement: _cython_3_2_1.cython_function_or_method
-is_Matrix: _cython_3_2_1.cython_function_or_method
-is_ModuleElement: _cython_3_2_1.cython_function_or_method
-is_MonoidElement: _cython_3_2_1.cython_function_or_method
-is_MultiplicativeGroupElement: _cython_3_2_1.cython_function_or_method
-is_PrincipalIdealDomainElement: _cython_3_2_1.cython_function_or_method
-is_RingElement: _cython_3_2_1.cython_function_or_method
-is_Vector: _cython_3_2_1.cython_function_or_method
-make_element: _cython_3_2_1.cython_function_or_method
-
-@overload
-def parent(x: Element) -> Parent:  # pyright: ignore[reportOverlappingOverload]
-    ...
-@overload
-def parent[T](x: T) -> type[T]:
-    """
-    Return the parent of the element ``x``.
-
-    Usually, this means the mathematical object of which ``x`` is an
-    element.
-
-    INPUT:
-
-    - ``x`` -- an element
-
-    OUTPUT:
-
-    - If ``x`` is a Sage :class:`Element`, return ``x.parent()``.
-
-    - Otherwise, return ``type(x)``.
-
-    .. SEEALSO::
-
-        `Parents, Conversion and Coercion <http://doc.sagemath.org/html/en/tutorial/tour_coercion.html>`_
-        Section in the Sage Tutorial
-
-    EXAMPLES::
-
-        sage: a = 42
-        sage: parent(a)
-        Integer Ring
-        sage: b = 42/1
-        sage: parent(b)
-        Rational Field
-        sage: c = 42.0
-        sage: parent(c)                                                                 # needs sage.rings.real_mpfr
-        Real Field with 53 bits of precision
-
-    Some more complicated examples::
-
-        sage: x = Partition([3,2,1,1,1])                                                # needs sage.combinat
-        sage: parent(x)                                                                 # needs sage.combinat
-        Partitions
-        sage: v = vector(RDF, [1,2,3])                                                  # needs sage.modules
-        sage: parent(v)                                                                 # needs sage.modules
-        Vector space of dimension 3 over Real Double Field
-
-    The following are not considered to be elements, so the type is
-    returned::
-
-        sage: d = int(42)  # Python int
-        sage: parent(d)
-        <... 'int'>
-        sage: L = list(range(10))
-        sage: parent(L)
-        <... 'list'>
-    """
-
-bin
-class AdditiveGroupElement(ModuleElement):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2602)
-
-        Generic element of an additive group.
-    """
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def order(self) -> Any:
-        """AdditiveGroupElement.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2606)
-
-        Return additive order of element"""
-    def __invert__(self) -> Any:
-        """AdditiveGroupElement.__invert__(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2612)"""
-
-class AlgebraElement(RingElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-
-class CommutativeAlgebraElement(CommutativeRingElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-
-class CommutativeRingElement(RingElement):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3007)
-
-        Base class for elements of commutative rings.
-    """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    @overload
-    def divides(self, x) -> Any:
-        """CommutativeRingElement.divides(self, x)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3043)
-
-        Return ``True`` if ``self`` divides x.
-
-        EXAMPLES::
-
-            sage: P.<x> = PolynomialRing(QQ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-            sage: P.<x> = PolynomialRing(ZZ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-
-        :issue:`5347` has been fixed::
-
-            sage: K = GF(7)
-            sage: K(3).divides(1)
-            True
-            sage: K(3).divides(K(1))
-            True
-
-        ::
-
-            sage: R = Integers(128)
-            sage: R(0).divides(1)
-            False
-            sage: R(0).divides(0)
-            True
-            sage: R(0).divides(R(0))
-            True
-            sage: R(1).divides(0)
-            True
-            sage: R(121).divides(R(120))
-            True
-            sage: R(120).divides(R(121))
-            False
-
-        If ``x`` has different parent than ``self``, they are first coerced to a
-        common parent if possible. If this coercion fails, it returns a
-        :exc:`TypeError`. This fixes :issue:`5759`. ::
-
-            sage: Zmod(2)(0).divides(Zmod(2)(0))
-            True
-            sage: Zmod(2)(0).divides(Zmod(2)(1))
-            False
-            sage: Zmod(5)(1).divides(Zmod(2)(1))
-            Traceback (most recent call last):
-            ...
-            TypeError: no common canonical parent for objects with parents:
-            'Ring of integers modulo 5' and 'Ring of integers modulo 2'
-            sage: Zmod(35)(4).divides(Zmod(7)(1))
-            True
-            sage: Zmod(35)(7).divides(Zmod(7)(1))
-            False"""
-    @overload
-    def divides(self, x) -> Any:
-        """CommutativeRingElement.divides(self, x)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3043)
-
-        Return ``True`` if ``self`` divides x.
-
-        EXAMPLES::
-
-            sage: P.<x> = PolynomialRing(QQ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-            sage: P.<x> = PolynomialRing(ZZ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-
-        :issue:`5347` has been fixed::
-
-            sage: K = GF(7)
-            sage: K(3).divides(1)
-            True
-            sage: K(3).divides(K(1))
-            True
-
-        ::
-
-            sage: R = Integers(128)
-            sage: R(0).divides(1)
-            False
-            sage: R(0).divides(0)
-            True
-            sage: R(0).divides(R(0))
-            True
-            sage: R(1).divides(0)
-            True
-            sage: R(121).divides(R(120))
-            True
-            sage: R(120).divides(R(121))
-            False
-
-        If ``x`` has different parent than ``self``, they are first coerced to a
-        common parent if possible. If this coercion fails, it returns a
-        :exc:`TypeError`. This fixes :issue:`5759`. ::
-
-            sage: Zmod(2)(0).divides(Zmod(2)(0))
-            True
-            sage: Zmod(2)(0).divides(Zmod(2)(1))
-            False
-            sage: Zmod(5)(1).divides(Zmod(2)(1))
-            Traceback (most recent call last):
-            ...
-            TypeError: no common canonical parent for objects with parents:
-            'Ring of integers modulo 5' and 'Ring of integers modulo 2'
-            sage: Zmod(35)(4).divides(Zmod(7)(1))
-            True
-            sage: Zmod(35)(7).divides(Zmod(7)(1))
-            False"""
-    @overload
-    def divides(self, x) -> Any:
-        """CommutativeRingElement.divides(self, x)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3043)
-
-        Return ``True`` if ``self`` divides x.
-
-        EXAMPLES::
-
-            sage: P.<x> = PolynomialRing(QQ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-            sage: P.<x> = PolynomialRing(ZZ)
-            sage: x.divides(x^2)
-            True
-            sage: x.divides(x^2 + 2)
-            False
-            sage: (x^2 + 2).divides(x)
-            False
-
-        :issue:`5347` has been fixed::
-
-            sage: K = GF(7)
-            sage: K(3).divides(1)
-            True
-            sage: K(3).divides(K(1))
-            True
-
-        ::
-
-            sage: R = Integers(128)
-            sage: R(0).divides(1)
-            False
-            sage: R(0).divides(0)
-            True
-            sage: R(0).divides(R(0))
-            True
-            sage: R(1).divides(0)
-            True
-            sage: R(121).divides(R(120))
-            True
-            sage: R(120).divides(R(121))
-            False
-
-        If ``x`` has different parent than ``self``, they are first coerced to a
-        common parent if possible. If this coercion fails, it returns a
-        :exc:`TypeError`. This fixes :issue:`5759`. ::
-
-            sage: Zmod(2)(0).divides(Zmod(2)(0))
-            True
-            sage: Zmod(2)(0).divides(Zmod(2)(1))
-            False
-            sage: Zmod(5)(1).divides(Zmod(2)(1))
-            Traceback (most recent call last):
-            ...
-            TypeError: no common canonical parent for objects with parents:
-            'Ring of integers modulo 5' and 'Ring of integers modulo 2'
-            sage: Zmod(35)(4).divides(Zmod(7)(1))
-            True
-            sage: Zmod(35)(7).divides(Zmod(7)(1))
-            False"""
-    def inverse_mod(self, I) -> Any:
-        """CommutativeRingElement.inverse_mod(self, I)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3012)
-
-        Return an inverse of ``self`` modulo the ideal `I`, if defined,
-        i.e., if `I` and ``self`` together generate the unit ideal.
-
-        EXAMPLES::
-
-            sage: # needs sage.rings.finite_rings
-            sage: F = GF(25)
-            sage: x = F.gen()
-            sage: z = F.zero()
-            sage: x.inverse_mod(F.ideal(z))
-            2*z2 + 3
-            sage: x.inverse_mod(F.ideal(1))
-            1
-            sage: z.inverse_mod(F.ideal(1))
-            1
-            sage: z.inverse_mod(F.ideal(z))
-            Traceback (most recent call last):
-            ...
-            ValueError: an element of a proper ideal does not have an inverse modulo that ideal"""
-    @overload
-    def is_square(self, root=...) -> Any:
-        """CommutativeRingElement.is_square(self, root=False)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3221)
-
-        Return whether or not the ring element ``self`` is a square.
-
-        If the optional argument root is ``True``, then also return
-        the square root (or ``None``, if it is not a square).
-
-        INPUT:
-
-        - ``root`` -- boolean (default: ``False``); whether or not to also
-          return a square root
-
-        OUTPUT:
-
-        - boolean; whether or not a square
-
-        - object; (optional) an actual square root if found, and ``None``
-          otherwise
-
-        EXAMPLES::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = 12*(x+1)^2 * (x+3)^2
-            sage: f.is_square()
-            False
-            sage: f.is_square(root=True)
-            (False, None)
-            sage: h = f/3
-            sage: h.is_square()
-            True
-            sage: h.is_square(root=True)
-            (True, 2*x^2 + 8*x + 6)
-
-        .. NOTE::
-
-            This is the is_square implementation for general commutative ring
-            elements. It's implementation is to raise a
-            :exc:`NotImplementedError`. The function definition is here to show
-            what functionality is expected and provide a general framework."""
-    @overload
-    def is_square(self) -> Any:
-        """CommutativeRingElement.is_square(self, root=False)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3221)
-
-        Return whether or not the ring element ``self`` is a square.
-
-        If the optional argument root is ``True``, then also return
-        the square root (or ``None``, if it is not a square).
-
-        INPUT:
-
-        - ``root`` -- boolean (default: ``False``); whether or not to also
-          return a square root
-
-        OUTPUT:
-
-        - boolean; whether or not a square
-
-        - object; (optional) an actual square root if found, and ``None``
-          otherwise
-
-        EXAMPLES::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = 12*(x+1)^2 * (x+3)^2
-            sage: f.is_square()
-            False
-            sage: f.is_square(root=True)
-            (False, None)
-            sage: h = f/3
-            sage: h.is_square()
-            True
-            sage: h.is_square(root=True)
-            (True, 2*x^2 + 8*x + 6)
-
-        .. NOTE::
-
-            This is the is_square implementation for general commutative ring
-            elements. It's implementation is to raise a
-            :exc:`NotImplementedError`. The function definition is here to show
-            what functionality is expected and provide a general framework."""
-    @overload
-    def is_square(self, root=...) -> Any:
-        """CommutativeRingElement.is_square(self, root=False)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3221)
-
-        Return whether or not the ring element ``self`` is a square.
-
-        If the optional argument root is ``True``, then also return
-        the square root (or ``None``, if it is not a square).
-
-        INPUT:
-
-        - ``root`` -- boolean (default: ``False``); whether or not to also
-          return a square root
-
-        OUTPUT:
-
-        - boolean; whether or not a square
-
-        - object; (optional) an actual square root if found, and ``None``
-          otherwise
-
-        EXAMPLES::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = 12*(x+1)^2 * (x+3)^2
-            sage: f.is_square()
-            False
-            sage: f.is_square(root=True)
-            (False, None)
-            sage: h = f/3
-            sage: h.is_square()
-            True
-            sage: h.is_square(root=True)
-            (True, 2*x^2 + 8*x + 6)
-
-        .. NOTE::
-
-            This is the is_square implementation for general commutative ring
-            elements. It's implementation is to raise a
-            :exc:`NotImplementedError`. The function definition is here to show
-            what functionality is expected and provide a general framework."""
-    @overload
-    def is_square(self) -> Any:
-        """CommutativeRingElement.is_square(self, root=False)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3221)
-
-        Return whether or not the ring element ``self`` is a square.
-
-        If the optional argument root is ``True``, then also return
-        the square root (or ``None``, if it is not a square).
-
-        INPUT:
-
-        - ``root`` -- boolean (default: ``False``); whether or not to also
-          return a square root
-
-        OUTPUT:
-
-        - boolean; whether or not a square
-
-        - object; (optional) an actual square root if found, and ``None``
-          otherwise
-
-        EXAMPLES::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = 12*(x+1)^2 * (x+3)^2
-            sage: f.is_square()
-            False
-            sage: f.is_square(root=True)
-            (False, None)
-            sage: h = f/3
-            sage: h.is_square()
-            True
-            sage: h.is_square(root=True)
-            (True, 2*x^2 + 8*x + 6)
-
-        .. NOTE::
-
-            This is the is_square implementation for general commutative ring
-            elements. It's implementation is to raise a
-            :exc:`NotImplementedError`. The function definition is here to show
-            what functionality is expected and provide a general framework."""
-    @overload
-    def is_square(self, root=...) -> Any:
-        """CommutativeRingElement.is_square(self, root=False)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3221)
-
-        Return whether or not the ring element ``self`` is a square.
-
-        If the optional argument root is ``True``, then also return
-        the square root (or ``None``, if it is not a square).
-
-        INPUT:
-
-        - ``root`` -- boolean (default: ``False``); whether or not to also
-          return a square root
-
-        OUTPUT:
-
-        - boolean; whether or not a square
-
-        - object; (optional) an actual square root if found, and ``None``
-          otherwise
-
-        EXAMPLES::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = 12*(x+1)^2 * (x+3)^2
-            sage: f.is_square()
-            False
-            sage: f.is_square(root=True)
-            (False, None)
-            sage: h = f/3
-            sage: h.is_square()
-            True
-            sage: h.is_square(root=True)
-            (True, 2*x^2 + 8*x + 6)
-
-        .. NOTE::
-
-            This is the is_square implementation for general commutative ring
-            elements. It's implementation is to raise a
-            :exc:`NotImplementedError`. The function definition is here to show
-            what functionality is expected and provide a general framework."""
-    def mod(self, I) -> Any:
-        """CommutativeRingElement.mod(self, I)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3146)
-
-        Return a representative for ``self`` modulo the ideal I (or the ideal
-        generated by the elements of I if I is not an ideal.)
-
-        EXAMPLES:  Integers
-        Reduction of 5 modulo an ideal::
-
-            sage: n = 5
-            sage: n.mod(3*ZZ)
-            2
-
-        Reduction of 5 modulo the ideal generated by 3::
-
-            sage: n.mod(3)
-            2
-
-        Reduction of 5 modulo the ideal generated by 15 and 6, which is `(3)`.
-
-        ::
-
-            sage: n.mod([15,6])
-            2
-
-        EXAMPLES: Univariate polynomials
-
-        ::
-
-            sage: R.<x> = PolynomialRing(QQ)
-            sage: f = x^3 + x + 1
-            sage: f.mod(x + 1)
-            -1
-
-        Reduction for `\\ZZ[x]`::
-
-            sage: R.<x> = PolynomialRing(ZZ)
-            sage: f = x^3 + x + 1
-            sage: f.mod(x + 1)
-            -1
-
-        When little is implemented about a given ring, then ``mod`` may
-        simply return `f`.
-
-        EXAMPLES: Multivariate polynomials
-        We reduce a polynomial in two variables modulo a polynomial
-        and an ideal::
-
-            sage: R.<x,y,z> = PolynomialRing(QQ, 3)
-            sage: (x^2 + y^2 + z^2).mod(x + y + z)                                      # needs sage.libs.singular
-            2*y^2 + 2*y*z + 2*z^2
-
-        Notice above that `x` is eliminated.  In the next example,
-        both `y` and `z` are eliminated::
-
-            sage: (x^2 + y^2 + z^2).mod( (x - y, y - z) )                               # needs sage.libs.singular
-            3*z^2
-            sage: f = (x^2 + y^2 + z^2)^2; f
-            x^4 + 2*x^2*y^2 + y^4 + 2*x^2*z^2 + 2*y^2*z^2 + z^4
-            sage: f.mod( (x - y, y - z) )                                               # needs sage.libs.singular
-            9*z^4
-
-        In this example `y` is eliminated::
-
-            sage: (x^2 + y^2 + z^2).mod( (x^3, y - z) )                                 # needs sage.libs.singular
-            x^2 + 2*z^2"""
-    @overload
-    def sqrt(self, extend=..., all=..., name=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, name=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, all=..., name=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, extend=..., all=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, extend=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, name=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, all=..., name=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, extend=..., all=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-    @overload
-    def sqrt(self, extend=...) -> Any:
-        """CommutativeRingElement.sqrt(self, extend=True, all=False, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3263)
-
-        Compute the square root.
-
-        INPUT:
-
-        - ``extend`` -- boolean (default: ``True``); whether to make a ring
-          extension containing a square root if ``self`` is not a square
-
-        - ``all`` -- boolean (default: ``False``); whether to return a list of
-          all square roots or just a square root
-
-        - ``name`` -- required when ``extend=True`` and ``self`` is not a
-          square; this will be the name of the generator of the extension
-
-        OUTPUT:
-
-        - if ``all=False``, a square root; raises an error if ``extend=False``
-          and ``self`` is not a square
-
-        - if ``all=True``, a list of all the square roots (empty if
-          ``extend=False`` and ``self`` is not a square)
-
-        ALGORITHM:
-
-        It uses ``is_square(root=true)`` for the hard part of the work, the rest
-        is just wrapper code.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = ZZ[]
-            sage: (x^2).sqrt()
-            x
-            sage: f = x^2 - 4*x + 4; f.sqrt(all=True)
-            [x - 2, -x + 2]
-            sage: sqrtx = x.sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            x
-            sage: x.sqrt(all=true, name='y')
-            [y, -y]
-            sage: x.sqrt(extend=False, all=True)
-            []
-            sage: x.sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: x.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square x with extend = False
-
-        TESTS::
-
-            sage: # needs sage.libs.pari
-            sage: f = (x + 3)^2; f.sqrt()
-            x + 3
-            sage: f = (x + 3)^2; f.sqrt(all=True)
-            [x + 3, -x - 3]
-            sage: f = (x^2 - x + 3)^2; f.sqrt()
-            x^2 - x + 3
-            sage: f = (x^2 - x + 3)^6; f.sqrt()
-            x^6 - 3*x^5 + 12*x^4 - 19*x^3 + 36*x^2 - 27*x + 27
-            sage: g = (R.random_element(15))^2
-            sage: g.sqrt()^2 == g
-            True
-
-            sage: # needs sage.libs.pari
-            sage: R.<x> = GF(250037)[]
-            sage: f = x^2/(x+1)^2; f.sqrt()
-            x/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt()
-            3*x^2/(x + 1)
-            sage: f = 9 * x^4 / (x+1)^2; f.sqrt(all=True)
-            [3*x^2/(x + 1), 250034*x^2/(x + 1)]
-
-            sage: R.<x> = QQ[]
-            sage: a = 2*(x+1)^2 / (2*(x-1)^2); a.sqrt()
-            (x + 1)/(x - 1)
-            sage: sqrtx=(1/x).sqrt(name='y'); sqrtx
-            y
-            sage: sqrtx^2
-            1/x
-            sage: (1/x).sqrt(all=true, name='y')
-            [y, -y]
-            sage: (1/x).sqrt(extend=False, all=True)
-            []
-            sage: (1/(x^2-1)).sqrt()
-            Traceback (most recent call last):
-            ...
-            TypeError: Polynomial is not a square. You must specify the name
-            of the square root when using the default extend = True
-            sage: (1/(x^2-3)).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ValueError: trying to take square root of non-square 1/(x^2 - 3) with extend = False"""
-
-class DedekindDomainElement(IntegralDomainElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-
-class Element(sage.structure.sage_object.SageObject):
-    """Element(parent)
-
-    File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 369)
-
     Generic element of a structure. All other types of elements
     (:class:`RingElement`, :class:`ModuleElement`, etc)
     derive from this type.
@@ -3212,18 +313,14 @@ class Element(sage.structure.sage_object.SageObject):
     .. automethod:: __truediv__
     .. automethod:: __floordiv__
     .. automethod:: __mod__"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, parent) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 393)
-
+    
+    def __init__(self, parent: P):
+        """
                 INPUT:
 
                 - ``parent`` -- a SageObject
         """
-    def base_extend(self, R) -> Any:
-        """Element.base_extend(self, R)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 643)"""
+    def base_extend(self, R) -> Element: ...
     def base_ring(self) -> Any:
         """Element.base_ring(self)
 
@@ -3237,15 +334,12 @@ class Element(sage.structure.sage_object.SageObject):
             Rational Field
             sage: identity_matrix(3).base_ring()                                        # needs sage.modules
             Integer Ring"""
-    def category(self) -> Any:
+    def category(self) -> Elements[P]:
         """Element.category(self)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 661)"""
-    def is_zero(self) -> Any:
-        """Element.is_zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1044)
-
+    def is_zero(self) -> bool:
+        """
         Return ``True`` if ``self`` equals ``self.parent()(0)``.
 
         The default implementation is to fall back to ``not
@@ -3255,36 +349,16 @@ class Element(sage.structure.sage_object.SageObject):
 
             Do not re-implement this method in your subclass but
             implement ``__bool__`` instead."""
-    @overload
-    def n(self, prec=..., digits=..., algorithm=...) -> Any:
-        """Element.n(self, prec=None, digits=None, algorithm=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 894)
-
+    def n(self, prec: Int | None = None, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
+        """
         Alias for :meth:`numerical_approx`.
 
         EXAMPLES::
 
             sage: (2/3).n()                                                             # needs sage.rings.real_mpfr
             0.666666666666667"""
-    @overload
-    def n(self) -> Any:
-        """Element.n(self, prec=None, digits=None, algorithm=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 894)
-
-        Alias for :meth:`numerical_approx`.
-
-        EXAMPLES::
-
-            sage: (2/3).n()                                                             # needs sage.rings.real_mpfr
-            0.666666666666667"""
-    @overload
-    def numerical_approx(self, prec=..., digits=..., algorithm=...) -> Any:
-        """Element.numerical_approx(self, prec=None, digits=None, algorithm=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 853)
-
+    def numerical_approx(self, prec: Int | None = None, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
+        """
         Return a numerical approximation of ``self`` with ``prec`` bits
         (or decimal ``digits``) of precision.
 
@@ -3318,58 +392,12 @@ class Element(sage.structure.sage_object.SageObject):
 
             sage: (0).n(algorithm='foo')                                                # needs sage.rings.real_mpfr
             0.000000000000000"""
-    @overload
-    def numerical_approx(self) -> Any:
-        """Element.numerical_approx(self, prec=None, digits=None, algorithm=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 853)
-
-        Return a numerical approximation of ``self`` with ``prec`` bits
-        (or decimal ``digits``) of precision.
-
-        No guarantee is made about the accuracy of the result.
-
-        INPUT:
-
-        - ``prec`` -- precision in bits
-
-        - ``digits`` -- precision in decimal digits (only used if
-          ``prec`` is not given)
-
-        - ``algorithm`` -- which algorithm to use to compute this
-          approximation (the accepted algorithms depend on the object)
-
-        If neither ``prec`` nor ``digits`` is given, the default
-        precision is 53 bits (roughly 16 digits).
-
-        EXAMPLES::
-
-            sage: (2/3).numerical_approx()                                              # needs sage.rings.real_mpfr
-            0.666666666666667
-            sage: pi.n(digits=10)                                                       # needs sage.symbolic
-            3.141592654
-            sage: pi.n(prec=20)                                                         # needs sage.symbolic
-            3.1416
-
-        TESTS:
-
-        Check that :issue:`14778` is fixed::
-
-            sage: (0).n(algorithm='foo')                                                # needs sage.rings.real_mpfr
-            0.000000000000000"""
-    def parent(self, x=...) -> Any:
-        """Element.parent(self, x=None)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 770)
-
+    def parent(self, x: Any = None) -> P:
+        """
         Return the parent of this element; or, if the optional argument x is
         supplied, the result of coercing x into the parent of this element."""
-    @overload
-    def subs(self, in_dict=..., **kwds) -> Any:
-        """Element.subs(self, in_dict=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 780)
-
+    def subs(self, in_dict: dict | None = None, **kwds) -> Any:
+        """
         Substitutes given generators with given values while not touching
         other generators.
 
@@ -3399,117 +427,8 @@ class Element(sage.structure.sage_object.SageObject):
             1/(25*y^2 + y + 30)
             sage: Integer(5).subs(x=4)
             5"""
-    @overload
-    def subs(self, x=...) -> Any:
-        """Element.subs(self, in_dict=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 780)
-
-        Substitutes given generators with given values while not touching
-        other generators.
-
-        This is a generic wrapper around ``__call__``.  The syntax is
-        meant to be compatible with the corresponding method for
-        symbolic expressions.
-
-        INPUT:
-
-        - ``in_dict`` -- (optional) dictionary of inputs
-
-        - ``**kwds`` -- named parameters
-
-        OUTPUT: new object if substitution is possible, otherwise ``self``
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ,2,'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.subs({x:5})
-            25*y^2 + y + 30
-            sage: f.subs(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).subs(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).subs(x=4)
-            5"""
-    @overload
-    def subs(self, x=...) -> Any:
-        """Element.subs(self, in_dict=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 780)
-
-        Substitutes given generators with given values while not touching
-        other generators.
-
-        This is a generic wrapper around ``__call__``.  The syntax is
-        meant to be compatible with the corresponding method for
-        symbolic expressions.
-
-        INPUT:
-
-        - ``in_dict`` -- (optional) dictionary of inputs
-
-        - ``**kwds`` -- named parameters
-
-        OUTPUT: new object if substitution is possible, otherwise ``self``
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ,2,'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.subs({x:5})
-            25*y^2 + y + 30
-            sage: f.subs(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).subs(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).subs(x=4)
-            5"""
-    @overload
-    def subs(self, x=...) -> Any:
-        """Element.subs(self, in_dict=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 780)
-
-        Substitutes given generators with given values while not touching
-        other generators.
-
-        This is a generic wrapper around ``__call__``.  The syntax is
-        meant to be compatible with the corresponding method for
-        symbolic expressions.
-
-        INPUT:
-
-        - ``in_dict`` -- (optional) dictionary of inputs
-
-        - ``**kwds`` -- named parameters
-
-        OUTPUT: new object if substitution is possible, otherwise ``self``
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ,2,'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.subs({x:5})
-            25*y^2 + y + 30
-            sage: f.subs(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).subs(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).subs(x=4)
-            5"""
-    @overload
-    def substitute(self, *args, **kwds) -> Any:
-        """Element.substitute(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 832)
-
+    def substitute(self, in_dict: dict | None = None, **kwds) -> Any:
+        """
         This calls :meth:`self.subs`.
 
         EXAMPLES::
@@ -3526,77 +445,8 @@ class Element(sage.structure.sage_object.SageObject):
             1/(25*y^2 + y + 30)
             sage: Integer(5).substitute(x=4)
             5"""
-    @overload
-    def substitute(self, x=...) -> Any:
-        """Element.substitute(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 832)
-
-        This calls :meth:`self.subs`.
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ, 2, 'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.substitute({x: 5})
-            25*y^2 + y + 30
-            sage: f.substitute(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).substitute(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).substitute(x=4)
-            5"""
-    @overload
-    def substitute(self, x=...) -> Any:
-        """Element.substitute(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 832)
-
-        This calls :meth:`self.subs`.
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ, 2, 'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.substitute({x: 5})
-            25*y^2 + y + 30
-            sage: f.substitute(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).substitute(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).substitute(x=4)
-            5"""
-    @overload
-    def substitute(self, x=...) -> Any:
-        """Element.substitute(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 832)
-
-        This calls :meth:`self.subs`.
-
-        EXAMPLES::
-
-            sage: x, y = PolynomialRing(ZZ, 2, 'xy').gens()
-            sage: f = x^2 + y + x^2*y^2 + 5
-            sage: f((5,y))
-            25*y^2 + y + 30
-            sage: f.substitute({x: 5})
-            25*y^2 + y + 30
-            sage: f.substitute(x=5)
-            25*y^2 + y + 30
-            sage: (1/f).substitute(x=5)
-            1/(25*y^2 + y + 30)
-            sage: Integer(5).substitute(x=4)
-            5"""
-    def __add__(self, left, right) -> Any:
-        """Element.__add__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1173)
-
+    def __add__(self, right) -> Any:    # I don't know how to type this
+        """
         Top-level addition operator for :class:`Element` invoking
         the coercion model.
 
@@ -3644,8 +494,44 @@ class Element(sage.structure.sage_object.SageObject):
             ...
             TypeError: unsupported operand type(s) for +: 'sage.structure.element.Element' and 'NoneType'"""
     def __bool__(self) -> bool:
-        """True if self else False"""
-    def __copy__(self) -> Any:
+        r"""
+        Return whether this element is equal to ``self.parent()(0)``.
+
+        Note that this is automatically called when converting to
+        boolean, as in the conditional of an if or while statement.
+
+        EXAMPLES::
+
+            sage: bool(1) # indirect doctest
+            True
+
+        If ``self.parent()(0)`` raises an exception (because there is no
+        meaningful zero element,) then this method returns ``True``. Here,
+        there is no zero morphism of rings that goes to a non-trivial ring::
+
+            sage: bool(Hom(ZZ, Zmod(2)).an_element())
+            True
+
+        But there is a zero morphism to the trivial ring::
+
+            sage: bool(Hom(ZZ, Zmod(1)).an_element())
+            False
+
+        TESTS:
+
+        Verify that :issue:`5185` is fixed::
+
+            sage: # needs sage.modules
+            sage: v = vector({1: 1, 3: -1})
+            sage: w = vector({1: -1, 3: 1})
+            sage: v + w
+            (0, 0, 0, 0)
+            sage: (v + w).is_zero()
+            True
+            sage: bool(v + w)
+            False
+        """
+    def __copy__(self) -> Self:
         """Element.__copy__(self)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 594)
@@ -3674,11 +560,8 @@ class Element(sage.structure.sage_object.SageObject):
             False
             sage: el1.__dict__ is el.__dict__
             False"""
-    def __dir__(self) -> Any:
-        """Element.__dir__(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 510)
-
+    def __dir__(self) -> list[str]:
+        """
         Emulate ``__dir__`` for elements with dynamically attached methods.
 
         Let cat be the category of the parent of ``self``. This method
@@ -3710,11 +593,8 @@ class Element(sage.structure.sage_object.SageObject):
             True"""
     def __eq__(self, other: object) -> bool:
         """Return self==value."""
-    def __floordiv__(self, left, right) -> Any:
-        """Element.__floordiv__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1774)
-
+    def __floordiv__(self, right) -> Any:
+        """
         Top-level floor division operator for :class:`Element` invoking
         the coercion model.
 
@@ -3772,21 +652,34 @@ class Element(sage.structure.sage_object.SageObject):
             TypeError: unsupported operand type(s) for //: 'sage.structure.element.Element' and 'NoneType'"""
     def __ge__(self, other: object) -> bool:
         """Return self>=value."""
-    def __getmetaclass__(self, _) -> Any:
-        """Element.__getmetaclass__(_)
+    def __getmetaclass__(self) -> type[InheritComparisonMetaclass]:
+        ...
+    def __getstate__(self) -> tuple[P, dict[str, Any]]:
+        """
+        Return a tuple describing the state of your object.
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 387)"""
+        This should return all information that will be required to unpickle
+        the object. The functionality for unpickling is implemented in
+        __setstate__().
+
+        TESTS::
+
+            sage: R.<x,y> = QQ[]
+            sage: i = ideal(x^2 - y^2 + 1)
+            sage: i.__getstate__()
+            (Monoid of ideals of Multivariate Polynomial Ring in x, y over Rational Field,
+             {'_Ideal_generic__gens': (x^2 - y^2 + 1,),
+              '_Ideal_generic__ring': Multivariate Polynomial Ring in x, y over Rational Field,
+              '_gb_by_ordering': {}})
+        """
     def __gt__(self, other: object) -> bool:
         """Return self>value."""
     def __le__(self, other: object) -> bool:
         """Return self<=value."""
     def __lt__(self, other: object) -> bool:
         """Return self<value."""
-    def __matmul__(self, left, right) -> Any:
-        """Element.__matmul__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1579)
-
+    def __matmul__(self, right) -> Any:
+        """
         Top-level matrix multiplication operator for :class:`Element`
         invoking the coercion model.
 
@@ -3834,11 +727,8 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for @: 'sage.structure.element.Element' and 'NoneType'"""
-    def __mod__(self, left, right) -> Any:
-        """Element.__mod__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1874)
-
+    def __mod__(self, right) -> Any:
+        """
         Top-level modulo operator for :class:`Element` invoking
         the coercion model.
 
@@ -3894,79 +784,8 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for %: 'sage.structure.element.Element' and 'NoneType'"""
-    @overload
-    def __mul__(self, left, right) -> Any:
-        """Element.__mul__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1444)
-
-        Top-level multiplication operator for :class:`Element` invoking
-        the coercion model.
-
-        See :ref:`element_arithmetic`.
-
-        EXAMPLES::
-
-            sage: from sage.structure.element import Element
-            sage: class MyElement(Element):
-            ....:     def _mul_(self, other):
-            ....:         return 42
-            sage: e = MyElement(Parent())
-            sage: e * e
-            42
-
-        TESTS::
-
-            sage: e = Element(Parent())
-            sage: e * e
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand parent(s) for *: '<sage.structure.parent.Parent object at ...>' and '<sage.structure.parent.Parent object at ...>'
-            sage: 1 * e
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand parent(s) for *: 'Integer Ring' and '<sage.structure.parent.Parent object at ...>'
-            sage: e * 1
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand parent(s) for *: '<sage.structure.parent.Parent object at ...>' and 'Integer Ring'
-            sage: int(1) * e
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand type(s) for *: 'int' and 'sage.structure.element.Element'
-            sage: e * int(1)
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand type(s) for *: 'sage.structure.element.Element' and 'int'
-            sage: None * e
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand type(s) for *: 'NoneType' and 'sage.structure.element.Element'
-            sage: e * None
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operand type(s) for *: 'sage.structure.element.Element' and 'NoneType'
-
-        ::
-
-            sage: # needs sage.combinat sage.modules
-            sage: A = AlgebrasWithBasis(QQ).example(); A
-            An example of an algebra with basis: the free algebra
-            on the generators ('a', 'b', 'c') over Rational Field
-            sage: x = A.an_element()
-            sage: x
-            B[word: ] + 2*B[word: a] + 3*B[word: b] + B[word: bab]
-            sage: x.__mul__(x)
-            B[word: ] + 4*B[word: a] + 4*B[word: aa] + 6*B[word: ab]
-            + 2*B[word: abab] + 6*B[word: b] + 6*B[word: ba]
-            + 2*B[word: bab] + 2*B[word: baba] + 3*B[word: babb]
-            + B[word: babbab] + 9*B[word: bb] + 3*B[word: bbab]"""
-    @overload
-    def __mul__(self, x) -> Any:
-        """Element.__mul__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1444)
-
+    def __mul__(self, right) -> Any:
+        """
         Top-level multiplication operator for :class:`Element` invoking
         the coercion model.
 
@@ -4030,11 +849,8 @@ class Element(sage.structure.sage_object.SageObject):
             + B[word: babbab] + 9*B[word: bb] + 3*B[word: bbab]"""
     def __ne__(self, other: object) -> bool:
         """Return self!=value."""
-    def __neg__(self) -> Any:
-        """Element.__neg__(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1390)
-
+    def __neg__(self) -> Self | Any:
+        """
         Top-level negation operator for :class:`Element`.
 
         EXAMPLES::
@@ -4054,15 +870,10 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand parent for unary -: '<sage.structure.parent.Parent object at ...>'"""
-    def __pos__(self) -> Any:
-        """Element.__pos__(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 960)"""
-    def __pow__(self, left, right, modulus) -> Any:
-        """Element.__pow__(left, right, modulus)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1974)
-
+    def __pos__(self) -> Self:
+        ...
+    def __pow__(self, right, modulus: None = None) -> Any:
+        """
         Top-level power operator for :class:`Element` invoking
         the coercion model.
 
@@ -4136,29 +947,53 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for ** or pow(): 'sage.structure.element.Element' and 'NoneType'"""
-    def __radd__(self, other):
-        """Return value+self."""
-    def __rfloordiv__(self, other):
-        """Return value//self."""
-    def __rmatmul__(self, *args, **kwargs):
-        """Return value@self."""
-    def __rmod__(self, other):
-        """Return value%self."""
-    def __rmul__(self, other):
-        """Return value*self."""
-    def __rpow__(self, other):
-        """Return pow(value, self, mod)."""
-    def __rsub__(self, other):
-        """Return value-self."""
-    def __rtruediv__(self, other):
-        """Return value/self."""
-    def __rxor__(self, other):
-        """Return value^self."""
-    def __sub__(self, left, right) -> Any:
-        """Element.__sub__(left, right)
+    def __radd__(self, other): ...
+    def __rfloordiv__(self, other): ...
+    def __richcmp__(self, other, op: int) -> bool:
+        """
+        Compare ``self`` and ``other`` using the coercion framework,
+        comparing according to the comparison operator ``op``.
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1299)
+        Normally, a class will not redefine ``__richcmp__`` but rely on
+        this ``Element.__richcmp__`` method which uses coercion if
+        needed to compare elements. After coercion (or if no coercion
+        is needed), ``_richcmp_`` is called.
 
+        If a class wants to implement rich comparison without coercion,
+        then ``__richcmp__`` should be defined.
+        See :class:`sage.numerical.linear_functions.LinearConstraint`
+        for such an example.
+
+        For efficiency reasons, a class can do certain "manual"
+        coercions directly in ``__richcmp__``, using
+        ``coercion_model.richcmp()`` for the remaining cases.
+        This is done for example in :class:`Integer`.
+        """
+    def __rmatmul__(self, other): ...
+    def __rmod__(self, other): ...
+    def __rmul__(self, other): ...
+    def __rpow__(self, other): ...
+    def __rsub__(self, other): ...
+    def __rtruediv__(self, other): ...
+    def __setstate__(self, state: tuple[P, dict[str, Any]]) -> None:
+        """
+        Initialize the state of the object from data saved in a pickle.
+
+        During unpickling ``__init__`` methods of classes are not called, the
+        saved data is passed to the class via this function instead.
+
+        TESTS::
+
+            sage: R.<x,y> = QQ[]
+            sage: i = ideal(x); i
+            Ideal (x) of Multivariate Polynomial Ring in x, y over Rational Field
+            sage: S.<x,y,z> = ZZ[]
+            sage: i.__setstate__((R,{'_Ideal_generic__ring':S,'_Ideal_generic__gens': (S(x^2 - y^2 + 1),)}))
+            sage: i
+            Ideal (x^2 - y^2 + 1) of Multivariate Polynomial Ring in x, y, z over Integer Ring
+        """
+    def __sub__(self, right) -> Any:
+        """
         Top-level subtraction operator for :class:`Element` invoking
         the coercion model.
 
@@ -4205,15 +1040,8 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for -: 'sage.structure.element.Element' and 'NoneType'"""
-    @overload
-    def __truediv__(self, left, right) -> Any:
-        ...
-    @overload
     def __truediv__(self, right) -> Any:
-        """Element.__truediv__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 1671)
-
+        """
         Top-level true division operator for :class:`Element` invoking
         the coercion model.
 
@@ -4271,14 +1099,519 @@ class Element(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for /: 'sage.structure.element.Element' and 'NoneType'"""
-    def __xor__(self, right) -> Any:
-        """Element.__xor__(self, right)
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 956)"""
+def bin_op(x: object, y: object, op: Callable[[Any, Any], Any]) -> Any: ...
 
-class ElementWithCachedMethod(Element):
-    '''File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2162)
+type _Numeric = int | float | complex | NumPyNumber
+type _Sage = SageObject | SupportsSage
 
+@overload
+def canonical_coercion[P: Parent | SageObject](
+    x: Element[P], y: Element[P]
+) -> tuple[Element[P], Element[P]]: ...
+@overload
+def canonical_coercion(x: _Numeric, y: _Numeric) -> tuple[_Numeric, _Numeric]: ...
+@overload
+def canonical_coercion[P: Parent | SageObject](
+    x: _Sage, y: _Numeric) -> tuple[Element[P], Element[P]]: ...
+@overload
+def canonical_coercion[P: Parent | SageObject](
+    x: _Numeric, y: _Sage) -> tuple[Element[P], Element[P]]: ...
+@overload
+def canonical_coercion[P: Parent | SageObject](
+    x: _Sage, y: _Sage) -> tuple[Element[P], Element[P]]:
+    """``canonical_coercion(x,y)`` is what is called before doing an
+arithmetic operation between ``x`` and ``y``.  It returns a pair ``(z,w)``
+such that ``z`` is got from ``x`` and ``w`` from ``y`` via canonical coercion and
+the parents of ``z`` and ``w`` are identical.
+
+EXAMPLES::
+
+    sage: A = Matrix([[0, 1], [1, 0]])                                              # needs sage.modules
+    sage: canonical_coercion(A, 1)                                                  # needs sage.modules
+    (
+    [0 1]  [1 0]
+    [1 0], [0 1]
+    )
+"""
+
+class _BinopMethod(Protocol):
+    def __call__(self, other, *args, **kwargs): ...
+
+def coerce_binop(method: _BinopMethod) -> _BinopMethod:
+    r"""
+    Decorator for a binary operator method for applying coercion to the
+    arguments before calling the method.
+
+    Consider a parent class in the category framework, `S`, whose element class
+    expose a method `binop`. If `a` and `b` are elements of `S`, then
+    `a.binop(b)` behaves as expected. If `a` and `b` are not elements of `S`,
+    but rather have a common parent `T` whose element class also exposes
+    `binop`, we would rather expect `a.binop(b)` to compute `aa.binop(bb)`,
+    where `aa = T(a)` and `bb = T(b)`. This decorator ensures that behaviour
+    without having to otherwise modify the implementation of `binop` on the
+    element class of `A`.
+
+    Since coercion will be attempted on the arguments of the decorated method, a
+    `TypeError` will be thrown if there is no common parent between the
+    elements. An `AttributeError` or `NotImplementedError` or similar will be
+    thrown if there is a common parent of the arguments, but its element class
+    does not implement a method of the same name as the decorated method.
+
+    EXAMPLES:
+
+    Sparse polynomial rings uses ``@coerce_binop`` on ``gcd``::
+
+        sage: S.<x> = PolynomialRing(ZZ, sparse=True)
+        sage: f = x^2
+        sage: g = x
+        sage: f.gcd(g)  #indirect doctest
+        x
+        sage: T = PolynomialRing(QQ, name='x', sparse=True)
+        sage: h = 1/2*T(x)
+        sage: u = f.gcd(h); u  #indirect doctest
+        x
+        sage: u.parent() == T
+        True
+
+    Another real example::
+
+        sage: R1 = QQ['x,y']
+        sage: R2 = QQ['x,y,z']
+        sage: f = R1(1)
+        sage: g = R1(2)
+        sage: h = R2(1)
+        sage: f.gcd(g)
+        1
+        sage: f.gcd(g, algorithm='modular')
+        1
+        sage: f.gcd(h)
+        1
+        sage: f.gcd(h, algorithm='modular')
+        1
+        sage: h.gcd(f)
+        1
+        sage: h.gcd(f, 'modular')
+        1
+
+    We demonstrate a small class using ``@coerce_binop`` on a method::
+
+        sage: from sage.structure.element import coerce_binop
+        sage: class MyRational(Rational):
+        ....:     def __init__(self, value):
+        ....:         self.v = value
+        ....:     @coerce_binop
+        ....:     def test_add(self, other, keyword='z'):
+        ....:         return (self.v, other, keyword)
+
+    Calls func directly if the two arguments have the same parent::
+
+        sage: x = MyRational(1)
+        sage: x.test_add(1/2)
+        (1, 1/2, 'z')
+        sage: x.test_add(1/2, keyword=3)
+        (1, 1/2, 3)
+
+    Passes through coercion and does a method lookup if the left operand is not
+    the same. If the common parent's element class does not have a method of the
+    same name, an exception is raised::
+
+        sage: x.test_add(2)
+        (1, 2, 'z')
+        sage: x.test_add(2, keyword=3)
+        (1, 2, 3)
+        sage: x.test_add(CC(2))
+        Traceback (most recent call last):
+        ...
+        AttributeError: 'sage.rings.complex_mpfr.ComplexNumber' object has no attribute 'test_add'...
+
+    TESTS:
+
+    Test that additional arguments given to the method do not override
+    the ``self`` argument, see :issue:`21322`::
+
+        sage: f.gcd(g, 1)
+        Traceback (most recent call last):
+        ...
+        TypeError: algorithm 1 not supported
+    """
+    ...
+coercion_model: sage.structure.coerce.CoercionModel
+
+@overload
+def coercion_traceback(dump: Literal[False]) -> list[str]: ...
+@overload
+def coercion_traceback(dump: Literal[True] = True) -> None:
+    r"""
+    This function is very helpful in debugging coercion errors. It prints
+    the tracebacks of all the errors caught in the coercion detection. Note
+    that failure is cached, so some errors may be omitted the second time
+    around (as it remembers not to retry failed paths for speed reasons.
+
+    For performance and caching reasons, exception recording must be
+    explicitly enabled before using this function.
+
+    EXAMPLES::
+
+        sage: cm = sage.structure.element.get_coercion_model()
+        sage: cm.record_exceptions()
+        sage: 1 + 1/5
+        6/5
+        sage: coercion_traceback()  # Should be empty, as all went well.
+        sage: 1/5 + GF(5).gen()
+        Traceback (most recent call last):
+        ...
+        TypeError: unsupported operand parent(s) for +:
+        'Rational Field' and 'Finite Field of size 5'
+        sage: coercion_traceback()
+        Traceback (most recent call last):
+        ...
+        TypeError: no common canonical parent for objects with parents:
+        'Rational Field' and 'Finite Field of size 5'
+    """
+def get_coercion_model() -> sage.structure.coerce.CoercionModel: 
+    """
+    Return the global coercion model.
+
+    EXAMPLES::
+
+       sage: import sage.structure.element as e
+       sage: cm = e.get_coercion_model()
+       sage: cm
+       <sage.structure.coerce.CoercionModel object at ...>
+       sage: cm is coercion_model
+       True
+    """
+    ...
+have_same_parent: _cython_3_2_1.cython_function_or_method
+def is_AdditiveGroupElement(x: object) -> TypeGuard[AdditiveGroupElement]:
+    """
+    Return ``True`` if x is of type AdditiveGroupElement.
+    """
+def is_AlgebraElement(x: object) -> TypeGuard[AlgebraElement]:
+    """
+    Return ``True`` if x is of type AlgebraElement.
+    """
+def is_CommutativeAlgebraElement(x: object) -> TypeGuard[CommutativeAlgebraElement]:
+    """
+    Return ``True`` if x is of type CommutativeAlgebraElement.
+    """
+def is_CommutativeRingElement(x: object) -> TypeGuard[CommutativeRingElement]:
+    """
+    Return ``True`` if x is of type CommutativeRingElement.
+
+    TESTS::
+
+        sage: from sage.structure.element import is_CommutativeRingElement
+        sage: is_CommutativeRingElement(oo)
+        doctest:warning...
+        DeprecationWarning: The function is_CommutativeRingElement is deprecated; use 'isinstance(..., CommutativeRingElement)' instead.
+        See https://github.com/sagemath/sage/issues/38077 for details.
+        False
+
+        sage: is_CommutativeRingElement(1)
+        True
+    """
+def is_DedekindDomainElement(x: object) -> TypeGuard[DedekindDomainElement]:
+    """
+    Return ``True`` if x is of type DedekindDomainElement.
+    """
+def is_Element(x: object) -> TypeGuard[Element]:
+    """
+    Return ``True`` if x is of type Element.
+    """
+def is_EuclideanDomainElement(x: object) -> TypeGuard[EuclideanDomainElement]:
+    """
+    Return ``True`` if x is of type EuclideanDomainElement.
+    """
+def is_FieldElement(x: object) -> TypeGuard[FieldElement]:
+    """
+    Return ``True`` if x is of type FieldElement.
+    """
+def is_InfinityElement(x: object) -> TypeGuard[InfinityElement]:
+    """
+    Return ``True`` if x is of type InfinityElement.
+    """
+def is_IntegralDomainElement(x: object) -> TypeGuard[IntegralDomainElement]:
+    """
+    Return ``True`` if x is of type IntegralDomainElement.
+    """
+def is_Matrix(x: object) -> TypeGuard[Matrix]:
+    ...
+def is_ModuleElement(x: object) -> TypeGuard[ModuleElement]:
+    """
+    Return ``True`` if x is of type ModuleElement.
+
+    This is even faster than using isinstance inline.
+
+    EXAMPLES::
+
+        sage: from sage.structure.element import is_ModuleElement
+        sage: is_ModuleElement(2/3)
+        doctest:warning...
+        DeprecationWarning: The function is_ModuleElement is deprecated; use 'isinstance(..., ModuleElement)' instead.
+        See https://github.com/sagemath/sage/issues/38077 for details.
+        True
+        sage: is_ModuleElement((QQ^3).0)                                                # needs sage.modules
+        True
+        sage: is_ModuleElement('a')
+        False
+    """
+def is_MonoidElement(x: object) -> TypeGuard[MonoidElement]:
+    """
+    Return ``True`` if x is of type MonoidElement.
+    """
+def is_MultiplicativeGroupElement(x: object) -> TypeGuard[MultiplicativeGroupElement]:
+    """
+    Return ``True`` if x is of type MultiplicativeGroupElement.
+    """
+def is_PrincipalIdealDomainElement(x: object) -> TypeGuard[PrincipalIdealDomainElement]:
+    """
+    Return ``True`` if x is of type PrincipalIdealDomainElement.
+    """
+def is_RingElement(x: object) -> TypeGuard[RingElement]:
+    """
+    Return ``True`` if x is of type RingElement.
+    """
+def is_Vector(x: object) -> TypeGuard[Vector]: ...
+def make_element(_class, _dict, parent):
+    """
+    This function is only here to support old pickles.
+
+    Pickling functionality is moved to Element.{__getstate__,__setstate__}
+    functions.
+    """
+
+@overload
+def parent[P: Parent | SageObject](x: Element[P]) -> P:  # pyright: ignore[reportOverlappingOverload]
+    ...
+@overload
+def parent[T](x: T) -> type[T]:
+    """
+    Return the parent of the element ``x``.
+
+    Usually, this means the mathematical object of which ``x`` is an
+    element.
+
+    INPUT:
+
+    - ``x`` -- an element
+
+    OUTPUT:
+
+    - If ``x`` is a Sage :class:`Element`, return ``x.parent()``.
+
+    - Otherwise, return ``type(x)``.
+
+    .. SEEALSO::
+
+        `Parents, Conversion and Coercion <http://doc.sagemath.org/html/en/tutorial/tour_coercion.html>`_
+        Section in the Sage Tutorial
+
+    EXAMPLES::
+
+        sage: a = 42
+        sage: parent(a)
+        Integer Ring
+        sage: b = 42/1
+        sage: parent(b)
+        Rational Field
+        sage: c = 42.0
+        sage: parent(c)                                                                 # needs sage.rings.real_mpfr
+        Real Field with 53 bits of precision
+
+    Some more complicated examples::
+
+        sage: x = Partition([3,2,1,1,1])                                                # needs sage.combinat
+        sage: parent(x)                                                                 # needs sage.combinat
+        Partitions
+        sage: v = vector(RDF, [1,2,3])                                                  # needs sage.modules
+        sage: parent(v)                                                                 # needs sage.modules
+        Vector space of dimension 3 over Real Double Field
+
+    The following are not considered to be elements, so the type is
+    returned::
+
+        sage: d = int(42)  # Python int
+        sage: parent(d)
+        <... 'int'>
+        sage: L = list(range(10))
+        sage: parent(L)
+        <... 'list'>
+    """
+
+class AdditiveGroupElement[P: Parent | SageObject](ModuleElement[P]):
+    """
+        Generic element of an additive group.
+    """
+    def order(self) -> Any:
+        """
+        Return additive order of element"""
+
+class AlgebraElement[P: Parent | SageObject](RingElement[P]): ...
+
+class CommutativeAlgebraElement[P: Parent | SageObject](CommutativeRingElement[P]): ...
+
+class CommutativeRingElement[P: Parent | SageObject](RingElement[P]):
+    """
+        Base class for elements of commutative rings.
+    """
+    def divides(self, other) -> bool:
+        """
+        Return ``True`` if ``self`` divides x.
+
+        EXAMPLES::
+
+            sage: P.<x> = PolynomialRing(QQ)
+            sage: x.divides(x^2)
+            True
+            sage: x.divides(x^2 + 2)
+            False
+            sage: (x^2 + 2).divides(x)
+            False
+            sage: P.<x> = PolynomialRing(ZZ)
+            sage: x.divides(x^2)
+            True
+            sage: x.divides(x^2 + 2)
+            False
+            sage: (x^2 + 2).divides(x)
+            False
+
+        :issue:`5347` has been fixed::
+
+            sage: K = GF(7)
+            sage: K(3).divides(1)
+            True
+            sage: K(3).divides(K(1))
+            True
+
+        ::
+
+            sage: R = Integers(128)
+            sage: R(0).divides(1)
+            False
+            sage: R(0).divides(0)
+            True
+            sage: R(0).divides(R(0))
+            True
+            sage: R(1).divides(0)
+            True
+            sage: R(121).divides(R(120))
+            True
+            sage: R(120).divides(R(121))
+            False
+
+        If ``x`` has different parent than ``self``, they are first coerced to a
+        common parent if possible. If this coercion fails, it returns a
+        :exc:`TypeError`. This fixes :issue:`5759`. ::
+
+            sage: Zmod(2)(0).divides(Zmod(2)(0))
+            True
+            sage: Zmod(2)(0).divides(Zmod(2)(1))
+            False
+            sage: Zmod(5)(1).divides(Zmod(2)(1))
+            Traceback (most recent call last):
+            ...
+            TypeError: no common canonical parent for objects with parents:
+            'Ring of integers modulo 5' and 'Ring of integers modulo 2'
+            sage: Zmod(35)(4).divides(Zmod(7)(1))
+            True
+            sage: Zmod(35)(7).divides(Zmod(7)(1))
+            False"""
+    def inverse_mod(self, I) -> Any:
+        """
+        Return an inverse of ``self`` modulo the ideal `I`, if defined,
+        i.e., if `I` and ``self`` together generate the unit ideal.
+
+        EXAMPLES::
+
+            sage: # needs sage.rings.finite_rings
+            sage: F = GF(25)
+            sage: x = F.gen()
+            sage: z = F.zero()
+            sage: x.inverse_mod(F.ideal(z))
+            2*z2 + 3
+            sage: x.inverse_mod(F.ideal(1))
+            1
+            sage: z.inverse_mod(F.ideal(1))
+            1
+            sage: z.inverse_mod(F.ideal(z))
+            Traceback (most recent call last):
+            ...
+            ValueError: an element of a proper ideal does not have an inverse modulo that ideal"""
+    def mod(self, I) -> Any:
+        """CommutativeRingElement.mod(self, I)
+
+        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3146)
+
+        Return a representative for ``self`` modulo the ideal I (or the ideal
+        generated by the elements of I if I is not an ideal.)
+
+        EXAMPLES:  Integers
+        Reduction of 5 modulo an ideal::
+
+            sage: n = 5
+            sage: n.mod(3*ZZ)
+            2
+
+        Reduction of 5 modulo the ideal generated by 3::
+
+            sage: n.mod(3)
+            2
+
+        Reduction of 5 modulo the ideal generated by 15 and 6, which is `(3)`.
+
+        ::
+
+            sage: n.mod([15,6])
+            2
+
+        EXAMPLES: Univariate polynomials
+
+        ::
+
+            sage: R.<x> = PolynomialRing(QQ)
+            sage: f = x^3 + x + 1
+            sage: f.mod(x + 1)
+            -1
+
+        Reduction for `\\ZZ[x]`::
+
+            sage: R.<x> = PolynomialRing(ZZ)
+            sage: f = x^3 + x + 1
+            sage: f.mod(x + 1)
+            -1
+
+        When little is implemented about a given ring, then ``mod`` may
+        simply return `f`.
+
+        EXAMPLES: Multivariate polynomials
+        We reduce a polynomial in two variables modulo a polynomial
+        and an ideal::
+
+            sage: R.<x,y,z> = PolynomialRing(QQ, 3)
+            sage: (x^2 + y^2 + z^2).mod(x + y + z)                                      # needs sage.libs.singular
+            2*y^2 + 2*y*z + 2*z^2
+
+        Notice above that `x` is eliminated.  In the next example,
+        both `y` and `z` are eliminated::
+
+            sage: (x^2 + y^2 + z^2).mod( (x - y, y - z) )                               # needs sage.libs.singular
+            3*z^2
+            sage: f = (x^2 + y^2 + z^2)^2; f
+            x^4 + 2*x^2*y^2 + y^4 + 2*x^2*z^2 + 2*y^2*z^2 + z^4
+            sage: f.mod( (x - y, y - z) )                                               # needs sage.libs.singular
+            9*z^4
+
+        In this example `y` is eliminated::
+
+            sage: (x^2 + y^2 + z^2).mod( (x^3, y - z) )                                 # needs sage.libs.singular
+            x^2 + 2*z^2"""
+    
+class DedekindDomainElement[P: Parent | SageObject](IntegralDomainElement[P]): ...
+
+class ElementWithCachedMethod[P: Parent | SageObject](Element[P]):
+    '''
         An element class that fully supports cached methods.
 
         NOTE:
@@ -4428,32 +1761,15 @@ class ElementWithCachedMethod(Element):
             sage: epython.element_cache_test() is epython.element_cache_test()              # needs sage.misc.cython
             True
     '''
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+    ...
 
-class EuclideanDomainElement(PrincipalIdealDomainElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def degree(self) -> Any:
-        """EuclideanDomainElement.degree(self)
+class EuclideanDomainElement[P: Parent | SageObject](PrincipalIdealDomainElement[P]):
+    def degree(self): ...
+    def leading_coefficient(self) : ...
+    def quo_rem(self, other): ...
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4321)"""
-    def leading_coefficient(self) -> Any:
-        """EuclideanDomainElement.leading_coefficient(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4324)"""
-    def quo_rem(self, other) -> Any:
-        """EuclideanDomainElement.quo_rem(self, other)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4327)"""
-
-class Expression(CommutativeRingElement):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3400)
-
+class Expression[P: Parent | SageObject](CommutativeRingElement[P]):
+    """
         Abstract base class for :class:`~sage.symbolic.expression.Expression`.
 
         This class is defined for the purpose of :func:`isinstance` tests.  It should not be
@@ -4469,22 +1785,10 @@ class Expression(CommutativeRingElement):
             sage: len(sage.structure.element.Expression.__subclasses__()) <= 1
             True
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
 
-class FieldElement(CommutativeRingElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    @overload
-    def canonical_associate(self) -> Any:
-        """FieldElement.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4494)
-
+class FieldElement[P: Parent | SageObject](CommutativeRingElement[P]):
+    def canonical_associate(self) -> tuple[Any, Self]:
+        """
         Return a canonical associate.
 
         EXAMPLES::
@@ -4494,42 +1798,8 @@ class FieldElement(CommutativeRingElement):
             (1, x/y)
             sage: (0).canonical_associate()
             (0, 1)"""
-    @overload
-    def canonical_associate(self) -> Any:
-        """FieldElement.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4494)
-
-        Return a canonical associate.
-
-        EXAMPLES::
-
-            sage: R.<x,y>=QQ[]; k=R.fraction_field()
-            sage: (x/y).canonical_associate()
-            (1, x/y)
-            sage: (0).canonical_associate()
-            (0, 1)"""
-    @overload
-    def canonical_associate(self) -> Any:
-        """FieldElement.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4494)
-
-        Return a canonical associate.
-
-        EXAMPLES::
-
-            sage: R.<x,y>=QQ[]; k=R.fraction_field()
-            sage: (x/y).canonical_associate()
-            (1, x/y)
-            sage: (0).canonical_associate()
-            (0, 1)"""
-    @overload
-    def divides(self, FieldElementother) -> Any:
-        """FieldElement.divides(self, FieldElement other)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4470)
-
+    def divides(self, other: FieldElement) -> bool:
+        """
         Check whether ``self`` divides ``other``, for field elements.
 
         Since this is a field, all values divide all other values,
@@ -4547,31 +1817,7 @@ class FieldElement(CommutativeRingElement):
             True
             sage: rt3.divides(K(0))
             True"""
-    @overload
-    def divides(self, rt3) -> Any:
-        """FieldElement.divides(self, FieldElement other)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4470)
-
-        Check whether ``self`` divides ``other``, for field elements.
-
-        Since this is a field, all values divide all other values,
-        except that zero does not divide any nonzero values.
-
-        EXAMPLES::
-
-            sage: # needs sage.rings.number_field sage.symbolic
-            sage: K.<rt3> = QQ[sqrt(3)]
-            sage: K(0).divides(rt3)
-            False
-            sage: rt3.divides(K(17))
-            True
-            sage: K(0).divides(K(0))
-            True
-            sage: rt3.divides(K(0))
-            True"""
-    @overload
-    def is_unit(self) -> Any:
+    def is_unit(self) -> bool:
         """FieldElement.is_unit(self)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4414)
@@ -4596,59 +1842,8 @@ class FieldElement(CommutativeRingElement):
 
             sage: a = QQ(2); a.is_unit()
             True"""
-    @overload
-    def is_unit(self) -> Any:
-        """FieldElement.is_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4414)
-
-        Return ``True`` if ``self`` is a unit in its parent ring.
-
-        EXAMPLES::
-
-            sage: a = 2/3; a.is_unit()
-            True
-
-        On the other hand, 2 is not a unit, since its parent is `\\ZZ`.
-
-        ::
-
-            sage: a = 2; a.is_unit()
-            False
-            sage: parent(a)
-            Integer Ring
-
-        However, a is a unit when viewed as an element of QQ::
-
-            sage: a = QQ(2); a.is_unit()
-            True"""
-    @overload
-    def quo_rem(self, right) -> Any:
-        """FieldElement.quo_rem(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4448)
-
-        Return the quotient and remainder obtained by dividing ``self`` by
-        ``right``. Since this element lives in a field, the remainder is always
-        zero and the quotient is ``self/right``.
-
-        TESTS:
-
-        Test if :issue:`8671` is fixed::
-
-            sage: # needs sage.libs.pari sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: S.<a,b> = R.quo(y^2 + 1)
-            sage: S.is_field = lambda: False
-            sage: F = Frac(S); u = F.one()
-            sage: u.quo_rem(u)
-            (1, 0)"""
-    @overload
-    def quo_rem(self, u) -> Any:
-        """FieldElement.quo_rem(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4448)
-
+    def quo_rem(self, right) -> tuple[Any, Literal[0]]:
+        """
         Return the quotient and remainder obtained by dividing ``self`` by
         ``right``. Since this element lives in a field, the remainder is always
         zero and the quotient is ``self/right``.
@@ -4665,36 +1860,15 @@ class FieldElement(CommutativeRingElement):
             sage: u.quo_rem(u)
             (1, 0)"""
 
-class InfinityElement(RingElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def __invert__(self) -> Any:
-        """InfinityElement.__invert__(self)
+class InfinityElement[P: Parent | SageObject](RingElement[P]):
+    def __invert__(self) -> Integer: ...
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4575)"""
+class IntegralDomainElement[P: Parent | SageObject](CommutativeRingElement[P]):
+    def is_nilpotent(self) -> bool: ...
 
-class IntegralDomainElement(CommutativeRingElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def is_nilpotent(self) -> Any:
-        """IntegralDomainElement.is_nilpotent(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4204)"""
-
-class Matrix(ModuleElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def __mul__(self, left, right) -> Any:
-        """Matrix.__mul__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3805)
-
+class Matrix[P: Parent | SageObject](ModuleElement[P]):
+    def __mul__(self, right) -> Any:
+        """
         Multiplication of matrix by matrix, vector, or scalar.
 
         AUTHOR:
@@ -4997,15 +2171,10 @@ class Matrix(ModuleElement):
             [[27 30]
             [33 36] [39 42]
             [45 48]]"""
-    def __rmul__(self, other):
-        """Return value*self."""
-    def __rtruediv__(self, other):
-        """Return value/self."""
-    def __truediv__(self, left, right) -> Any:
-        """Matrix.__truediv__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4137)
-
+    def __rmul__(self, other): ...
+    def __rtruediv__(self, other): ...
+    def __truediv__(self,  right) -> Any:
+        """
         Division of the matrix ``left`` by the matrix or scalar
         ``right``.
 
@@ -5041,50 +2210,32 @@ class Matrix(ModuleElement):
             sage: (b / a) * a == b
             True"""
 
-class ModuleElement(Element):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2377)
-
+class ModuleElement[P: Parent | SageObject](Element[P]):
+    """
         Generic element of a module.
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def additive_order(self) -> Any:
-        """ModuleElement.additive_order(self)
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2456)
-
+    def additive_order(self):    # NotImplemented
+        """
         Return the additive order of ``self``."""
-    def order(self) -> Any:
-        """ModuleElement.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2449)
-
+    def order(self):    # NotImplemented
+        """
         Return the additive order of ``self``."""
 
-class ModuleElementWithMutability(ModuleElement):
-    """ModuleElementWithMutability(parent, is_immutable=False)
-
-    File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2462)
-
+class ModuleElementWithMutability[P: Parent | SageObject](ModuleElement[P]):
+    """
     Generic element of a module with mutability."""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, parent, is_immutable=...) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2467)
-
+    
+    def __init__(self, parent: P, is_immutable: bool = False):
+        """
                 EXAMPLES::
 
                     sage: v = sage.modules.free_module_element.FreeModuleElement(QQ^3)          # needs sage.modules
                     sage: type(v)                                                               # needs sage.modules
                     <class 'sage.modules.free_module_element.FreeModuleElement'>
         """
-    @overload
     def is_immutable(self) -> bool:
-        """ModuleElementWithMutability.is_immutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2511)
-
+        """
         Return ``True`` if this vector is immutable, i.e., the entries cannot
         be changed.
 
@@ -5095,44 +2246,8 @@ class ModuleElementWithMutability(ModuleElement):
             sage: v.set_immutable()                                                     # needs sage.modules
             sage: v.is_immutable()                                                      # needs sage.modules
             True"""
-    @overload
-    def is_immutable(self) -> Any:
-        """ModuleElementWithMutability.is_immutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2511)
-
-        Return ``True`` if this vector is immutable, i.e., the entries cannot
-        be changed.
-
-        EXAMPLES::
-
-            sage: v = vector(QQ['x,y'], [1..5]); v.is_immutable()                       # needs sage.modules
-            False
-            sage: v.set_immutable()                                                     # needs sage.modules
-            sage: v.is_immutable()                                                      # needs sage.modules
-            True"""
-    @overload
-    def is_immutable(self) -> Any:
-        """ModuleElementWithMutability.is_immutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2511)
-
-        Return ``True`` if this vector is immutable, i.e., the entries cannot
-        be changed.
-
-        EXAMPLES::
-
-            sage: v = vector(QQ['x,y'], [1..5]); v.is_immutable()                       # needs sage.modules
-            False
-            sage: v.set_immutable()                                                     # needs sage.modules
-            sage: v.is_immutable()                                                      # needs sage.modules
-            True"""
-    @overload
     def is_mutable(self) -> bool:
-        """ModuleElementWithMutability.is_mutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2496)
-
+        """
         Return ``True`` if this vector is mutable, i.e., the entries can be
         changed.
 
@@ -5143,43 +2258,8 @@ class ModuleElementWithMutability(ModuleElement):
             sage: v.set_immutable()                                                     # needs sage.modules
             sage: v.is_mutable()                                                        # needs sage.modules
             False"""
-    @overload
-    def is_mutable(self) -> Any:
-        """ModuleElementWithMutability.is_mutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2496)
-
-        Return ``True`` if this vector is mutable, i.e., the entries can be
-        changed.
-
-        EXAMPLES::
-
-            sage: v = vector(QQ['x,y'], [1..5]); v.is_mutable()                         # needs sage.modules
-            True
-            sage: v.set_immutable()                                                     # needs sage.modules
-            sage: v.is_mutable()                                                        # needs sage.modules
-            False"""
-    @overload
-    def is_mutable(self) -> Any:
-        """ModuleElementWithMutability.is_mutable(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2496)
-
-        Return ``True`` if this vector is mutable, i.e., the entries can be
-        changed.
-
-        EXAMPLES::
-
-            sage: v = vector(QQ['x,y'], [1..5]); v.is_mutable()                         # needs sage.modules
-            True
-            sage: v.set_immutable()                                                     # needs sage.modules
-            sage: v.is_mutable()                                                        # needs sage.modules
-            False"""
-    def set_immutable(self) -> Any:
-        """ModuleElementWithMutability.set_immutable(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2478)
-
+    def set_immutable(self) -> None:
+        """
         Make this vector immutable. This operation can't be undone.
 
         EXAMPLES::
@@ -5194,32 +2274,25 @@ class ModuleElementWithMutability(ModuleElement):
             ...
             ValueError: vector is immutable; please change a copy instead (use copy())"""
 
-class MonoidElement(Element):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2540)
-
+class _N(SupportsIndex, ComparableWithZero): ...
+class MonoidElement[P: Parent | SageObject](Element[P]):
+    """
         Generic element of a monoid.
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def multiplicative_order(self) -> Any:
+    def multiplicative_order(self):
         """MonoidElement.multiplicative_order(self)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2555)
 
         Return the multiplicative order of ``self``."""
-    def order(self) -> Any:
+    def order(self):
         """MonoidElement.order(self)
 
         File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2549)
 
         Return the multiplicative order of ``self``."""
-    def powers(self, n) -> Any:
-        """MonoidElement.powers(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2567)
-
+    def powers(self, n: _N) -> list[Self | Any]:
+        """
         Return the list `[x^0, x^1, \\ldots, x^{n-1}]`.
 
         EXAMPLES::
@@ -5228,44 +2301,25 @@ class MonoidElement(Element):
             sage: g = G([2, 3, 4, 1])                                                   # needs sage.groups
             sage: g.powers(4)                                                           # needs sage.groups
             [(), (1,2,3,4), (1,3)(2,4), (1,4,3,2)]"""
-    def __bool__(self) -> bool:
-        """True if self else False"""
+    def __bool__(self) -> Literal[True]: ...
 
-class MultiplicativeGroupElement(MonoidElement):
-    """File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2625)
-
+class MultiplicativeGroupElement[P: Parent | SageObject](MonoidElement[P]):
+    """
         Generic element of a multiplicative group.
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
     def order(self) -> Any:
-        """MultiplicativeGroupElement.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2629)
-
+        """
         Return the multiplicative order of ``self``."""
     def __invert__(self) -> Any:
-        """MultiplicativeGroupElement.__invert__(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2642)
-
+        """
         Return the multiplicative inverse of ``self``.
 
         This may cause infinite recursion because of the default definition
         of division using inversion in ``_div_``."""
 
-class PrincipalIdealDomainElement(DedekindDomainElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+class PrincipalIdealDomainElement[P: Parent | SageObject](DedekindDomainElement[P]):
     def gcd(self, right) -> Any:
-        """PrincipalIdealDomainElement.gcd(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4231)
-
+        """
         Return the greatest common divisor of ``self`` and ``other``.
 
         TESTS:
@@ -5293,10 +2347,7 @@ class PrincipalIdealDomainElement(DedekindDomainElement):
             sage: type(2.gcd(pari('1/3')))                                              # needs sage.libs.pari
             <class 'sage.rings.rational.Rational'>"""
     def lcm(self, right) -> Any:
-        """PrincipalIdealDomainElement.lcm(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 4270)
-
+        """
         Return the least common multiple of ``self`` and ``right``.
 
         TESTS:
@@ -5319,122 +2370,9 @@ class PrincipalIdealDomainElement(DedekindDomainElement):
             sage: type(2.lcm(gmpy2.mpz(3)))
             <class 'sage.rings.integer.Integer'>"""
 
-class RingElement(ModuleElement):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    @overload
+class RingElement[P: Parent | SageObject](ModuleElement[P]):
     def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
-        Return the absolute value of ``self``.  (This just calls the ``__abs__``
-        method, so it is equivalent to the ``abs()`` built-in function.)
-
-        EXAMPLES::
-
-            sage: RR(-1).abs()                                                          # needs sage.rings.real_mpfr
-            1.00000000000000
-            sage: ZZ(-1).abs()
-            1
-            sage: CC(I).abs()                                                           # needs sage.rings.real_mpfr sage.symbolic
-            1.00000000000000
-            sage: Mod(-15, 37).abs()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: absolute value not defined on integers modulo n."""
-    @overload
-    def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
-        Return the absolute value of ``self``.  (This just calls the ``__abs__``
-        method, so it is equivalent to the ``abs()`` built-in function.)
-
-        EXAMPLES::
-
-            sage: RR(-1).abs()                                                          # needs sage.rings.real_mpfr
-            1.00000000000000
-            sage: ZZ(-1).abs()
-            1
-            sage: CC(I).abs()                                                           # needs sage.rings.real_mpfr sage.symbolic
-            1.00000000000000
-            sage: Mod(-15, 37).abs()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: absolute value not defined on integers modulo n."""
-    @overload
-    def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
-        Return the absolute value of ``self``.  (This just calls the ``__abs__``
-        method, so it is equivalent to the ``abs()`` built-in function.)
-
-        EXAMPLES::
-
-            sage: RR(-1).abs()                                                          # needs sage.rings.real_mpfr
-            1.00000000000000
-            sage: ZZ(-1).abs()
-            1
-            sage: CC(I).abs()                                                           # needs sage.rings.real_mpfr sage.symbolic
-            1.00000000000000
-            sage: Mod(-15, 37).abs()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: absolute value not defined on integers modulo n."""
-    @overload
-    def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
-        Return the absolute value of ``self``.  (This just calls the ``__abs__``
-        method, so it is equivalent to the ``abs()`` built-in function.)
-
-        EXAMPLES::
-
-            sage: RR(-1).abs()                                                          # needs sage.rings.real_mpfr
-            1.00000000000000
-            sage: ZZ(-1).abs()
-            1
-            sage: CC(I).abs()                                                           # needs sage.rings.real_mpfr sage.symbolic
-            1.00000000000000
-            sage: Mod(-15, 37).abs()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: absolute value not defined on integers modulo n."""
-    @overload
-    def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
-        Return the absolute value of ``self``.  (This just calls the ``__abs__``
-        method, so it is equivalent to the ``abs()`` built-in function.)
-
-        EXAMPLES::
-
-            sage: RR(-1).abs()                                                          # needs sage.rings.real_mpfr
-            1.00000000000000
-            sage: ZZ(-1).abs()
-            1
-            sage: CC(I).abs()                                                           # needs sage.rings.real_mpfr sage.symbolic
-            1.00000000000000
-            sage: Mod(-15, 37).abs()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: absolute value not defined on integers modulo n."""
-    @overload
-    def abs(self) -> Any:
-        """RingElement.abs(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2881)
-
+        """
         Return the absolute value of ``self``.  (This just calls the ``__abs__``
         method, so it is equivalent to the ``abs()`` built-in function.)
 
@@ -5451,17 +2389,10 @@ class RingElement(ModuleElement):
             ...
             ArithmeticError: absolute value not defined on integers modulo n."""
     def additive_order(self) -> Any:
-        """RingElement.additive_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2842)
-
+        """
         Return the additive order of ``self``."""
-    @overload
-    def is_nilpotent(self) -> Any:
-        """RingElement.is_nilpotent(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2858)
-
+    def is_nilpotent(self) -> bool:
+        """
         Return ``True`` if ``self`` is nilpotent, i.e., some power of ``self``
         is 0.
 
@@ -5476,1570 +2407,9 @@ class RingElement(ModuleElement):
             sage: m = matrix(QQ, 3, [[3,2,3], [9,0,3], [-9,0,-3]])                      # needs sage.modules
             sage: m.is_nilpotent()                                                      # needs sage.modules
             True"""
-    @overload
-    def is_nilpotent(self) -> Any:
-        """RingElement.is_nilpotent(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2858)
-
-        Return ``True`` if ``self`` is nilpotent, i.e., some power of ``self``
-        is 0.
-
-        TESTS::
-
-            sage: a = QQ(2)
-            sage: a.is_nilpotent()
-            False
-            sage: a = QQ(0)
-            sage: a.is_nilpotent()
-            True
-            sage: m = matrix(QQ, 3, [[3,2,3], [9,0,3], [-9,0,-3]])                      # needs sage.modules
-            sage: m.is_nilpotent()                                                      # needs sage.modules
-            True"""
-    @overload
-    def is_nilpotent(self) -> Any:
-        """RingElement.is_nilpotent(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2858)
-
-        Return ``True`` if ``self`` is nilpotent, i.e., some power of ``self``
-        is 0.
-
-        TESTS::
-
-            sage: a = QQ(2)
-            sage: a.is_nilpotent()
-            False
-            sage: a = QQ(0)
-            sage: a.is_nilpotent()
-            True
-            sage: m = matrix(QQ, 3, [[3,2,3], [9,0,3], [-9,0,-3]])                      # needs sage.modules
-            sage: m.is_nilpotent()                                                      # needs sage.modules
-            True"""
-    @overload
-    def is_nilpotent(self) -> Any:
-        """RingElement.is_nilpotent(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2858)
-
-        Return ``True`` if ``self`` is nilpotent, i.e., some power of ``self``
-        is 0.
-
-        TESTS::
-
-            sage: a = QQ(2)
-            sage: a.is_nilpotent()
-            False
-            sage: a = QQ(0)
-            sage: a.is_nilpotent()
-            True
-            sage: m = matrix(QQ, 3, [[3,2,3], [9,0,3], [-9,0,-3]])                      # needs sage.modules
-            sage: m.is_nilpotent()                                                      # needs sage.modules
-            True"""
-    def is_one(self) -> Any:
-        """RingElement.is_one(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2677)"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
-        Check whether ``self`` is a prime element.
-
-        A *prime* element is a nonzero, non-unit element `p` such that,
-        whenever `p` divides `ab` for some `a` and `b`, then `p`
-        divides `a` or `p` divides `b`.
-
-        EXAMPLES:
-
-        For polynomial rings, prime is the same as irreducible::
-
-            sage: # needs sage.libs.singular
-            sage: R.<x,y> = QQ[]
-            sage: x.is_prime()
-            True
-            sage: (x^2 + y^3).is_prime()
-            True
-            sage: (x^2 - y^2).is_prime()
-            False
-            sage: R(0).is_prime()
-            False
-            sage: R(2).is_prime()
-            False
-
-        For the Gaussian integers::
-
-            sage: # needs sage.rings.number_field
-            sage: K.<i> = QuadraticField(-1)
-            sage: ZI = K.ring_of_integers()
-            sage: ZI(3).is_prime()
-            True
-            sage: ZI(5).is_prime()
-            False
-            sage: ZI(2 + i).is_prime()
-            True
-            sage: ZI(0).is_prime()
-            False
-            sage: ZI(1).is_prime()
-            False
-
-        In fields, an element is never prime::
-
-            sage: RR(0).is_prime()
-            False
-            sage: RR(2).is_prime()
-            False
-
-        For integers, :meth:`is_prime` redefines prime numbers to be
-        positive::
-
-            sage: (-2).is_prime()
-            False
-            sage: RingElement.is_prime(-2)                                              # needs sage.libs.pari
-            True
-
-        Similarly,
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        redefines :meth:`is_prime` to determine primality in the ring
-        of integers::
-
-            sage: # needs sage.rings.number_field
-            sage: (1 + i).is_prime()
-            True
-            sage: K(5).is_prime()
-            False
-            sage: K(7).is_prime()
-            True
-            sage: K(7/13).is_prime()
-            False
-
-        However, for rationals, :meth:`is_prime` *does* follow the
-        general definition of prime elements in a ring (i.e., always
-        returns ``False``) since the rationals are not a
-        :class:`~sage.rings.number_field.number_field_base.NumberField`
-        in Sage::
-
-            sage: QQ(7).is_prime()
-            False"""
-    @overload
-    def is_prime(self) -> Any:
-        """RingElement.is_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2901)
-
+    def is_one(self) -> bool: ...
+    def is_prime(self) -> bool:
+        """
         Check whether ``self`` is a prime element.
 
         A *prime* element is a nonzero, non-unit element `p` such that,
@@ -7125,11 +2495,8 @@ class RingElement(ModuleElement):
         Return the multiplicative order of ``self``, if ``self`` is a unit.
 
         This raises an :class:`ArithmeticError` otherwise."""
-    def powers(self, n) -> Any:
-        """RingElement.powers(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2743)
-
+    def powers(self, n: _N) -> list[Self | Any]:
+        """
         Return the list `[x^0, x^1, \\ldots, x^{n-1}]`.
 
         EXAMPLES::
@@ -7137,10 +2504,7 @@ class RingElement(ModuleElement):
             sage: 5.powers(3)
             [1, 5, 25]"""
     def __divmod__(self, other) -> Any:
-        """RingElement.__divmod__(self, other)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2773)
-
+        """
         Return the quotient and remainder of ``self`` divided by ``other``.
 
         This operation may not be defined in all rings.
@@ -7198,23 +2562,12 @@ class RingElement(ModuleElement):
 
             sage: divmod(22./7, RR(pi))                                                 # needs sage.symbolic
             (1.00040249943477, 0.000000000000000)"""
-    def __invert__(self) -> Any:
-        """RingElement.__invert__(self)
+    def __invert__(self) -> Self | Any: ...
+    def __rdivmod__(self, other): ...
 
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 2839)"""
-    def __rdivmod__(self, other):
-        """Return divmod(value, self)."""
-
-class Vector(ModuleElementWithMutability):
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def __mul__(self, left, right) -> Any:
-        """Vector.__mul__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3430)
-
+class Vector[P: Parent | SageObject](ModuleElementWithMutability[P]):
+    def __mul__(self, right) -> Any:
+        """
         Multiplication of vector by vector, matrix, or scalar.
 
         AUTHOR:
@@ -7483,15 +2836,10 @@ class Vector(ModuleElementWithMutability):
             TypeError: unsupported operand parent(s) for *:
              'Univariate Polynomial Ring in x over Rational Field' and
              'Ambient free module of rank 2 over the principal ideal domain Univariate Polynomial Ring in y over Rational Field'"""
-    def __rmul__(self, other):
-        """Return value*self."""
-    def __rtruediv__(self, other):
-        """Return value/self."""
+    def __rmul__(self, other): ...
+    def __rtruediv__(self, other): ...
     def __truediv__(self, right) -> Any:
-        """Vector.__truediv__(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/structure/element.pyx (starting at line 3714)
-
+        """
         Divide this vector by a scalar, vector or matrix.
 
         TESTS::
@@ -7506,3 +2854,4 @@ class Vector(ModuleElementWithMutability):
             sage: A = matrix([[1, 2], [0, 3], [1, 5]])
             sage: (b / A) * A == b
             True"""
+

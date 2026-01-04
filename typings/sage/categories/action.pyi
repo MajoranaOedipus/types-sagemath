@@ -5,7 +5,7 @@ from _typeshed import Incomplete
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from typing import Any, ClassVar
 
-class Action(sage.categories.functor.Functor):
+class Action[G, S](sage.categories.functor.Functor):
     """Action(G, S, is_left=True, op=None)
 
     File: /build/sagemath/src/sage/src/sage/categories/action.pyx (starting at line 78)
