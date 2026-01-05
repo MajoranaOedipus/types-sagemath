@@ -30,7 +30,7 @@ from sage.typeset.all import *
 
 from sage.misc.sh import sh
 
-from sage.libs.all import * # TODO: to clear
+from sage.libs.all import *
 from sage.data_structures.all import *
 
 from sage.structure.all import *
@@ -67,9 +67,9 @@ from sage.plot.plot3d.all import *
 from sage.coding.all import *
 from sage.combinat.all import *
 
-from sage.lfunctions.all import *   # TODO: here and below to clear
+from sage.lfunctions.all import *
 
-from sage.geometry.all import *
+from sage.geometry.all import *   # TODO: here and below to clear
 from sage.geometry.triangulation.all import *
 from sage.geometry.riemannian_manifolds.all import *
 

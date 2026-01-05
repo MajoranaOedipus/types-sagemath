@@ -1,8 +1,51 @@
-from _typeshed import Incomplete
+r"""
+Watkins symmetric power `L`-function calculator
+
+SYMPOW is a package to compute special values of symmetric power
+elliptic curve `L`-functions. It can compute up to about 64 digits of
+precision. This interface provides complete access to sympow, which
+is a standard part of Sage (and includes the extra data files).
+
+.. NOTE::
+
+    Each call to ``sympow`` runs a complete
+    ``sympow`` process. This incurs about 0.2 seconds
+    overhead.
+
+AUTHORS:
+
+- Mark Watkins (2005-2006): wrote and released sympow
+
+- William Stein (2006-03-05): wrote Sage interface
+
+ACKNOWLEDGEMENT (from sympow readme):
+
+-  The quad-double package was modified from David Bailey's
+   package: http://crd.lbl.gov/~dhbailey/mpdist/
+
+-  The ``squfof`` implementation was modified from
+   Allan Steel's version of Arjen Lenstra's original LIP-based code.
+
+-  The ``ec_ap`` code was originally written for the
+   kernel of MAGMA, but was modified to use small integers when
+   possible.
+
+-  SYMPOW was originally developed using PARI, but due to licensing
+   difficulties, this was eliminated. SYMPOW also does not use the
+   standard math libraries unless Configure is run with the -lm
+   option. SYMPOW still uses GP to compute the meshes of inverse
+   Mellin transforms (this is done when a new symmetric power is added
+   to datafiles).
+"""
+from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
+from sage.schemes.elliptic_curves.ell_rational_field import EllipticCurve_rational_field
+
 from sage.misc.pager import pager as pager
 from sage.misc.verbose import verbose as verbose
 from sage.rings.integer import Integer as Integer
 from sage.structure.sage_object import SageObject as SageObject
+
+from typings_sagemath import Int
 
 class Sympow(SageObject):
     """
@@ -16,11 +59,12 @@ class Sympow(SageObject):
     this class. Type ``sympow.help()`` for a list of
     commands and how to call them.
     """
-    def __call__(self, args):
+    def __call__(self, args: str) -> str:
         """
         Used to call sympow with given args
         """
-    def L(self, E, n, prec):
+        ...
+    def L(self, E: EllipticCurve_generic, n: Int, prec: Int) -> str:
         """
         Return `L(\\mathrm{Sym}^{(n)}(E, \\text{edge}))` to prec digits of
         precision, where edge is the *right* edge. Here `n` must be
@@ -61,7 +105,8 @@ class Sympow(SageObject):
             sage: RR(a)                                      # not tested
             1.05759924459096
         """
-    def Lderivs(self, E, n, prec, d):
+        ...
+    def Lderivs(self, E: EllipticCurve_generic, n: Int, prec: Int, d: Int) -> str:
         """
         Return `0`-th to `d`-th derivatives of
         `L(\\mathrm{Sym}^{(n)}(E,s)` to prec digits of precision, where
@@ -98,7 +143,8 @@ class Sympow(SageObject):
              1n2: 3.238743180659171E-02
              1w2: 3.414818600982502E-02
         """
-    def modular_degree(self, E):
+        ...
+    def modular_degree(self, E: EllipticCurve_rational_field) -> Integer:
         """
         Return the modular degree of the elliptic curve E, assuming the
         Stevens conjecture.
@@ -125,7 +171,7 @@ class Sympow(SageObject):
             sage: sympow.modular_degree(EllipticCurve([1, -1, 0, -79, 289]))
             334976
         """
-    def analytic_rank(self, E):
+    def analytic_rank(self, E: EllipticCurve_rational_field) -> tuple[Integer, str]:
         """
         Return the analytic rank and leading `L`-value of the
         elliptic curve `E`.
@@ -171,11 +217,11 @@ class Sympow(SageObject):
             sage: sympow.analytic_rank(EllipticCurve([0, 0, 0, -10012, 346900]))  # long time
             (7, '1.32517e+03')
         """
-    def new_data(self, n) -> None:
+    def new_data(self, n: Int) -> None:
         """
         Pre-compute data files needed for computation of `n`-th symmetric
         powers.
         """
     def help(self) -> None: ...
 
-sympow: Incomplete
+sympow: Sympow

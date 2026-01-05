@@ -1,14 +1,40 @@
-from _typeshed import Incomplete
-from sage.misc.lazy_import import lazy_import as lazy_import
+r"""
+Rubinstein's `L`-function calculator
+
+This interface provides complete
+access to Rubinstein's lcalc calculator with extra PARI
+functionality compiled in
+and is a standard part of Sage.
+
+.. NOTE::
+
+   Each call to ``lcalc`` runs a complete
+   ``lcalc`` process. On a typical Linux system, this
+   entails about 0.3 seconds overhead.
+
+AUTHORS:
+
+- Michael Rubinstein (2005): released under GPL the C++ program lcalc
+
+- William Stein (2006-03-05): wrote Sage interface to lcalc
+"""
+
+from typing import SupportsFloat
+from typings_sagemath import Int, Num
+from sage.rings.integer import Integer
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.schemes.elliptic_curves.ell_generic import EllipticCurve_generic
+
 from sage.misc.pager import pager as pager
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
 from sage.structure.sage_object import SageObject as SageObject
 
-prec: int
+prec: int = 32
 
 class LCalc(SageObject):
-    '''
+    """
     Rubinstein\'s `L`-functions Calculator.
 
     Type ``lcalc.[tab]`` for a list of useful commands that
@@ -27,10 +53,11 @@ class LCalc(SageObject):
     Rubinstein\'s `L`-functions calculations program via this
     class. Type ``lcalc.help()`` for a list of commands and
     how to call them.
-    '''
-    def __call__(self, args): ...
+    """
+
+    def __call__(self, args: str) -> str: ...
     def help(self) -> None: ...
-    def zeros(self, n, L: str = ''):
+    def zeros(self, n: Int, L: EllipticCurve_generic | str = "") -> list[RealNumber]:
         """
         Return the imaginary parts of the first `n` nontrivial
         zeros of the `L`-function in the upper half plane, as
@@ -57,7 +84,14 @@ class LCalc(SageObject):
             sage: lcalc.zeros(3, EllipticCurve('37a'))     # long time
             [0.000000000, 5.00317001, 6.87039122]
         """
-    def zeros_in_interval(self, x, y, stepsize, L: str = ''):
+
+    def zeros_in_interval(
+        self,
+        x: SupportsFloat,
+        y: SupportsFloat,
+        stepsize: SupportsFloat,
+        L: EllipticCurve_generic | str = "",
+    ) -> list[tuple[RealNumber, RealNumber]]:
         """
         Return the imaginary parts of (most of) the nontrivial zeros of the
         `L`-function on the line `\\Re(s)=1/2` with positive
@@ -83,7 +117,8 @@ class LCalc(SageObject):
             sage: lcalc.zeros_in_interval(10, 30, 0.1)
             [(14.1347251, 0.184672916), (21.0220396, -0.0677893290), (25.0108576, -0.0555872781)]
         """
-    def value(self, s, L: str = ''):
+
+    def value(self, s: Num, L: EllipticCurve_generic | str = "") -> ComplexNumber:
         """
         Return `L(s)` for `s` a complex number.
 
@@ -105,7 +140,10 @@ class LCalc(SageObject):
             sage: (0.5 + 100*I).zeta()
             2.69261988568132 - 0.0203860296025982*I
         """
-    def values_along_line(self, s0, s1, number_samples, L: str = ''):
+
+    def values_along_line(
+        self, s0: Num, s1: Num, number_samples: Int, L: EllipticCurve_generic | str = ""
+    ) -> list[tuple[ComplexNumber, ComplexNumber]]:
         """
         Return values of `L(s)` at ``number_samples``
         equally-spaced sample points along the line from `s_0` to
@@ -173,7 +211,10 @@ class LCalc(SageObject):
             sage: values[4][1] # abs tol 1e-8
             0.552975867 + 0.0*I
         """
-    def twist_values(self, s, dmin, dmax, L: str = ''):
+
+    def twist_values(
+        self, s: Num, dmin: Int, dmax: Int, L: EllipticCurve_generic | str = ""
+    ) -> list[tuple[Integer, ComplexNumber]]:
         """
         Return values of `L(s, \\chi_k)` for each quadratic
         character `\\chi_k` whose discriminant `d` satisfies
@@ -219,7 +260,10 @@ class LCalc(SageObject):
             sage: values[5][1] # abs tol 1e-8
             0.373691713 + 0.0*I
         """
-    def twist_zeros(self, n, dmin, dmax, L: str = ''):
+
+    def twist_zeros(
+        self, n: Int, dmin: Int, dmax: Int, L: EllipticCurve_generic | str = ""
+    ) -> dict[Integer, list[RealNumber]]:
         """
         Return first `n` real parts of nontrivial zeros for each
         quadratic character `\\chi_k` whose discriminant `d` satisfies
@@ -243,7 +287,8 @@ class LCalc(SageObject):
             sage: lcalc.twist_zeros(3, -3, 6)
             {-3: [8.03973716, 11.2492062, 15.7046192], 5: [6.64845335, 9.83144443, 11.9588456]}
         """
-    def analytic_rank(self, L: str = ''):
+
+    def analytic_rank(self, L: EllipticCurve_generic | str = "") -> Integer:
         """
         Return the analytic rank of the `L`-function at the central
         critical point.
@@ -267,4 +312,4 @@ class LCalc(SageObject):
             1
         """
 
-lcalc: Incomplete
+lcalc: LCalc
