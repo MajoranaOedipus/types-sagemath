@@ -1,3 +1,17 @@
+"""nodoctest
+List of assigned names in GAP
+
+EXAMPLES::
+
+    sage: from sage.libs.gap.assigned_names import KEYWORDS, GLOBALS, FUNCTIONS
+    sage: 'fi' in KEYWORDS
+    True
+    sage: 'ZassenhausIntersection' in GLOBALS
+    True
+    sage: 'SubdirectProduct' in FUNCTIONS
+    True
+"""
+
 from _typeshed import Incomplete
 from sage.libs.gap.libgap import libgap as libgap
 from sage.libs.gap.saved_workspace import workspace as workspace

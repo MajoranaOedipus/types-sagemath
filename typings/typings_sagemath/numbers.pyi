@@ -15,19 +15,23 @@ from sage.rings.complex_mpc import MPComplexNumber
 from sage.rings.rational import Rational
 from sage.rings.infinity import PlusInfinity, MinusInfinity
 
-
+from numpy import floating as NumPyFloating
 
 type Int = int | Integer | IntegerMod_int
 
-type RealInexact = float | RealNumber | RealBall | RealIntervalFieldElement | RealDoubleElement | RealDoubleElement_gsl | RealIntervalAbsoluteElement
-type ComplexInexact = complex | ComplexNumber | ComplexBall | ComplexIntervalFieldElement | ComplexDoubleElement | MPComplexNumber
+type RealInexactSage = RealNumber | RealBall | RealIntervalFieldElement | RealDoubleElement | RealDoubleElement_gsl | RealIntervalAbsoluteElement
+type RealInexact = float | RealInexactSage | NumPyFloating
+type ComplexInexactSage = ComplexNumber | ComplexBall | ComplexIntervalFieldElement | ComplexDoubleElement | MPComplexNumber
+type ComplexInexact = complex | ComplexInexactSage
 type NumInexact = RealInexact | ComplexInexact
+type NumInexactSage = RealInexactSage | ComplexInexactSage
 
 type Real = RealInexact | Rational | Int
 type Complex = ComplexInexact
 type FiniteNum = Real | Complex
 
 type Floating =  RealInexact | ComplexInexact
+type FloatingSage = RealInexactSage | ComplexInexactSage
 
 type Num = Real | Complex
 
