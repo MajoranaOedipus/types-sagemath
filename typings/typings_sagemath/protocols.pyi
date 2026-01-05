@@ -1,4 +1,5 @@
 from typing import Literal, Protocol, Self
+from collections.abc import Iterable
 from sage.structure.parent_gens import ParentWithGens
 from sage.structure.sage_object import SageObject
 
@@ -52,3 +53,7 @@ class MultiplicableWithExt[M, P](Protocol):
 
 class SupportsSage(Protocol):
     def _sage_(self) -> SageObject: ...
+
+class SupportsKeysAndGetItem[KT, VT](Protocol):
+    def keys(self) -> Iterable[KT]: ...
+    def __getitem__(self, key: KT, /) -> VT: ...

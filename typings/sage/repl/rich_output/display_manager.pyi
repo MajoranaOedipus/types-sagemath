@@ -1,5 +1,35 @@
+r"""
+Display Manager
+
+This is the heart of the rich output system, the display manager
+arbitrates between
+
+* Backend capabilities: what can be displayed
+
+* Backend preferences: what gives good quality on the backend
+
+* Sage capabilities: every Sage object can only generate certain
+  representations, and
+
+* User preferences: typeset vs. plain text vs. ascii art, etc.
+
+The display manager is a singleton class, Sage always has exactly one
+instance of it. Use :func:`get_display_manager` to obtain it.
+
+EXAMPLES::
+
+    sage: from sage.repl.rich_output import get_display_manager
+    sage: dm = get_display_manager();  dm
+    The Sage display manager using the doctest backend
+"""
+
+from typing import Protocol
+from typings_sagemath import SupportsKeysAndGetItem
+from collections.abc import Iterable
 import types
-from _typeshed import Incomplete
+from sage.repl.rich_output.backend_base import BackendBase
+from sage.repl.rich_output.output_basic import OutputBase
+
 from sage.repl.rich_output.output_basic import OutputAsciiArt as OutputAsciiArt, OutputPlainText as OutputPlainText, OutputUnicodeArt as OutputUnicodeArt
 from sage.repl.rich_output.output_browser import OutputHtml as OutputHtml
 from sage.repl.rich_output.preferences import DisplayPreferences as DisplayPreferences
@@ -55,8 +85,11 @@ class RichReprWarning(UserWarning):
         RichReprWarning: foo
     """
 
+class _SavedFunction(Protocol):
+    def __call__(self, filename: str, **kwds) -> None: ...
+
 class restricted_output:
-    def __init__(self, display_manager, output_classes) -> None:
+    def __init__(self, display_manager: DisplayManager, output_classes: Iterable[type[OutputBase]]):
         """
         Context manager to temporarily restrict the accepted output types.
 
@@ -149,7 +182,7 @@ class DisplayManager(SageObject):
             The Sage display manager using the doctest backend
         """
     @property
-    def types(self):
+    def types(self) -> types.ModuleType:
         """
         Catalog of all output container types.
 
@@ -168,7 +201,7 @@ class DisplayManager(SageObject):
             sage: dm.types.OutputPlainText
             <class 'sage.repl.rich_output.output_basic.OutputPlainText'>
         """
-    def switch_backend(self, backend, **kwds):
+    def switch_backend(self, backend: BackendBase, **kwds):
         """
         Switch to a new backend.
 
@@ -201,7 +234,7 @@ class DisplayManager(SageObject):
             True
         """
     @property
-    def preferences(self):
+    def preferences(self) -> DisplayPreferences:
         """
         Return the preferences.
 
@@ -221,7 +254,7 @@ class DisplayManager(SageObject):
             * supplemental_plot = never
             * text is not specified
         """
-    def is_in_terminal(self):
+    def is_in_terminal(self) -> bool:
         """
         Test whether the UI is meant to run in a terminal.
 
@@ -239,7 +272,7 @@ class DisplayManager(SageObject):
 
         Boolean.
         """
-    def check_backend_class(self, backend_class) -> None:
+    def check_backend_class(self, backend_class: type) -> bool:
         """
         Check that the current backend is an instance of
         ``backend_class``.
@@ -266,7 +299,15 @@ class DisplayManager(SageObject):
             ...
             RuntimeError: check failed: current backend is invalid
         """
-    def graphics_from_save(self, save_function, save_kwds, file_extension, output_container, figsize=None, dpi=None):
+    def graphics_from_save[_OutPut: OutputBase](
+            self, 
+            save_function: _SavedFunction, 
+            save_kwds: SupportsKeysAndGetItem[str, Any], 
+            file_extension: str, 
+            output_container: type[_OutPut], 
+            figsize: tuple[int, int] | None = None, 
+            dpi: int | None =None
+        ) -> _OutPut:
         """
         Helper to construct graphics.
 
@@ -314,7 +355,7 @@ class DisplayManager(SageObject):
             sage: out.png.filename()   # random
             '/home/user/.sage/temp/localhost.localdomain/23903/tmp_pu5woK.png'
         """
-    def threejs_scripts(self, online):
+    def threejs_scripts(self, online: bool):
         '''
         Return Three.js script tag for the current backend.
 
@@ -341,7 +382,7 @@ class DisplayManager(SageObject):
             ValueError: current backend does not support
             offline threejs graphics
         '''
-    def supported_output(self):
+    def supported_output(self) -> frozenset[type[OutputBase]]:
         """
         Return the output container classes that can be used.
 
@@ -361,7 +402,7 @@ class DisplayManager(SageObject):
             sage: type(dm.supported_output())
             <... 'frozenset'>
         """
-    def displayhook(self, obj: Any) -> None | Any:
+    def displayhook(self, obj: object) -> None | Any:
         """
         Implementation of the displayhook.
 
@@ -383,7 +424,7 @@ class DisplayManager(SageObject):
             sage: dm.displayhook(1/2)
             1/2
         """
-    def display_immediately(self, obj, **rich_repr_kwds) -> None:
+    def display_immediately(self, obj: object, **rich_repr_kwds) -> None:
         """
         Show output without going back to the command line prompt.
 
@@ -407,4 +448,4 @@ class DisplayManager(SageObject):
             1/2
         """
 
-get_display_manager: Incomplete
+get_display_manager = DisplayManager.get_instance

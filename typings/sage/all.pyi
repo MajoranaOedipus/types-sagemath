@@ -7,7 +7,7 @@ from cysignals.signals import (AlarmInterrupt, SignalError,
                                sig_on_reset as sig_on_count)
 
 from time import sleep as sleep
-from sage.structure.all import *    # TODO: to clear
+from sage.structure.all import *
 from sage.arith.power import generic_power as power
 
 from sage.cpython.all import *
@@ -19,7 +19,7 @@ from sage.env import SAGE_ROOT, SAGE_SRC, SAGE_DOC_SRC, SAGE_LOCAL, DOT_SAGE, SA
 from sage.misc.all import *
 
 from sage.doctest.all import *
-from sage.repl.all import * # TODO: to clear
+from sage.repl.all import *
 
 from functools import reduce
 
