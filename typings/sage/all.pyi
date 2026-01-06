@@ -87,10 +87,10 @@ from sage.logic.all import *
 
 from sage.numerical.all import *
 
-from sage.stats.all import *   # TODO: here and below to clear
+from sage.stats.all import *
 import sage.stats.all as stats
 
-from sage.parallel.all import *
+from sage.parallel.all import *   # TODO: here and below to clear
 
 from sage.ext.fast_callable import fast_callable as fast_callable
 from sage.ext.fast_eval import fast_float as fast_float
