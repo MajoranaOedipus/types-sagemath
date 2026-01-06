@@ -69,7 +69,7 @@ from sage.combinat.all import *
 
 from sage.lfunctions.all import *
 
-from sage.geometry.all import *   # TODO: here and below to clear
+from sage.geometry.all import *
 from sage.geometry.triangulation.all import *
 from sage.geometry.riemannian_manifolds.all import *
 
@@ -85,7 +85,7 @@ from sage.games.all import *
 
 from sage.logic.all import *
 
-from sage.numerical.all import *
+from sage.numerical.all import *   # TODO: here and below to clear
 
 from sage.stats.all import *
 import sage.stats.all as stats

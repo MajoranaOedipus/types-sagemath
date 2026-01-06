@@ -4,4 +4,7 @@ from sage.dynamics.arithmetic_dynamics.dynamical_semigroup import DynamicalSemig
 from sage.dynamics.arithmetic_dynamics.generic_ds import DynamicalSystem as DynamicalSystem
 from sage.dynamics.arithmetic_dynamics.product_projective_ds import DynamicalSystem_product_projective as DynamicalSystem_product_projective
 from sage.dynamics.arithmetic_dynamics.projective_ds import DynamicalSystem_projective as DynamicalSystem_projective
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.dynamics.arithmetic_dynamics.wehlerK3 import (
+    WehlerK3Surface as WehlerK3Surface,
+    random_WehlerK3Surface as random_WehlerK3Surface
+)

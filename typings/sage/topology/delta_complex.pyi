@@ -1,3 +1,52 @@
+r"""
+Finite Delta-complexes
+
+AUTHORS:
+
+- John H. Palmieri (2009-08)
+
+This module implements the basic structure of finite
+`\Delta`-complexes.  For full mathematical details, see Hatcher [Hat2002]_,
+especially Section 2.1 and the Appendix on "Simplicial CW Structures".
+As Hatcher points out, `\Delta`-complexes were first introduced by Eilenberg
+and Zilber [EZ1950]_, although they called them "semi-simplicial complexes".
+
+A `\Delta`-complex is a generalization of a :mod:`simplicial complex
+<sage.homology.simplicial_complex>`; a `\Delta`-complex `X` consists
+of sets `X_n` for each nonnegative integer `n`, the elements of which
+are called *n-simplices*, along with *face maps* between these sets of
+simplices: for each `n` and for all `0 \leq i \leq n`, there are
+functions `d_i` from `X_n` to `X_{n-1}`, with `d_i(s)` equal to the
+`i`-th face of `s` for each simplex `s \in X_n`.  These maps must
+satisfy the *simplicial identity*
+
+  .. MATH::
+
+    d_i d_j = d_{j-1} d_i \text{ for all } i<j.
+
+Given a `\Delta`-complex, it has a *geometric realization*: a
+topological space built by taking one topological `n`-simplex for each
+element of `X_n`, and gluing them together as determined by the face
+maps.
+
+`\Delta`-complexes are an alternative to simplicial complexes.  Every
+simplicial complex is automatically a `\Delta`-complex; in the other
+direction, though, it seems in practice that one can often construct
+`\Delta`-complex representations for spaces with many fewer simplices
+than in a simplicial complex representation.  For example, the minimal
+triangulation of a torus as a simplicial complex contains 14
+triangles, 21 edges, and 7 vertices, while there is a `\Delta`-complex
+representation of a torus using only 2 triangles, 3 edges, and 1
+vertex.
+
+.. NOTE::
+
+   This class derives from
+   :class:`~sage.homology.cell_complex.GenericCellComplex`, and so
+   inherits its methods.  Some of those methods are not listed here;
+   see the :mod:`Generic Cell Complex <sage.homology.cell_complex>`
+   page instead.
+"""
 from .simplicial_complex import Simplex as Simplex, SimplicialComplex as SimplicialComplex, lattice_paths as lattice_paths
 from _typeshed import Incomplete
 from sage.arith.misc import binomial as binomial
@@ -947,4 +996,4 @@ class DeltaComplexExamples:
             True
         """
 
-delta_complexes: Incomplete
+delta_complexes: DeltaComplexExamples

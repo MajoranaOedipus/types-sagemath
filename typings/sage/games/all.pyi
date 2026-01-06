@@ -1,1 +1,5 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.games.sudoku import (
+    Sudoku as Sudoku,
+    sudoku as sudoku
+)
+from sage.games.hexad import Minimog as Minimog

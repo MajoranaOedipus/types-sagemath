@@ -1,3 +1,71 @@
+r"""
+Finite cubical complexes
+
+AUTHORS:
+
+- John H. Palmieri (2009-08)
+
+This module implements the basic structure of finite cubical
+complexes.  For full mathematical details, see Kaczynski, Mischaikow,
+and Mrozek [KMM2004]_, for example.
+
+Cubical complexes are topological spaces built from gluing together
+cubes of various dimensions; the collection of cubes must be closed
+under taking faces, just as with a simplicial complex.  In this
+context, a "cube" means a product of intervals of length 1 or length 0
+(degenerate intervals), with integer endpoints, and its faces are
+obtained by using the nondegenerate intervals: if `C` is a cube -- a
+product of degenerate and nondegenerate intervals -- and if `[i,i+1]`
+is the `k`-th nondegenerate factor, then `C` has two faces indexed by
+`k`: the cubes obtained by replacing `[i, i+1]` with `[i, i]` or
+`[i+1, i+1]`.
+
+So to construct a space homeomorphic to a circle as a cubical complex,
+we could take for example the four line segments in the plane from
+`(0,2)` to `(0,3)` to `(1,3)` to `(1,2)` to `(0,2)`.  In Sage, this is
+done with the following command::
+
+    sage: S1 = CubicalComplex([([0,0], [2,3]), ([0,1], [3,3]),
+    ....:                      ([0,1], [2,2]), ([1,1], [2,3])]); S1
+    Cubical complex with 4 vertices and 8 cubes
+
+The argument to ``CubicalComplex`` is a list of the maximal "cubes" in
+the complex.  Each "cube" can be an instance of the class ``Cube`` or
+a list (or tuple) of "intervals", and an "interval" is a pair of
+integers, of one of the two forms `[i, i]` or `[i, i+1]`.  So the
+cubical complex ``S1`` above has four maximal cubes::
+
+    sage: len(S1.maximal_cells())
+    4
+    sage: sorted(S1.maximal_cells())
+    [[0,0] x [2,3], [0,1] x [2,2], [0,1] x [3,3], [1,1] x [2,3]]
+
+The first of these, for instance, is the product of the degenerate
+interval `[0,0]` with the unit interval `[2,3]`: this is the line
+segment in the plane from `(0,2)` to `(0,3)`.  We could form a
+topologically equivalent space by inserting some degenerate simplices::
+
+    sage: S1.homology()                                                                 # needs sage.modules
+    {0: 0, 1: Z}
+    sage: X = CubicalComplex([([0,0], [2,3], [2]), ([0,1], [3,3], [2]),
+    ....:                     ([0,1], [2,2], [2]), ([1,1], [2,3], [2])])
+    sage: X.homology()                                                                  # needs sage.modules
+    {0: 0, 1: Z}
+
+Topologically, the cubical complex ``X`` consists of four edges of a
+square in `\RR^3`: the same unit square as ``S1``, but embedded in
+`\RR^3` with `z`-coordinate equal to 2.  Thus ``X`` is homeomorphic to
+``S1`` (in fact, they're "cubically equivalent"), and this is
+reflected in the fact that they have isomorphic homology groups.
+
+.. NOTE::
+
+   This class derives from
+   :class:`~sage.homology.cell_complex.GenericCellComplex`, and so
+   inherits its methods.  Some of those methods are not listed here;
+   see the :mod:`Generic Cell Complex <sage.homology.cell_complex>`
+   page instead.
+"""
 from .cell_complex import GenericCellComplex as GenericCellComplex
 from _typeshed import Incomplete
 from sage.misc.cachefunc import cached_method as cached_method
@@ -1111,4 +1179,4 @@ class CubicalComplexExamples:
             Cubical complex with 8 vertices and 27 cubes
         """
 
-cubical_complexes: Incomplete
+cubical_complexes: CubicalComplexExamples
