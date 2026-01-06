@@ -1,25 +1,190 @@
-import _cython_3_2_1
+r"""
+Generic Backend for LP solvers
+
+This class only lists the methods that should be defined by any
+interface with a LP Solver. All these methods immediately raise
+:exc:`NotImplementedError` exceptions when called, and are obviously
+meant to be replaced by the solver-specific method. This file can also
+be used as a template to create a new interface : one would only need
+to replace the occurrences of ``"Nonexistent_LP_solver"`` by the
+solver's name, and replace ``GenericBackend`` by
+``SolverName(GenericBackend)`` so that the new solver extends this
+class.
+
+AUTHORS:
+
+- Nathann Cohen (2010-10)      : initial implementation
+- Risan (2012-02)              : extension for PPL backend
+- Ingolfur Edvardsson (2014-06): extension for CVXOPT backend
+"""
+from collections.abc import Callable, Iterable
 import sage.structure.sage_object
-from typing import Any, ClassVar, overload
+from typing import Any, Literal, overload
+from typings_sagemath import Int, RealInexact
+from sage.structure.element import RingElement, Vector
+from sage.rings.ring import Ring
 
-__pyx_capi__: dict
-default_mip_solver: _cython_3_2_1.cython_function_or_method
-default_solver: None
-get_solver: _cython_3_2_1.cython_function_or_method
+@overload
+def default_mip_solver() -> str | Callable: ...
+@overload
+def default_mip_solver(solver: Literal['GLPK', 'Coin', 'CPLEX', 'CVXOPT', 'CVXPY', 'Gurobi', 'PPL', 'SCIP', 'InteractiveLP'] | Callable) -> None:
+    """
+    Return/set the default MILP solver used by Sage.
 
+    INPUT:
+
+    - ``solver`` -- one of the following:
+
+      - a string indicating one of the available solvers
+        (see :class:`MixedIntegerLinearProgram`);
+
+      - a callable (typically a subclass of
+        :class:`sage.numerical.backends.generic_backend.GenericBackend`);
+
+      - ``None`` -- (default) in which case the current default solver
+        is returned; this is either a string or a callable
+
+    OUTPUT:
+
+    This function returns the current default solver's name if ``solver = None``
+    (default). Otherwise, it sets the default solver to the one given. If this
+    solver does not exist, or is not available, a :exc:`ValueError` exception is
+    raised.
+
+    EXAMPLES::
+
+        sage: former_solver = default_mip_solver()
+        sage: default_mip_solver("GLPK")
+        sage: default_mip_solver()
+        'Glpk'
+        sage: default_mip_solver("PPL")
+        sage: default_mip_solver()
+        'Ppl'
+        sage: default_mip_solver("GUROBI") # random
+        Traceback (most recent call last):
+        ...
+        ValueError: Gurobi is not available. Please refer to the documentation to install it.
+        sage: default_mip_solver("Yeahhhhhhhhhhh")
+        Traceback (most recent call last):
+        ...
+        ValueError: 'solver' should be set to ...
+        sage: default_mip_solver(former_solver)
+    """
+default_solver: Callable | str | None
+
+type _NotUsed = object
+# TODO: the solver should be something like a GenericSolver, 
+# and each str solver corresponds to a Solver class, check source on this
+@overload
+def get_solver(
+    constraint_generation: bool = False, 
+    solver: None = None, 
+    base_ring: Ring | None = None
+) -> GenericBackend: ...
+@overload
+def get_solver(
+    constraint_generation: _NotUsed, 
+    solver: Literal['GLPK', 'Coin', 'CPLEX', 'CVXOPT', 'CVXPY', 'Gurobi', 'PPL', 'SCIP', 'InteractiveLP'] | Callable, 
+    base_ring: Ring | None = None
+) -> GenericBackend:
+    """
+    Return a solver according to the given preferences.
+
+    INPUT:
+
+    - ``solver`` -- one of the following:
+
+      - a string indicating one of the available solvers
+        (see :class:`MixedIntegerLinearProgram`);
+
+      - ``None`` -- (default) in which case the default solver is used
+        (see :func:`default_mip_solver`);
+
+      - or a callable (such as a class), in which case it is called,
+        and its result is returned.
+
+    - ``base_ring`` -- if not ``None``, request a solver that works over this
+      (ordered) field.  If ``base_ring`` is not a field, its fraction field
+      is used.
+
+      For example, is ``base_ring=ZZ`` is provided, the solver will work over
+      the rational numbers.  This is unrelated to whether variables are
+      constrained to be integers or not.
+
+    - ``constraint_generation`` -- only used when ``solver=None``:
+
+      - When set to ``True``, after solving the ``MixedIntegerLinearProgram``,
+        it is possible to add a constraint, and then solve it again.
+        The effect is that solvers that do not support this feature will not be
+        used.  (Coin and SCIP are such solvers.)
+
+      - Defaults to ``False``.
+
+    .. SEEALSO::
+
+        - :func:`default_mip_solver` -- returns/sets the default MIP solver
+
+    EXAMPLES::
+
+        sage: from sage.numerical.backends.generic_backend import get_solver
+        sage: p = get_solver()
+        sage: p = get_solver(base_ring=RDF)
+        sage: p.base_ring()
+        Real Double Field
+        sage: p = get_solver(base_ring=QQ); p
+        <...sage.numerical.backends.ppl_backend.PPLBackend...>
+        sage: p = get_solver(base_ring=ZZ); p
+        <...sage.numerical.backends.ppl_backend.PPLBackend...>
+        sage: p.base_ring()
+        Rational Field
+        sage: p = get_solver(base_ring=AA); p                                           # needs sage.rings.number_field
+        <...sage.numerical.backends.interactivelp_backend.InteractiveLPBackend...>
+        sage: p.base_ring()                                                             # needs sage.rings.number_field
+        Algebraic Real Field
+
+        sage: # needs sage.groups sage.rings.number_field
+        sage: d = polytopes.dodecahedron()
+        sage: p = get_solver(base_ring=d.base_ring()); p
+        <...sage.numerical.backends.interactivelp_backend.InteractiveLPBackend...>
+        sage: p.base_ring()
+        Number Field in sqrt5 with defining polynomial x^2 - 5 with sqrt5 = 2.236067977499790?
+        sage: p = get_solver(solver='InteractiveLP', base_ring=QQ); p
+        <...sage.numerical.backends.interactivelp_backend.InteractiveLPBackend...>
+        sage: p.base_ring()
+        Rational Field
+
+    Passing a callable as the ``solver``::
+
+        sage: from sage.numerical.backends.glpk_backend import GLPKBackend
+        sage: p = get_solver(solver=GLPKBackend); p
+        <...sage.numerical.backends.glpk_backend.GLPKBackend...>
+
+    Passing a callable that customizes a backend::
+
+        sage: def glpk_exact_solver():
+        ....:     from sage.numerical.backends.generic_backend import get_solver
+        ....:     b = get_solver(solver='GLPK')
+        ....:     b.solver_parameter('simplex_or_intopt', 'exact_simplex_only')
+        ....:     return b
+        sage: codes.bounds.delsarte_bound_additive_hamming_space(11,3,4,solver=glpk_exact_solver) # long time
+        8
+
+    TESTS:
+
+    Test that it works when the default solver is a callable, see :issue:`28914`::
+
+        sage: old_default = default_mip_solver()
+        sage: from sage.numerical.backends.glpk_backend import GLPKBackend
+        sage: default_mip_solver(GLPKBackend)
+        sage: M = MixedIntegerLinearProgram()   # indirect doctest
+        sage: M.get_backend()
+        <...GLPKBackend...>
+        sage: default_mip_solver(old_default)
+    """
+
+# TODO: bounds should be ``real values'', but not sure what it means
 class GenericBackend(sage.structure.sage_object.SageObject):
-    _test_add_col: ClassVar[method] = ...
-    _test_add_linear_constraint_vector: ClassVar[method] = ...
-    _test_add_linear_constraints: ClassVar[method] = ...
-    _test_add_variables: ClassVar[method] = ...
-    _test_copy_some_mips: ClassVar[method] = ...
-    _test_sense: ClassVar[method] = ...
-    _test_solve: ClassVar[method] = ...
-    _test_solve_trac_18572: ClassVar[method] = ...
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+    
     def add_col(self, indices, coeffs) -> Any:
         '''GenericBackend.add_col(self, indices, coeffs)
 
@@ -57,11 +222,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_col(list(range(5)), list(range(5)))
             sage: p.nrows()
             5'''
-    def add_linear_constraint(self, coefficients, lower_bound, upper_bound, name=...) -> Any:
-        '''GenericBackend.add_linear_constraint(self, coefficients, lower_bound, upper_bound, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 448)
-
+    def add_linear_constraint(self, coefficients: Iterable[tuple[Int, RingElement]], lower_bound: RingElement | None, upper_bound: RingElement | None, name: str | None = None):
+        '''
         Add a linear constraint.
 
         INPUT:
@@ -93,7 +255,7 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_linear_constraint( zip(range(5), range(5)), 1.0, 1.0, name=\'foo\')
             sage: p.row_name(1)
             \'foo\''''
-    def add_linear_constraint_vector(self, degree, coefficients, lower_bound, upper_bound, name=...) -> Any:
+    def add_linear_constraint_vector(self, degree: Int, coefficients: Iterable[tuple[Int, Vector]], lower_bound: Vector | None, upper_bound: Vector | None, name: str | None = None) -> None:
         '''GenericBackend.add_linear_constraint_vector(self, degree, coefficients, lower_bound, upper_bound, name=None)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 484)
@@ -136,11 +298,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_variables(2)
             1
             sage: p.add_linear_constraint_vector(2, coeffs, lower, upper, \'foo\')'''
-    def add_linear_constraints(self, intnumber, lower_bound, upper_bound, names=...) -> Any:
-        '''GenericBackend.add_linear_constraints(self, int number, lower_bound, upper_bound, names=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 624)
-
+    def add_linear_constraints(self, number: Int, lower_bound: RingElement | None, upper_bound: RingElement | None, names: Iterable[str] | None = None) -> None:
+        '''
         Add ``\'number`` linear constraints.
 
         INPUT:
@@ -165,12 +324,13 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             ([], [])
             sage: p.row_bounds(4)
             (None, 2.0)'''
-    @overload
-    def add_variable(self, lower_bound=..., upper_bound=..., binary=..., continuous=..., integer=..., obj=..., name=...) -> int:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
+    def add_variable(
+        self, 
+        lower_bound=0, upper_bound=None,
+        binary: bool = False, continuous: bool = True, integer: bool = False,
+        obj=0.0, name: str | None = None
+    ) -> int:
+        '''
         Add a variable.
 
         This amounts to adding a new column to the matrix. By default,
@@ -219,281 +379,11 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             \'x\'
             sage: p.objective_coefficient(3)
             1.0'''
-    @overload
-    def add_variable(self) -> Any:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``lower_bound`` -- the lower bound of the variable (default: 0)
-
-        - ``upper_bound`` -- the upper bound of the variable (default: ``None``)
-
-        - ``binary`` -- ``True`` if the variable is binary (default: ``False``)
-
-        - ``continuous`` -- ``True`` if the variable is continuous (default: ``True``)
-
-        - ``integer`` -- ``True`` if the variable is integral (default: ``False``)
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default: ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(binary=True)
-            1
-            sage: p.add_variable(lower_bound=-2.0, integer=True)
-            2
-            sage: p.add_variable(continuous=True, integer=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: ...
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    @overload
-    def add_variable(self, binary=...) -> Any:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``lower_bound`` -- the lower bound of the variable (default: 0)
-
-        - ``upper_bound`` -- the upper bound of the variable (default: ``None``)
-
-        - ``binary`` -- ``True`` if the variable is binary (default: ``False``)
-
-        - ``continuous`` -- ``True`` if the variable is continuous (default: ``True``)
-
-        - ``integer`` -- ``True`` if the variable is integral (default: ``False``)
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default: ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(binary=True)
-            1
-            sage: p.add_variable(lower_bound=-2.0, integer=True)
-            2
-            sage: p.add_variable(continuous=True, integer=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: ...
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    @overload
-    def add_variable(self, lower_bound=..., integer=...) -> Any:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``lower_bound`` -- the lower bound of the variable (default: 0)
-
-        - ``upper_bound`` -- the upper bound of the variable (default: ``None``)
-
-        - ``binary`` -- ``True`` if the variable is binary (default: ``False``)
-
-        - ``continuous`` -- ``True`` if the variable is continuous (default: ``True``)
-
-        - ``integer`` -- ``True`` if the variable is integral (default: ``False``)
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default: ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(binary=True)
-            1
-            sage: p.add_variable(lower_bound=-2.0, integer=True)
-            2
-            sage: p.add_variable(continuous=True, integer=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: ...
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    @overload
-    def add_variable(self, continuous=..., integer=...) -> Any:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``lower_bound`` -- the lower bound of the variable (default: 0)
-
-        - ``upper_bound`` -- the upper bound of the variable (default: ``None``)
-
-        - ``binary`` -- ``True`` if the variable is binary (default: ``False``)
-
-        - ``continuous`` -- ``True`` if the variable is continuous (default: ``True``)
-
-        - ``integer`` -- ``True`` if the variable is integral (default: ``False``)
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default: ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(binary=True)
-            1
-            sage: p.add_variable(lower_bound=-2.0, integer=True)
-            2
-            sage: p.add_variable(continuous=True, integer=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: ...
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    @overload
-    def add_variable(self, name=..., obj=...) -> Any:
-        '''GenericBackend.add_variable(self, lower_bound=0, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 42)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``lower_bound`` -- the lower bound of the variable (default: 0)
-
-        - ``upper_bound`` -- the upper bound of the variable (default: ``None``)
-
-        - ``binary`` -- ``True`` if the variable is binary (default: ``False``)
-
-        - ``continuous`` -- ``True`` if the variable is continuous (default: ``True``)
-
-        - ``integer`` -- ``True`` if the variable is integral (default: ``False``)
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default: ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(binary=True)
-            1
-            sage: p.add_variable(lower_bound=-2.0, integer=True)
-            2
-            sage: p.add_variable(continuous=True, integer=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: ...
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    def add_variables(self, intn, lower_bound=..., upper_bound=..., binary=..., continuous=..., integer=..., obj=..., names=...) -> int:
-        '''GenericBackend.add_variables(self, int n, lower_bound=False, upper_bound=None, binary=False, continuous=True, integer=False, obj=None, names=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 97)
-
+    def add_variables(self, n: int, lower_bound=0, upper_bound=None, 
+            binary: bool = False, continuous: bool = True, integer: bool = False, 
+            obj=0.0, names: Iterable[str] | None = None
+        ) -> int:
+        '''
         Add ``n`` variables.
 
         This amounts to adding new columns to the matrix. By default,
@@ -546,16 +436,9 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             \'a\'
             sage: p.objective_coefficient(5)    # tol 1e-8
             42.0'''
-    def base_ring(self) -> Any:
-        """GenericBackend.base_ring(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 35)"""
-    @overload
-    def best_known_objective_bound(self) -> Any:
-        '''GenericBackend.best_known_objective_bound(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 778)
-
+    def base_ring(self) -> Ring: ...
+    def best_known_objective_bound(self):
+        '''
         Return the value of the currently best known bound.
 
         This method returns the current best upper (resp. lower) bound on the
@@ -584,45 +467,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             2.0
             sage: pb.best_known_objective_bound()
             2.0'''
-    @overload
-    def best_known_objective_bound(self) -> Any:
-        '''GenericBackend.best_known_objective_bound(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 778)
-
-        Return the value of the currently best known bound.
-
-        This method returns the current best upper (resp. lower) bound on the
-        optimal value of the objective function in a maximization
-        (resp. minimization) problem. It is equal to the output of
-        :meth:`get_objective_value` if the MILP found an optimal solution, but
-        it can differ if it was interrupted manually or after a time limit (cf
-        :meth:`solver_parameter`).
-
-        .. NOTE::
-
-           Has no meaning unless ``solve`` has been called before.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: p = MixedIntegerLinearProgram(solver="Nonexistent_LP_solver")
-            sage: b = p.new_variable(binary=True)
-            sage: for u,v in graphs.CycleGraph(5).edges(labels=False):
-            ....:     p.add_constraint(b[u]+b[v]<=1)
-            sage: p.set_objective(p.sum(b[x] for x in range(5)))
-            sage: p.solve()
-            2.0
-            sage: pb = p.get_backend()
-            sage: pb.get_objective_value()
-            2.0
-            sage: pb.best_known_objective_bound()
-            2.0'''
-    def col_bounds(self, intindex) -> Any:
-        '''GenericBackend.col_bounds(self, int index)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1120)
-
+    def col_bounds(self, index: Int) -> tuple[RingElement | None, RingElement | None]:
+        '''
         Return the bounds of a specific variable.
 
         INPUT:
@@ -647,11 +493,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.variable_upper_bound(0, 5)
             sage: p.col_bounds(0)
             (0.0, 5.0)'''
-    def col_name(self, intindex) -> Any:
-        '''GenericBackend.col_name(self, int index)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1239)
-
+    def col_name(self, index: Int) -> str:
+        '''
         Return the ``index``-th column name.
 
         INPUT:
@@ -706,12 +549,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_objective(b[1] + b[2])
             sage: copy(p).solve()
             6.0'''
-    @overload
-    def get_objective_value(self) -> Any:
-        '''GenericBackend.get_objective_value(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 749)
-
+    def get_objective_value(self):
+        '''
         Return the value of the objective function.
 
         .. NOTE::
@@ -735,40 +574,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             0.0
             sage: p.get_variable_value(1)
             1.5'''
-    @overload
-    def get_objective_value(self) -> Any:
-        '''GenericBackend.get_objective_value(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 749)
-
-        Return the value of the objective function.
-
-        .. NOTE::
-
-           Behavior is undefined unless ``solve`` has been called before.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_variables(2)
-            1
-            sage: p.add_linear_constraint([(0,1), (1,2)], None, 3)
-            sage: p.set_objective([2, 5])
-            sage: p.solve()
-            0
-            sage: p.get_objective_value()
-            7.5
-            sage: p.get_variable_value(0)
-            0.0
-            sage: p.get_variable_value(1)
-            1.5'''
-    def get_relative_objective_gap(self) -> Any:
-        '''GenericBackend.get_relative_objective_gap(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 811)
-
+    def get_relative_objective_gap(self):
+        '''
         Return the relative objective gap of the best known solution.
 
         For a minimization problem, this value is computed by
@@ -799,11 +606,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             2.0
             sage: pb.get_relative_objective_gap()
             0.0'''
-    def get_variable_value(self, intvariable) -> Any:
-        '''GenericBackend.get_variable_value(self, int variable)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 846)
-
+    def get_variable_value(self, variable: Int):
+        '''
         Return the value of a variable given by the solver.
 
         .. NOTE::
@@ -827,12 +631,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             0.0
             sage: p.get_variable_value(1)
             1.5'''
-    @overload
     def is_maximization(self) -> bool:
-        '''GenericBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 920)
-
+        '''
         Test whether the problem is a maximization
 
         EXAMPLES::
@@ -845,47 +645,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_sense(-1)
             sage: p.is_maximization()
             False'''
-    @overload
-    def is_maximization(self) -> Any:
-        '''GenericBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 920)
-
-        Test whether the problem is a maximization
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.is_maximization()
-            True
-            sage: p.set_sense(-1)
-            sage: p.is_maximization()
-            False'''
-    @overload
-    def is_maximization(self) -> Any:
-        '''GenericBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 920)
-
-        Test whether the problem is a maximization
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.is_maximization()
-            True
-            sage: p.set_sense(-1)
-            sage: p.is_maximization()
-            False'''
-    def is_slack_variable_basic(self, intindex) -> bool:
-        '''GenericBackend.is_slack_variable_basic(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1485)
-
+    def is_slack_variable_basic(self, index: Int) -> bool:
+        '''
         Test whether the slack variable of the given row is basic.
 
         This assumes that the problem has been solved with the simplex method
@@ -912,11 +673,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             True
             sage: b.is_slack_variable_basic(1)
             False'''
-    def is_slack_variable_nonbasic_at_lower_bound(self, intindex) -> bool:
-        '''GenericBackend.is_slack_variable_nonbasic_at_lower_bound(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1516)
-
+    def is_slack_variable_nonbasic_at_lower_bound(self, index: Int) -> bool:
+        '''
         Test whether the given variable is nonbasic at lower bound.
 
         This assumes that the problem has been solved with the simplex method
@@ -943,11 +701,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             False
             sage: b.is_slack_variable_nonbasic_at_lower_bound(1)
             True'''
-    def is_variable_basic(self, intindex) -> bool:
-        '''GenericBackend.is_variable_basic(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1423)
-
+    def is_variable_basic(self, index: Int) -> bool:
+        '''
         Test whether the given variable is basic.
 
         This assumes that the problem has been solved with the simplex method
@@ -974,11 +729,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             True
             sage: b.is_variable_basic(1)
             False'''
-    def is_variable_binary(self, intindex) -> bool:
-        '''GenericBackend.is_variable_binary(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1149)
-
+    def is_variable_binary(self, index: Int) -> bool:
+        '''
         Test whether the given variable is of binary type.
 
         INPUT:
@@ -997,11 +749,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_variable_type(0,0)
             sage: p.is_variable_binary(0)
             True'''
-    def is_variable_continuous(self, intindex) -> bool:
-        '''GenericBackend.is_variable_continuous(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1195)
-
+    def is_variable_continuous(self, index: Int) -> bool:
+        '''
         Test whether the given variable is of continuous/real type.
 
         INPUT:
@@ -1022,11 +771,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_variable_type(0,1)
             sage: p.is_variable_continuous(0)
             False'''
-    def is_variable_integer(self, intindex) -> bool:
-        '''GenericBackend.is_variable_integer(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1172)
-
+    def is_variable_integer(self, index: Int) -> bool:
+        '''
         Test whether the given variable is of integer type.
 
         INPUT:
@@ -1045,11 +791,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_variable_type(0,1)
             sage: p.is_variable_integer(0)
             True'''
-    def is_variable_nonbasic_at_lower_bound(self, intindex) -> bool:
-        '''GenericBackend.is_variable_nonbasic_at_lower_bound(self, int index) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1454)
-
+    def is_variable_nonbasic_at_lower_bound(self, index: Int) -> bool:
+        '''
         Test whether the given variable is nonbasic at lower bound.
 
         This assumes that the problem has been solved with the simplex method
@@ -1076,12 +819,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             False
             sage: b.is_variable_nonbasic_at_lower_bound(1)
             True'''
-    @overload
     def ncols(self) -> int:
-        '''GenericBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 875)
-
+        '''
         Return the number of columns/variables.
 
         EXAMPLES::
@@ -1095,50 +834,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             1
             sage: p.ncols()
             2'''
-    @overload
-    def ncols(self) -> Any:
-        '''GenericBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 875)
-
-        Return the number of columns/variables.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variables(2)
-            1
-            sage: p.ncols()
-            2'''
-    @overload
-    def ncols(self) -> Any:
-        '''GenericBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 875)
-
-        Return the number of columns/variables.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variables(2)
-            1
-            sage: p.ncols()
-            2'''
-    @overload
     def nrows(self) -> int:
-        '''GenericBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 902)
-
+        '''
         Return the number of rows/constraints.
 
         EXAMPLES::
@@ -1151,47 +848,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_linear_constraints(2, 2.0, None)
             sage: p.nrows()
             2'''
-    @overload
-    def nrows(self) -> Any:
-        '''GenericBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 902)
-
-        Return the number of rows/constraints.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.nrows()
-            0
-            sage: p.add_linear_constraints(2, 2.0, None)
-            sage: p.nrows()
-            2'''
-    @overload
-    def nrows(self) -> Any:
-        '''GenericBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 902)
-
-        Return the number of rows/constraints.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.nrows()
-            0
-            sage: p.add_linear_constraints(2, 2.0, None)
-            sage: p.nrows()
-            2'''
-    def objective_coefficient(self, intvariable, coeff=...) -> Any:
-        '''GenericBackend.objective_coefficient(self, int variable, coeff=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 286)
-
+    def objective_coefficient(self, variable: int, coeff: RealInexact | None = None):
+        '''
         Set or get the coefficient of a variable in the objective
         function
 
@@ -1214,57 +872,10 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.objective_coefficient(0)
             2.0'''
     @overload
-    def objective_constant_term(self, d=...) -> Any:
-        '''GenericBackend.objective_constant_term(self, d=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 312)
-
-        Set or get the constant term in the objective function.
-
-        INPUT:
-
-        - ``d`` -- double; its coefficient.  If ``None`` (default), return the
-          current value.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.objective_constant_term()
-            0.0
-            sage: p.objective_constant_term(42)
-            sage: p.objective_constant_term()
-            42.0'''
+    def objective_constant_term(self, d: RealInexact) -> None: ...
     @overload
-    def objective_constant_term(self) -> Any:
-        '''GenericBackend.objective_constant_term(self, d=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 312)
-
-        Set or get the constant term in the objective function.
-
-        INPUT:
-
-        - ``d`` -- double; its coefficient.  If ``None`` (default), return the
-          current value.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.objective_constant_term()
-            0.0
-            sage: p.objective_constant_term(42)
-            sage: p.objective_constant_term()
-            42.0'''
-    @overload
-    def objective_constant_term(self) -> Any:
-        '''GenericBackend.objective_constant_term(self, d=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 312)
-
+    def objective_constant_term(self) -> RealInexact:
+        '''
         Set or get the constant term in the objective function.
 
         INPUT:
@@ -1301,11 +912,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.problem_name("There once was a french fry") # optional - Nonexistent_LP_solver
             sage: print(p.problem_name())                       # optional - Nonexistent_LP_solver
             There once was a french fry'''
-    def remove_constraint(self, inti) -> Any:
-        '''GenericBackend.remove_constraint(self, int i)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 390)
-
+    def remove_constraint(self, i: Int):
+        '''
         Remove a constraint.
 
         INPUT:
@@ -1329,11 +937,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             10.0
             sage: p.get_values([x,y])
             [0.0, 3.0]'''
-    def remove_constraints(self, constraints) -> Any:
-        '''GenericBackend.remove_constraints(self, constraints)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 418)
-
+    def remove_constraints(self, constraints: list[Int] | list[tuple[Int, Int]]) -> Any:
+        '''
         Remove several constraints.
 
         INPUT:
@@ -1350,11 +955,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_linear_constraint([(0, 2), (1, 3)], None, 6)
             sage: p.add_linear_constraint([(0, 3), (1, 2)], None, 6)
             sage: p.remove_constraints([0, 1])'''
-    def row(self, inti) -> Any:
-        '''GenericBackend.row(self, int i)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1061)
-
+    def row(self, i: Int) -> Int:
+        '''
         Return a row.
 
         INPUT:
@@ -1380,11 +982,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             ([4, 3, 2, 1], [4.0, 3.0, 2.0, 1.0]) ## FIXME: Why backwards?
             sage: p.row_bounds(0)
             (2.0, 2.0)'''
-    def row_bounds(self, intindex) -> Any:
-        '''GenericBackend.row_bounds(self, int index)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1091)
-
+    def row_bounds(self, index: Int) -> tuple[RingElement | None, RingElement | None]:
+        '''
         Return the bounds of a specific constraint.
 
         INPUT:
@@ -1409,11 +1008,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             ([4, 3, 2, 1], [4.0, 3.0, 2.0, 1.0]) ## FIXME: Why backwards?
             sage: p.row_bounds(0)
             (2.0, 2.0)'''
-    def row_name(self, intindex) -> Any:
-        '''GenericBackend.row_name(self, int index)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1220)
-
+    def row_name(self, index: Int) -> str:
+        '''
         Return the ``index``-th row name.
 
         INPUT:
@@ -1428,11 +1024,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.add_linear_constraints(1, 2, None, names=[\'Empty constraint 1\'])
             sage: p.row_name(0)
             \'Empty constraint 1\''''
-    def set_objective(self, listcoeff, d=...) -> Any:
-        '''GenericBackend.set_objective(self, list coeff, d=0.0)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 337)
-
+    def set_objective(self, coeff: list[RealInexact], d: RealInexact =0.0):
+        '''
         Set the objective function.
 
         INPUT:
@@ -1465,11 +1058,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_integer(x); p.set_integer(y)
             sage: p.solve()
             9.0'''
-    def set_sense(self, intsense) -> Any:
-        '''GenericBackend.set_sense(self, int sense)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 241)
-
+    def set_sense(self, sense: Literal[+1, -1]) -> None:
+        '''
         Set the direction (maximization/minimization).
 
         INPUT:
@@ -1489,11 +1079,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_sense(-1)
             sage: p.is_maximization()
             False'''
-    def set_variable_type(self, intvariable, intvtype) -> Any:
-        '''GenericBackend.set_variable_type(self, int variable, int vtype)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 212)
-
+    def set_variable_type(self, variable: int, vtype: Literal[1, 0, -1]):
+        '''
         Set the type of a variable.
 
         INPUT:
@@ -1518,7 +1105,7 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.set_variable_type(0,1)
             sage: p.is_variable_integer(0)
             True'''
-    def set_verbosity(self, intlevel) -> Any:
+    def set_verbosity(self, level: Literal[0, 1, 2, 3]):
         '''GenericBackend.set_verbosity(self, int level)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 374)
@@ -1534,12 +1121,8 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: from sage.numerical.backends.generic_backend import get_solver
             sage: p = get_solver(solver="Nonexistent_LP_solver")  # optional - Nonexistent_LP_solver
             sage: p.set_verbosity(2)                                # optional - Nonexistent_LP_solver'''
-    @overload
     def solve(self) -> int:
-        '''GenericBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 693)
-
+        '''
         Solve the problem.
 
         .. NOTE::
@@ -1562,63 +1145,7 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             Traceback (most recent call last):
             ...
             MIPSolverException: ...'''
-    @overload
-    def solve(self) -> Any:
-        '''GenericBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 693)
-
-        Solve the problem.
-
-        .. NOTE::
-
-            This method raises ``MIPSolverException`` exceptions when
-            the solution cannot be computed for any reason (none
-            exists, or the LP solver was not able to find it, etc...)
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_linear_constraints(5, 0, None)
-            sage: p.add_col(list(range(5)), list(range(5)))
-            sage: p.solve()
-            0
-            sage: p.objective_coefficient(0,1)
-            sage: p.solve()
-            Traceback (most recent call last):
-            ...
-            MIPSolverException: ...'''
-    @overload
-    def solve(self) -> Any:
-        '''GenericBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 693)
-
-        Solve the problem.
-
-        .. NOTE::
-
-            This method raises ``MIPSolverException`` exceptions when
-            the solution cannot be computed for any reason (none
-            exists, or the LP solver was not able to find it, etc...)
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_linear_constraints(5, 0, None)
-            sage: p.add_col(list(range(5)), list(range(5)))
-            sage: p.solve()
-            0
-            sage: p.objective_coefficient(0,1)
-            sage: p.solve()
-            Traceback (most recent call last):
-            ...
-            MIPSolverException: ...'''
-    def solver_parameter(self, name, value=...) -> Any:
+    def solver_parameter(self, name: str, value=None) -> Any:
         '''GenericBackend.solver_parameter(self, name, value=None)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1396)
@@ -1645,11 +1172,11 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.solver_parameter("timelimit")
             sage: p.solver_parameter("timelimit", 60)
             sage: p.solver_parameter("timelimit")'''
-    def variable_lower_bound(self, intindex, value=...) -> Any:
-        '''GenericBackend.variable_lower_bound(self, int index, value=False)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1369)
-
+    @overload
+    def variable_lower_bound(self, index: Int, value: RingElement | None) -> None: ...
+    @overload
+    def variable_lower_bound(self, index: Int, value: Literal[False] = False) -> RingElement | None:
+        '''
         Return or define the lower bound on a variable.
 
         INPUT:
@@ -1672,11 +1199,11 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: p.variable_lower_bound(0, 5)
             sage: p.col_bounds(0)
             (5.0, None)'''
-    def variable_upper_bound(self, intindex, value=...) -> Any:
-        '''GenericBackend.variable_upper_bound(self, int index, value=False)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 1342)
-
+    @overload
+    def variable_upper_bound(self, index: Int, value: RingElement | None) -> None: ...
+    @overload
+    def variable_upper_bound(self, index: Int, value: Literal[False] = False) -> RingElement | None:
+        '''
         Return or define the upper bound on a variable.
 
         INPUT:
@@ -1745,10 +1272,7 @@ class GenericBackend(sage.structure.sage_object.SageObject):
             sage: from tempfile import NamedTemporaryFile
             sage: with NamedTemporaryFile(suffix=\'.lp\') as f:
             ....:     p.write_lp(f.name)'''
-    def zero(self) -> Any:
-        """GenericBackend.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_backend.pyx (starting at line 39)"""
+    def zero(self) -> RingElement: ...
     def __copy__(self) -> Any:
         '''GenericBackend.__copy__(self)
 

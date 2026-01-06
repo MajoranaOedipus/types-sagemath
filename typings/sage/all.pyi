@@ -85,9 +85,9 @@ from sage.games.all import *
 
 from sage.logic.all import *
 
-from sage.numerical.all import *   # TODO: here and below to clear
+from sage.numerical.all import *
 
-from sage.stats.all import *
+from sage.stats.all import *   # TODO: here and below to clear
 import sage.stats.all as stats
 
 from sage.parallel.all import *

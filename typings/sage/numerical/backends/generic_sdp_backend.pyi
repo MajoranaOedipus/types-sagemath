@@ -1,17 +1,114 @@
-import _cython_3_2_1
-from typing import Any, ClassVar, overload
+r"""
+Generic Backend for SDP solvers
 
-__pyx_capi__: dict
-default_sdp_solver: _cython_3_2_1.cython_function_or_method
-default_solver: None
-get_solver: _cython_3_2_1.cython_function_or_method
+This class only lists the methods that should be defined by any
+interface with a SDP Solver. All these methods immediately raise
+:exc:`NotImplementedError` exceptions when called, and are obviously
+meant to be replaced by the solver-specific method. This file can also
+be used as a template to create a new interface : one would only need
+to replace the occurrences of ``"Nonexistent_SDP_solver"`` by the
+solver's name, and replace ``GenericSDPBackend`` by
+``SolverName(GenericSDPBackend)`` so that the new solver extends this
+class.
+
+AUTHORS:
+
+- Ingolfur Edvardsson (2014-07): initial implementation
+"""
+from collections.abc import Iterable
+from typing import Any, Literal, overload
+from typings_sagemath import Int, RealInexact
+from sage.structure.element import RingElement, Matrix
+from sage.rings.ring import Ring
+
+@overload
+def default_sdp_solver() -> str | type[GenericSDPBackend]: ...
+@overload
+def default_sdp_solver(solver: Literal["SVXOPT"] | type[GenericSDPBackend]) -> None:
+    """
+    Return/set the default SDP solver used by Sage.
+
+    INPUT:
+
+    - ``solver`` -- one of the following:
+
+      - the string ``'CVXOPT'``, to make the use of the CVXOPT solver
+        (see the `CVXOPT <http://cvxopt.org/>`_ web site) the default;
+
+      - a subclass of
+        :class:`sage.numerical.backends.generic_sdp_backend.GenericSDPBackend`,
+        to make it the default; or
+
+      - ``None`` -- (default) in which case the current default solver
+        (a string or a class) is returned
+
+    OUTPUT:
+
+    This function returns the current default solver (a string or a
+    class) if ``solver = None`` (default). Otherwise, it sets the
+    default solver to the one given. If this solver does not exist, or
+    is not available, a :exc:`ValueError` exception is raised.
+
+    EXAMPLES::
+
+        sage: former_solver = default_sdp_solver()
+        sage: default_sdp_solver("Cvxopt")
+        sage: default_sdp_solver()
+        'Cvxopt'
+        sage: default_sdp_solver("Yeahhhhhhhhhhh")
+        Traceback (most recent call last):
+        ...
+        ValueError: 'solver' should be set to ...
+        sage: default_sdp_solver(former_solver)
+        sage: from sage.numerical.backends.generic_sdp_backend import GenericSDPBackend
+        sage: class my_sdp_solver(GenericSDPBackend): pass
+        sage: default_sdp_solver(my_sdp_solver)
+        sage: default_sdp_solver() is my_sdp_solver
+        True
+    """
+default_solver: None | str | type[GenericSDPBackend]
+def get_solver(solver: Literal["SVXOPT"] | type[GenericSDPBackend] | None = None, base_ring: Ring | None = None) -> GenericSDPBackend:
+    """
+    Return a solver according to the given preferences.
+
+    INPUT:
+
+    - ``solver`` -- one of the following:
+
+      - the string ``'CVXOPT'``, designating the use of the CVXOPT solver
+        (see the `CVXOPT <http://cvxopt.org/>`_ web site);
+
+      - a subclass of
+        :class:`sage.numerical.backends.generic_sdp_backend.GenericSDPBackend`
+
+      - ``None`` -- (default) in which case the default solver is used (see
+        :func:`default_sdp_solver`)
+
+    .. SEEALSO::
+
+        - :func:`default_sdp_solver` -- returns/sets the default SDP solver
+
+    EXAMPLES::
+
+        sage: from sage.numerical.backends.generic_sdp_backend import get_solver
+        sage: p = get_solver()
+
+    Passing a class::
+
+        sage: from sage.numerical.backends.generic_sdp_backend import GenericSDPBackend
+        sage: class MockSDPBackend(GenericSDPBackend):
+        ....:     def solve(self):
+        ....:         raise RuntimeError("SDP is too slow")
+        sage: P = SemidefiniteProgram(solver=MockSDPBackend)
+        sage: P.solve()
+        Traceback (most recent call last):
+        ...
+        RuntimeError: SDP is too slow
+    """
 
 class GenericSDPBackend:
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def add_linear_constraint(self, coefficients, name=...) -> Any:
+    
+    def add_linear_constraint(self, coefficients: Iterable[tuple[Int, RealInexact]], name: str | None = None):
         '''GenericSDPBackend.add_linear_constraint(self, coefficients, name=None)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 203)
@@ -45,11 +142,8 @@ class GenericSDPBackend:
             sage: p.add_linear_constraint( zip(range(5), range(5)), 1.0, 1.0, name=\'foo\')
             sage: p.row_name(-1)
             "foo"'''
-    def add_linear_constraints(self, intnumber, names=...) -> Any:
-        '''GenericSDPBackend.add_linear_constraints(self, int number, names=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 237)
-
+    def add_linear_constraints(self, number: Int, names: str | None = None):
+        '''
         Add constraints.
 
         INPUT:
@@ -74,12 +168,8 @@ class GenericSDPBackend:
             ([], [])
             sage: p.row_bounds(4)
             (None, 2.0)'''
-    @overload
-    def add_variable(self, obj=..., name=...) -> int:
-        '''GenericSDPBackend.add_variable(self, obj=0.0, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 56)
-
+    def add_variable(self, obj=0.0, name: str | None = None) -> int:
+        '''
         Add a variable.
 
         This amounts to adding a new column to the matrix. By default,
@@ -112,87 +202,8 @@ class GenericSDPBackend:
             \'x\'
             sage: p.objective_coefficient(3)
             1.0'''
-    @overload
-    def add_variable(self) -> Any:
-        '''GenericSDPBackend.add_variable(self, obj=0.0, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 56)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective
-          function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default:
-          ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    @overload
-    def add_variable(self, name=..., obj=...) -> Any:
-        '''GenericSDPBackend.add_variable(self, obj=0.0, name=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 56)
-
-        Add a variable.
-
-        This amounts to adding a new column to the matrix. By default,
-        the variable is both positive and real.
-
-        INPUT:
-
-        - ``obj`` -- (optional) coefficient of this variable in the objective
-          function (default: 0.0)
-
-        - ``name`` -- an optional name for the newly added variable (default:
-          ``None``)
-
-        OUTPUT: the index of the newly created variable
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variable()
-            0
-            sage: p.ncols()
-            1
-            sage: p.add_variable(name=\'x\', obj=1.0)
-            3
-            sage: p.col_name(3)
-            \'x\'
-            sage: p.objective_coefficient(3)
-            1.0'''
-    def add_variables(self, intn, names=...) -> int:
-        '''GenericSDPBackend.add_variables(self, int n, names=None) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 93)
-
+    def add_variables(self, n: Int, names: Iterable[str] | None = None) -> int:
+        '''
         Add ``n`` variables.
 
         This amounts to adding new columns to the matrix. By default,
@@ -221,12 +232,8 @@ class GenericSDPBackend:
             5
             sage: p.add_variables(2, lower_bound=-2.0, integer=True, names=[\'a\',\'b\'])
             6'''
-    @overload
-    def base_ring(self) -> Any:
-        """GenericSDPBackend.base_ring(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 31)
-
+    def base_ring(self) -> Ring:
+        """
         The base ring.
 
         TESTS::
@@ -234,24 +241,8 @@ class GenericSDPBackend:
             sage: from sage.numerical.backends.generic_sdp_backend import GenericSDPBackend
             sage: GenericSDPBackend().base_ring()
             Real Double Field"""
-    @overload
-    def base_ring(self) -> Any:
-        """GenericSDPBackend.base_ring(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 31)
-
-        The base ring.
-
-        TESTS::
-
-            sage: from sage.numerical.backends.generic_sdp_backend import GenericSDPBackend
-            sage: GenericSDPBackend().base_ring()
-            Real Double Field"""
-    def col_name(self, intindex) -> Any:
-        '''GenericSDPBackend.col_name(self, int index)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 473)
-
+    def col_name(self, index: Int) -> str:
+        '''
         Return the ``index``-th col name.
 
         INPUT:
@@ -270,11 +261,8 @@ class GenericSDPBackend:
             1
             sage: p.col_name(0)
             \'I am a variable\''''
-    def dual_variable(self, inti, sparse=...) -> Any:
-        '''GenericSDPBackend.dual_variable(self, int i, sparse=False)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 496)
-
+    def dual_variable(self, i: Int, sparse: bool = False) -> Matrix:
+        '''
         The `i`-th dual variable.
 
         Available after ``self.solve()`` is called, otherwise the result is undefined
@@ -315,8 +303,7 @@ class GenericSDPBackend:
             IndexError: list index out of range
             sage: abs(g - B._get_answer()[\'gap\'])  # optional - Nonexistent_LP_solver # tol 1e-22
             0.0'''
-    @overload
-    def get_objective_value(self) -> Any:
+    def get_objective_value(self):
         '''GenericSDPBackend.get_objective_value(self)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 293)
@@ -344,40 +331,8 @@ class GenericSDPBackend:
             0.0
             sage: p.get_variable_value(1)
             1.5'''
-    @overload
-    def get_objective_value(self) -> Any:
-        '''GenericSDPBackend.get_objective_value(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 293)
-
-        Return the value of the objective function.
-
-        .. NOTE::
-
-           Behaviour is undefined unless ``solve`` has been called before.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_variables(2)
-            2
-            sage: p.add_linear_constraint([(0,1), (1,2)], None, 3)
-            sage: p.set_objective([2, 5])
-            sage: p.solve()
-            0
-            sage: p.get_objective_value()
-            7.5
-            sage: p.get_variable_value(0)
-            0.0
-            sage: p.get_variable_value(1)
-            1.5'''
-    def get_variable_value(self, intvariable) -> Any:
-        '''GenericSDPBackend.get_variable_value(self, int variable)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 321)
-
+    def get_variable_value(self, variable: Int):
+        '''
         Return the value of a variable given by the solver.
 
         .. NOTE::
@@ -401,12 +356,8 @@ class GenericSDPBackend:
             0.0
             sage: p.get_variable_value(1)
             1.5'''
-    @overload
     def is_maximization(self) -> bool:
-        '''GenericSDPBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 386)
-
+        '''
         Test whether the problem is a maximization
 
         EXAMPLES::
@@ -419,48 +370,8 @@ class GenericSDPBackend:
             sage: p.set_sense(-1)
             sage: p.is_maximization()
             False'''
-    @overload
-    def is_maximization(self) -> Any:
-        '''GenericSDPBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 386)
-
-        Test whether the problem is a maximization
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.is_maximization()
-            True
-            sage: p.set_sense(-1)
-            sage: p.is_maximization()
-            False'''
-    @overload
-    def is_maximization(self) -> Any:
-        '''GenericSDPBackend.is_maximization(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 386)
-
-        Test whether the problem is a maximization
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.is_maximization()
-            True
-            sage: p.set_sense(-1)
-            sage: p.is_maximization()
-            False'''
-    @overload
     def ncols(self) -> int:
-        '''GenericSDPBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 350)
-
+        '''
         Return the number of columns/variables.
 
         EXAMPLES::
@@ -474,50 +385,8 @@ class GenericSDPBackend:
             2
             sage: p.ncols()
             2'''
-    @overload
-    def ncols(self) -> Any:
-        '''GenericSDPBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 350)
-
-        Return the number of columns/variables.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variables(2)
-            2
-            sage: p.ncols()
-            2'''
-    @overload
-    def ncols(self) -> Any:
-        '''GenericSDPBackend.ncols(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 350)
-
-        Return the number of columns/variables.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.ncols()
-            0
-            sage: p.add_variables(2)
-            2
-            sage: p.ncols()
-            2'''
-    @overload
     def nrows(self) -> int:
-        '''GenericSDPBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 369)
-
+        '''
         Return the number of rows/constraints.
 
         EXAMPLES::
@@ -530,47 +399,8 @@ class GenericSDPBackend:
             sage: p.add_linear_constraints(2, 2.0, None)
             sage: p.nrows()
             2'''
-    @overload
-    def nrows(self) -> Any:
-        '''GenericSDPBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 369)
-
-        Return the number of rows/constraints.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.nrows()
-            0
-            sage: p.add_linear_constraints(2, 2.0, None)
-            sage: p.nrows()
-            2'''
-    @overload
-    def nrows(self) -> Any:
-        '''GenericSDPBackend.nrows(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 369)
-
-        Return the number of rows/constraints.
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.nrows()
-            0
-            sage: p.add_linear_constraints(2, 2.0, None)
-            sage: p.nrows()
-            2'''
-    def objective_coefficient(self, intvariable, coeff=...) -> Any:
-        '''GenericSDPBackend.objective_coefficient(self, int variable, coeff=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 150)
-
+    def objective_coefficient(self, variable: int, coeff: RealInexact | None = None):
+        '''
         Set or get the coefficient of a variable in the objective
         function
 
@@ -592,11 +422,11 @@ class GenericSDPBackend:
             sage: p.objective_coefficient(0,2)
             sage: p.objective_coefficient(0)
             2.0'''
-    def problem_name(self, name=...) -> Any:
-        '''GenericSDPBackend.problem_name(self, name=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 403)
-
+    @overload
+    def problem_name(self) -> str: ...
+    @overload
+    def problem_name(self, name: str) -> None:
+        '''
         Return or define the problem\'s name.
 
         INPUT:
@@ -612,7 +442,7 @@ class GenericSDPBackend:
             sage: p.problem_name("There once was a french fry")
             sage: print(p.problem_name())
             There once was a french fry'''
-    def row(self, inti) -> Any:
+    def row(self, i: Int) -> tuple:
         '''GenericSDPBackend.row(self, int i)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 424)
@@ -642,7 +472,7 @@ class GenericSDPBackend:
             ([4, 3, 2, 1], [4.0, 3.0, 2.0, 1.0])
             sage: p.row_bounds(0)
             (2.0, 2.0)'''
-    def row_name(self, intindex) -> Any:
+    def row_name(self, index: Int) -> str:
         '''GenericSDPBackend.row_name(self, int index)
 
         File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 454)
@@ -661,11 +491,8 @@ class GenericSDPBackend:
             sage: p.add_linear_constraints(1, 2, None, name="Empty constraint 1")
             sage: p.row_name(0)
             \'Empty constraint 1\''''
-    def set_objective(self, listcoeff, d=...) -> Any:
-        '''GenericSDPBackend.set_objective(self, list coeff, d=0.0)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 176)
-
+    def set_objective(self, coeff: list[RealInexact], d: RealInexact =0.0) -> None:
+        '''
         Set the objective function.
 
         INPUT:
@@ -688,11 +515,8 @@ class GenericSDPBackend:
             [1.0, 1.0, 2.0, 1.0, 3.0]
 
         Constants in the objective function are respected.'''
-    def set_sense(self, intsense) -> Any:
-        '''GenericSDPBackend.set_sense(self, int sense)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 126)
-
+    def set_sense(self, sense: Literal[+1, -1]) -> None:
+        '''
         Set the direction (maximization/minimization).
 
         INPUT:
@@ -712,11 +536,8 @@ class GenericSDPBackend:
             sage: p.set_sense(-1)
             sage: p.is_maximization()
             False'''
-    def slack(self, inti, sparse=...) -> Any:
-        '''GenericSDPBackend.slack(self, int i, sparse=False)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 541)
-
+    def slack(self, i: Int, sparse: bool = False) -> Matrix:
+        '''
         Slack of the `i`-th constraint.
 
         Available after ``self.solve()`` is called, otherwise the result is
@@ -760,12 +581,8 @@ class GenericSDPBackend:
             Traceback (most recent call last):
             ...
             IndexError: list index out of range'''
-    @overload
     def solve(self) -> int:
-        '''GenericSDPBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 266)
-
+        '''
         Solve the problem.
 
         .. NOTE::
@@ -789,66 +606,10 @@ class GenericSDPBackend:
             ...
             SDPSolverException: ...'''
     @overload
-    def solve(self) -> Any:
-        '''GenericSDPBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 266)
-
-        Solve the problem.
-
-        .. NOTE::
-
-            This method raises :class:`SDPSolverException` exceptions when
-            the solution cannot be computed for any reason (none
-            exists, or the LP solver was not able to find it, etc...)
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_linear_constraints(5, 0, None)
-            sage: p.add_col(range(5), range(5))
-            sage: p.solve()
-            0
-            sage: p.objective_coefficient(0,1)
-            sage: p.solve()
-            Traceback (most recent call last):
-            ...
-            SDPSolverException: ...'''
+    def solver_parameter(self, name: str, value) -> None: ...
     @overload
-    def solve(self) -> Any:
-        '''GenericSDPBackend.solve(self) -> int
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 266)
-
-        Solve the problem.
-
-        .. NOTE::
-
-            This method raises :class:`SDPSolverException` exceptions when
-            the solution cannot be computed for any reason (none
-            exists, or the LP solver was not able to find it, etc...)
-
-        EXAMPLES::
-
-            sage: # optional - nonexistent_lp_solver
-            sage: from sage.numerical.backends.generic_sdp_backend import get_solver
-            sage: p = get_solver(solver="Nonexistent_LP_solver")
-            sage: p.add_linear_constraints(5, 0, None)
-            sage: p.add_col(range(5), range(5))
-            sage: p.solve()
-            0
-            sage: p.objective_coefficient(0,1)
-            sage: p.solve()
-            Traceback (most recent call last):
-            ...
-            SDPSolverException: ...'''
-    def solver_parameter(self, name, value=...) -> Any:
-        '''GenericSDPBackend.solver_parameter(self, name, value=None)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 589)
-
+    def solver_parameter(self, name: str) -> Any:
+        '''
         Return or define a solver parameter.
 
         INPUT:
@@ -871,25 +632,8 @@ class GenericSDPBackend:
             sage: p.solver_parameter("timelimit")
             sage: p.solver_parameter("timelimit", 60)
             sage: p.solver_parameter("timelimit")'''
-    @overload
-    def zero(self) -> Any:
-        """GenericSDPBackend.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 44)
-
-        Zero of the base ring.
-
-        TESTS::
-
-            sage: from sage.numerical.backends.generic_sdp_backend import GenericSDPBackend
-            sage: GenericSDPBackend().zero()
-            0.0"""
-    @overload
-    def zero(self) -> Any:
-        """GenericSDPBackend.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/numerical/backends/generic_sdp_backend.pyx (starting at line 44)
-
+    def zero(self) -> RingElement:
+        """
         Zero of the base ring.
 
         TESTS::
