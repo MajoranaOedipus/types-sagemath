@@ -1,1 +1,1 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.geometry.hyperbolic_space.hyperbolic_interface import HyperbolicPlane as HyperbolicPlane

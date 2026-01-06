@@ -1,11 +1,90 @@
+r"""
+Library of commonly used, famous, or interesting polytopes
+
+This module gathers several constructors of polytopes that can be reached
+through ``polytopes.<tab>``. For example, here is the hypercube in dimension 5::
+
+    sage: polytopes.hypercube(5)
+    A 5-dimensional polyhedron in ZZ^5 defined as the convex hull of 32 vertices
+
+The following constructions are available
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30
+    :delim: |
+
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.Birkhoff_polytope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.associahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.bitruncated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.buckyball`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cantellated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cantellated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cantitruncated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cantitruncated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cross_polytope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cube`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cuboctahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.cyclic_polytope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.dodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.flow_polytope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.Gosset_3_21`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.grand_antiprism`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.great_rhombicuboctahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.harmonic_polytope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.hypercube`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.hypersimplex`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.icosahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.icosidodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.Kirkman_icosahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.octahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.omnitruncated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.omnitruncated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.parallelotope`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.pentakis_dodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.permutahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.generalized_permutahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.rectified_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.rectified_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.regular_polygon`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.rhombic_dodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.rhombicosidodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.runcinated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.runcitruncated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.runcitruncated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.simplex`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.small_rhombicuboctahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.snub_cube`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.snub_dodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.tetrahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_cube`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_dodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_icosidodecahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_tetrahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_octahedron`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_one_hundred_twenty_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.truncated_six_hundred_cell`
+    :meth:`~sage.geometry.polyhedron.library.Polytopes.twenty_four_cell`
+"""
+
+from typing import overload
+from typings_sagemath import Int
+from _typeshed import Incomplete
+from sage.rings.real_double import RealDoubleField_class
+from sage.structure.element import Matrix, Vector
+from sage.structure.parent import Parent
+
 from .constructor import Polyhedron as Polyhedron
 from .parent import Polyhedra as Polyhedra
-from _typeshed import Incomplete
-from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
 
-def zero_sum_projection(d, base_ring=None):
+@overload
+def zero_sum_projection(d: Int) -> Matrix[RealDoubleField_class]: ...
+@overload
+def zero_sum_projection[P: Parent](d: Int, base_ring: P) -> Matrix[P]:
     """
     Return a matrix corresponding to the projection on the orthogonal of
     `(1,1,\\ldots,1)` in dimension `d`.
@@ -34,7 +113,10 @@ def zero_sum_projection(d, base_ring=None):
         [ 0.7071067811865475? -0.7071067811865475?                    0]
         [ 0.4082482904638630?  0.4082482904638630? -0.8164965809277260?]
     """
-def project_points(*points, **kwds):
+@overload
+def project_points(*points) -> list[Vector[RealDoubleField_class]]: ...
+@overload
+def project_points[P: Parent](*points, base_ring: P) -> list[Vector[P]]:
     """
     Projects a set of points into a vector space of dimension one less.
 
@@ -2669,4 +2751,4 @@ class Polytopes:
     edge_polytope: Incomplete
     symmetric_edge_polytope: Incomplete
 
-polytopes: Incomplete
+polytopes: Polytopes

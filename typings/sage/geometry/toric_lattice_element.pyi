@@ -1,4 +1,6 @@
 import _cython_3_2_1
+from sage.geometry.toric_lattice import ToricLattice_generic
+
 import sage.modules.vector_integer_dense
 from sage.structure.coerce_exceptions import CoercionException as CoercionException
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
@@ -8,7 +10,7 @@ from typing import Any, ClassVar, overload
 is_ToricLatticeElement: _cython_3_2_1.cython_function_or_method
 unpickle_v1: _cython_3_2_1.cython_function_or_method
 
-class ToricLatticeElement(sage.modules.vector_integer_dense.Vector_integer_dense):
+class ToricLatticeElement[TL: ToricLattice_generic](sage.modules.vector_integer_dense.Vector_integer_dense):
     """File: /build/sagemath/src/sage/src/sage/geometry/toric_lattice_element.pyx (starting at line 142)
 
         Create an element of a toric lattice.

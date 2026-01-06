@@ -1,4 +1,18 @@
-from _typeshed import Incomplete
+r"""
+Library of Hyperplane Arrangements
+
+A collection of useful or interesting hyperplane arrangements. See
+:mod:`sage.geometry.hyperplane_arrangement.arrangement` for details
+about how to construct your own hyperplane arrangements.
+"""
+
+from collections.abc import Iterable
+from typing import Any, Literal
+from typings_sagemath import Int
+from sage.rings.ring import Ring, Field
+from sage.geometry.hyperplane_arrangement.arrangement import HyperplaneArrangementElement
+from sage.graphs.graph import Graph
+
 from sage.arith.misc import binomial as binomial
 from sage.geometry.hyperplane_arrangement.arrangement import HyperplaneArrangements as HyperplaneArrangements
 from sage.matrix.constructor import matrix as matrix, random_matrix as random_matrix
@@ -8,7 +22,9 @@ from sage.rings.polynomial.polynomial_ring import polygen as polygen
 from sage.rings.rational_field import QQ as QQ
 from sage.rings.semirings.non_negative_integer_semiring import NN as NN
 
-def make_parent(base_ring, dimension, names=None):
+from sage.structure.element import FieldElement, Matrix
+
+def make_parent(base_ring: Ring, dimension: Int, names: Iterable[str]|None = None) -> HyperplaneArrangements:
     """
     Construct the parent for the hyperplane arrangements.
 
@@ -37,11 +53,13 @@ def make_parent(base_ring, dimension, names=None):
         Rational Field with coordinates t0, t1, t2
     """
 
+type _CartanTypeData = list | str | Any # TODO: not done, check sage.combinat.root_system.cartan_type
+
 class HyperplaneArrangementLibrary:
     """
     The library of hyperplane arrangements.
     """
-    def braid(self, n, K=..., names=None):
+    def braid(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         The braid arrangement.
 
@@ -64,7 +82,7 @@ class HyperplaneArrangementLibrary:
             sage: hyperplane_arrangements.braid(4)                                      # needs sage.graphs
             Arrangement of 6 hyperplanes of dimension 4 and rank 3
         """
-    def bigraphical(self, G, A=None, K=..., names=None):
+    def bigraphical(self, G: Graph, A: list[list[FieldElement]] | Matrix[FieldElement] | Literal["generic"] | None = None, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         '''
         Return a bigraphical hyperplane arrangement.
 
@@ -121,7 +139,7 @@ class HyperplaneArrangementLibrary:
             ....:   \'generic\').n_regions() == 65 for _ in range(5))
             True
         '''
-    def Catalan(self, n, K=..., names=None):
+    def Catalan(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the Catalan arrangement.
 
@@ -153,7 +171,7 @@ class HyperplaneArrangementLibrary:
             sage: h.characteristic_polynomial()              # long time
             x^5 - 30*x^4 + 335*x^3 - 1650*x^2 + 3024*x
         """
-    def coordinate(self, n, K=..., names=None):
+    def coordinate(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the coordinate hyperplane arrangement.
 
@@ -177,7 +195,7 @@ class HyperplaneArrangementLibrary:
             sage: hyperplane_arrangements.coordinate(5)
             Arrangement of 5 hyperplanes of dimension 5 and rank 5
         """
-    def Coxeter(self, data, K=..., names=None):
+    def Coxeter(self, data: Int | _CartanTypeData, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         '''
         Return the Coxeter arrangement.
 
@@ -235,7 +253,7 @@ class HyperplaneArrangementLibrary:
             sage: hyperplane_arrangements.Coxeter("A3").characteristic_polynomial()
             x^3 - 6*x^2 + 11*x - 6
         '''
-    def G_semiorder(self, G, K=..., names=None):
+    def G_semiorder(self, G: Graph, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the semiorder hyperplane arrangement of a graph.
 
@@ -264,7 +282,7 @@ class HyperplaneArrangementLibrary:
             sage: hyperplane_arrangements.G_semiorder(g)
             Arrangement of 12 hyperplanes of dimension 5 and rank 4
         """
-    def G_Shi(self, G, K=..., names=None):
+    def G_Shi(self, G: Graph, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the Shi hyperplane arrangement of a graph `G`.
 
@@ -291,7 +309,7 @@ class HyperplaneArrangementLibrary:
             sage: a = hyperplane_arrangements.G_Shi(graphs.WheelGraph(4)); a
             Arrangement of 12 hyperplanes of dimension 4 and rank 3
         """
-    def graphical(self, G, K=..., names=None):
+    def graphical(self, G: Graph, K: Field=QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the graphical hyperplane arrangement of a graph ``G``.
 
@@ -330,7 +348,7 @@ class HyperplaneArrangementLibrary:
             sage: h.characteristic_polynomial()         # long time
             x^5 - 6*x^4 + 14*x^3 - 15*x^2 + 6*x
         """
-    def Ish(self, n, K=..., names=None):
+    def Ish(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the Ish arrangement.
 
@@ -374,7 +392,7 @@ class HyperplaneArrangementLibrary:
 
         - [AR2012]_
         """
-    def IshB(self, n, K=..., names=None):
+    def IshB(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the type B Ish arrangement.
 
@@ -436,7 +454,7 @@ class HyperplaneArrangementLibrary:
 
         - [TT2023]_
         """
-    def linial(self, n, K=..., names=None):
+    def linial(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the linial hyperplane arrangement.
 
@@ -470,7 +488,7 @@ class HyperplaneArrangementLibrary:
             sage: h.characteristic_polynomial()              # long time
             x^5 - 10*x^4 + 45*x^3 - 100*x^2 + 90*x
         """
-    def semiorder(self, n, K=..., names=None):
+    def semiorder(self, n: Int, K: Field = QQ, names: Iterable[str]|None=None) -> HyperplaneArrangementElement:
         """
         Return the semiorder arrangement.
 
@@ -503,7 +521,7 @@ class HyperplaneArrangementLibrary:
             sage: h.characteristic_polynomial()         # long time
             x^5 - 20*x^4 + 180*x^3 - 790*x^2 + 1380*x
         """
-    def Shi(self, data, K=..., names=None, m: int = 1):
+    def Shi(self, data: Int | _CartanTypeData, K: Field = QQ, names: Iterable[str]|None=None, m: Int = 1) -> HyperplaneArrangementElement:
         '''
         Return the Shi arrangement.
 
@@ -604,4 +622,4 @@ class HyperplaneArrangementLibrary:
             x^3 - 54*x^2 + 972*x - 5832
         '''
 
-hyperplane_arrangements: Incomplete
+hyperplane_arrangements: HyperplaneArrangementLibrary

@@ -1,17 +1,164 @@
-from _typeshed import Incomplete
+r"""
+Toric lattices
+
+This module was designed as a part of the framework for toric varieties
+(:mod:`~sage.schemes.toric.variety`,
+:mod:`~sage.schemes.toric.fano_variety`).
+
+All toric lattices are isomorphic to `\ZZ^n` for some `n`, but will prevent
+you from doing "wrong" operations with objects from different lattices.
+
+AUTHORS:
+
+- Andrey Novoseltsev (2010-05-27): initial version.
+- Andrey Novoseltsev (2010-07-30): sublattices and quotients.
+
+EXAMPLES:
+
+The simplest way to create a toric lattice is to specify its dimension only::
+
+    sage: N = ToricLattice(3)
+    sage: N
+    3-d lattice N
+
+While our lattice ``N`` is called exactly "N" it is a coincidence: all
+lattices are called "N" by default::
+
+    sage: another_name = ToricLattice(3)
+    sage: another_name
+    3-d lattice N
+
+If fact, the above lattice is exactly the same as before as an object in
+memory::
+
+    sage: N is another_name
+    True
+
+There are actually four names associated to a toric lattice and they all must
+be the same for two lattices to coincide::
+
+    sage: N, N.dual(), latex(N), latex(N.dual())
+    (3-d lattice N, 3-d lattice M, N, M)
+
+Notice that the lattice dual to ``N`` is called "M" which is standard in toric
+geometry. This happens only if you allow completely automatic handling of
+names::
+
+    sage: another_N = ToricLattice(3, "N")
+    sage: another_N.dual()
+    3-d lattice N*
+    sage: N is another_N
+    False
+
+What can you do with toric lattices? Well, their main purpose is to allow
+creation of elements of toric lattices::
+
+    sage: n = N([1,2,3])
+    sage: n
+    N(1, 2, 3)
+    sage: M = N.dual()
+    sage: m = M(1,2,3)
+    sage: m
+    M(1, 2, 3)
+
+Dual lattices can act on each other::
+
+    sage: n * m
+    14
+    sage: m * n
+    14
+
+You can also add elements of the same lattice or scale them::
+
+    sage: 2 * n
+    N(2, 4, 6)
+    sage: n * 2
+    N(2, 4, 6)
+    sage: n + n
+    N(2, 4, 6)
+
+However, you cannot "mix wrong lattices" in your expressions::
+
+    sage: n + m
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand parent(s) for +:
+    '3-d lattice N' and '3-d lattice M'
+    sage: n * n
+    Traceback (most recent call last):
+    ...
+    TypeError: elements of the same toric lattice cannot be multiplied!
+    sage: n == m
+    False
+
+Note that ``n`` and ``m`` are not equal to each other even though they are
+both "just (1,2,3)." Moreover, you cannot easily convert elements between
+toric lattices::
+
+    sage: M(n)
+    Traceback (most recent call last):
+    ...
+    TypeError: N(1, 2, 3) cannot be converted to 3-d lattice M!
+
+If you really need to consider elements of one lattice as elements of another,
+you can either use intermediate conversion to "just a vector"::
+
+    sage: ZZ3 = ZZ^3
+    sage: n_in_M = M(ZZ3(n))
+    sage: n_in_M
+    M(1, 2, 3)
+    sage: n == n_in_M
+    False
+    sage: n_in_M == m
+    True
+
+Or you can create a homomorphism from one lattice to any other::
+
+    sage: h = N.hom(identity_matrix(3), M)
+    sage: h(n)
+    M(1, 2, 3)
+
+.. WARNING::
+
+    While integer vectors (elements of `\ZZ^n`) are printed as ``(1,2,3)``,
+    in the code ``(1,2,3)`` is a :class:`tuple`, which has nothing to do
+    neither with vectors, nor with toric lattices, so the following is
+    probably not what you want while working with toric geometry objects::
+
+        sage: (1,2,3) + (1,2,3)
+        (1, 2, 3, 1, 2, 3)
+
+    Instead, use syntax like ::
+
+        sage: N(1,2,3) + N(1,2,3)
+        N(2, 4, 6)
+"""
+
+from typing import Literal, Self, TypeGuard, SupportsInt, overload
+from collections.abc import Iterable
+from typings_sagemath import Int
+from sage.rings.integer import Integer
+from sage.modules.free_module import FreeModule_generic
+from sage.modules.free_module_element import FreeModuleElement
+from sage.modules.quotient_module import FreeModule_ambient_field_quotient
+from sage.rings.ring import Ring
+from sage.rings.integer_ring import ZZ, IntegerRing_class
+from sage.plot.graphics import Graphics
+
 from sage.geometry.toric_lattice_element import ToricLatticeElement as ToricLatticeElement
 from sage.misc.latex import latex as latex
-from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.modules.fg_pid.fgp_element import FGP_Element as FGP_Element
 from sage.modules.fg_pid.fgp_module import FGP_Module_class as FGP_Module_class
 from sage.modules.free_module import FreeModule_ambient_pid as FreeModule_ambient_pid, FreeModule_generic_pid as FreeModule_generic_pid, FreeModule_submodule_pid as FreeModule_submodule_pid, FreeModule_submodule_with_basis_pid as FreeModule_submodule_with_basis_pid
 from sage.rings.integer_ring import ZZ as ZZ
-from sage.rings.rational_field import QQ as QQ
+from sage.rings.rational_field import QQ as QQ, RationalField
 from sage.structure.all import parent as parent
 from sage.structure.factory import UniqueFactory as UniqueFactory
 from sage.structure.richcmp import rich_to_bool as rich_to_bool, richcmp as richcmp, richcmp_method as richcmp_method, richcmp_not_equal as richcmp_not_equal
 
-def is_ToricLattice(x):
+
+
+def is_ToricLattice(x) -> TypeGuard[ToricLattice_generic]:
     """
     Check if ``x`` is a toric lattice.
 
@@ -37,7 +184,7 @@ def is_ToricLattice(x):
         sage: is_ToricLattice(N)
         True
     """
-def is_ToricLatticeQuotient(x):
+def is_ToricLatticeQuotient(x) -> TypeGuard[ToricLattice_quotient]:
     """
     Check if ``x`` is a toric lattice quotient.
 
@@ -153,7 +300,11 @@ class ToricLatticeFactory(UniqueFactory):
     The reason for this is that ``L2`` and ``L4`` have different names either
     for dual lattices or for LaTeX typesetting.
     '''
-    def create_key(self, rank, name=None, dual_name=None, latex_name=None, latex_dual_name=None):
+    def create_key(
+        self, rank: SupportsInt, 
+        name: str | None = None, dual_name: str | None = None, 
+        latex_name: str | None = None, latex_dual_name: str | None = None
+    ) -> tuple[int, str, str, str, str]:
         """
         Create a key that uniquely identifies this toric lattice.
 
@@ -172,7 +323,7 @@ class ToricLatticeFactory(UniqueFactory):
             True
             sage: TestSuite(N).run()
         """
-    def create_object(self, version, key):
+    def create_object(self, version, key) -> ToricLattice_ambient:
         """
         Create the toric lattice described by ``key``.
 
@@ -189,7 +340,7 @@ class ToricLatticeFactory(UniqueFactory):
             3-d lattice N
         """
 
-ToricLattice: Incomplete
+ToricLattice: ToricLatticeFactory
 
 class ToricLattice_generic(FreeModule_generic_pid):
     """
@@ -237,7 +388,11 @@ class ToricLattice_generic(FreeModule_generic_pid):
             sage: N2( Q.an_element() )
             N2(1, 0)
         """
-    def __contains__(self, point) -> bool:
+    
+    @overload
+    def __contains__(self, point: ToricLatticeElement) -> Literal[True]: ...
+    @overload
+    def __contains__(self, point: object) -> bool:
         '''
         Check if ``point`` is an element of ``self``.
 
@@ -285,7 +440,11 @@ class ToricLattice_generic(FreeModule_generic_pid):
             sage: print(ToricLattice(3).construction())
             None
         """
-    def direct_sum(self, other):
+    
+    @overload
+    def direct_sum(self, other: ToricLattice_generic) -> ToricLattice_generic: ...
+    @overload
+    def direct_sum(self, other: FreeModule_generic) -> FreeModule_generic:
         """
         Return the direct sum with ``other``.
 
@@ -326,7 +485,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             [0 0 0 1 0]
             [0 0 0 0 1]
         """
-    def intersection(self, other):
+    def intersection(self, other: ToricLattice_generic) -> ToricLattice_generic:
         """
         Return the intersection of ``self`` and ``other``.
 
@@ -356,7 +515,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             sage: N.intersection(Ns1) is Ns1
             True
         """
-    def quotient(self, sub, check: bool = True, positive_point=None, positive_dual_point=None, **kwds):
+    def quotient(self, sub: ToricLattice_generic, check: bool = True, positive_point=None, positive_dual_point=None, **kwds) -> ToricLattice_quotient:
         """
         Return the quotient of ``self`` by the given sublattice ``sub``.
 
@@ -452,7 +611,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             0-d lattice, quotient of 3-d lattice N by Sublattice
             <N(1, 0, 0), N(0, 1, 0), N(0, 0, 1)>
         """
-    def saturation(self):
+    def saturation(self) -> ToricLattice_generic:
         """
         Return the saturation of ``self``.
 
@@ -470,7 +629,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             sage: Ns_sat is Ns_sat.saturation()
             True
         """
-    def span(self, gens, base_ring=..., *args, **kwds):
+    def span(self, gens: Iterable[FreeModuleElement], base_ring: Ring = ZZ, *args, **kwds) -> ToricLattice_generic:
         """
         Return the span of the given generators.
 
@@ -505,7 +664,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             ...
             ArithmeticError: argument gens (= [N(0, 1, 0)]) does not generate a submodule of self
         """
-    def span_of_basis(self, basis, base_ring=..., *args, **kwds):
+    def span_of_basis(self, basis: Iterable[FreeModuleElement], base_ring: Ring = ZZ, *args, **kwds) -> ToricLattice_generic:
         """
         Return the submodule with the given ``basis``.
 
@@ -549,6 +708,7 @@ class ToricLattice_generic(FreeModule_generic_pid):
             ValueError: The given basis vectors must be linearly independent.
         """
 
+# TODO: @richcmp_method
 class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
     '''
     Create a toric lattice.
@@ -569,8 +729,8 @@ class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
         3-d lattice N
         sage: TestSuite(N).run()
     '''
-    Element = ToricLatticeElement
-    def __init__(self, rank, name, dual_name, latex_name, latex_dual_name) -> None:
+    Element: type[ToricLatticeElement[ToricLattice_ambient]] = ToricLatticeElement
+    def __init__(self, rank: Int, name: str, dual_name: str, latex_name: str,latex_dual_name: str):
         '''
         See :class:`ToricLattice <ToricLatticeFactory>` for documentation.
 
@@ -579,7 +739,7 @@ class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
             sage: ToricLattice(3, "N", "M", "N", "M")
             3-d lattice N
         '''
-    def __richcmp__(self, right, op):
+    def __richcmp__(self, right: object, op) -> bool:
         """
         Compare ``self`` and ``right``.
 
@@ -605,7 +765,7 @@ class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
             sage: N3 == ToricLattice(3)
             True
         """
-    def ambient_module(self):
+    def ambient_module(self) -> Self:
         """
         Return the ambient module of ``self``.
 
@@ -624,7 +784,7 @@ class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
             sage: N.ambient_module() is N
             True
         """
-    def dual(self):
+    def dual(self) -> ToricLattice_generic:
         """
         Return the lattice dual to ``self``.
 
@@ -650,7 +810,7 @@ class ToricLattice_ambient(ToricLattice_generic, FreeModule_ambient_pid):
             sage: m * n
             32
         """
-    def plot(self, **options):
+    def plot(self, **options) -> Graphics:
         """
         Plot ``self``.
 
@@ -707,7 +867,7 @@ class ToricLattice_sublattice_with_basis(ToricLattice_generic, FreeModule_submod
         sage: sublattice.echelonized_basis()
         [N(1, 0, 1), N(0, 1, -1)]
     '''
-    def dual(self):
+    def dual(self) -> ToricLattice_generic:
         """
         Return the lattice dual to ``self``.
 
@@ -720,7 +880,7 @@ class ToricLattice_sublattice_with_basis(ToricLattice_generic, FreeModule_submod
             sage: Ns.dual()
             2-d lattice, quotient of 3-d lattice M by Sublattice <M(1, -1, -1)>
         """
-    def plot(self, **options):
+    def plot(self, **options) -> Graphics:
         """
         Plot ``self``.
 
@@ -904,7 +1064,15 @@ class ToricLattice_quotient(FGP_Module_class):
         sage: loads(dumps(Q)).gens() == Q.gens()
         True
     """
-    def __init__(self, V, W, check: bool = True, positive_point=None, positive_dual_point=None, **kwds) -> None:
+    def __init__(
+        self, 
+        V: ToricLattice_ambient, 
+        W: ToricLattice_generic, 
+        check: bool = True, 
+        positive_point: ToricLatticeElement | None = None, 
+        positive_dual_point: ToricLatticeElement | None = None, 
+        **kwds
+    ):
         """
         The constructor.
 
@@ -931,7 +1099,7 @@ class ToricLattice_quotient(FGP_Module_class):
             ...
             ArithmeticError: W must be a sublattice of V
         """
-    def gens(self) -> tuple:
+    def gens(self) -> tuple[ToricLattice_quotient_element]:
         """
         Return the generators of the quotient.
 
@@ -947,8 +1115,12 @@ class ToricLattice_quotient(FGP_Module_class):
             sage: Q.gens()
             (N[0, -1, 0],)
         """
-    Element = ToricLattice_quotient_element
-    def base_extend(self, R):
+    Element: type[ToricLattice_quotient_element] = ToricLattice_quotient_element
+    
+    @overload
+    def base_extend(self, R: IntegerRing_class) -> Self: ...
+    @overload
+    def base_extend(self, R: RationalField) -> FreeModule_ambient_field_quotient: # pyright: ignore[reportIncompatibleMethodOverride]
         """
         Return the base change of ``self`` to the ring ``R``.
 
@@ -974,7 +1146,7 @@ class ToricLattice_quotient(FGP_Module_class):
             [1 0 0]
             [0 1 0]
         """
-    def is_torsion_free(self):
+    def is_torsion_free(self) -> bool:
         """
         Check if ``self`` is torsion-free.
 
@@ -992,7 +1164,7 @@ class ToricLattice_quotient(FGP_Module_class):
             sage: Q.is_torsion_free()
             True
         """
-    def dual(self):
+    def dual(self) -> ToricLattice_quotient:
         """
         Return the lattice dual to ``self``.
 
@@ -1006,7 +1178,7 @@ class ToricLattice_quotient(FGP_Module_class):
             sage: Q.dual()
             Sublattice <M(1, 0, 1), M(0, 1, -1)>
         """
-    def rank(self):
+    def rank(self) -> Integer:
         """
         Return the rank of ``self``.
 
@@ -1029,7 +1201,7 @@ class ToricLattice_quotient(FGP_Module_class):
             2
         """
     dimension = rank
-    def coordinate_vector(self, x, reduce: bool = False):
+    def coordinate_vector(self, x, reduce: bool = False) -> FreeModuleElement:
         """
         Return coordinates of ``x`` with respect to the optimized
         representation of ``self``.
