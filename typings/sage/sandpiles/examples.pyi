@@ -1,4 +1,25 @@
-from _typeshed import Incomplete
+"""
+Examples of Sandpile
+
+AUTHORS:
+
+- David Perkinson (2015-05) [Using `examples.py` from homology as
+  template.]
+
+This file constructs some examples of Sandpiles.
+
+The examples are accessible by typing ``sandpiles.NAME``, where
+``NAME`` is the name of the example.  You can get a list by typing
+``sandpiles.`` and hitting the :kbd:`Tab` key::
+
+   sandpiles.Complete
+   sandpiles.Cycle
+   sandpiles.Diamond
+   sandpiles.Grid
+   sandpiles.House
+
+See the documentation for each particular type of example for full details.
+"""
 from sage.graphs.graph_generators import graphs as graphs
 from sage.sandpiles.sandpile import Sandpile as Sandpile
 
@@ -161,4 +182,4 @@ class SandpileExamples:
             [1, 1, 1, 11, 11]
         """
 
-sandpiles: Incomplete
+sandpiles: SandpileExamples

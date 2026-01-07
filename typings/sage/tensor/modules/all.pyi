@@ -1,1 +1,1 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.tensor.modules.finite_rank_free_module import FiniteRankFreeModule as FiniteRankFreeModule

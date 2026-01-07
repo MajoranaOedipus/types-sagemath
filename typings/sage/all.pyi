@@ -95,7 +95,7 @@ from sage.parallel.all import *
 from sage.ext.fast_callable import fast_callable as fast_callable
 from sage.ext.fast_eval import fast_float as fast_float
 
-from sage.sandpiles.all import *   # TODO: here and below to clear
+from sage.sandpiles.all import *
 
 from sage.tensor.all import *
 

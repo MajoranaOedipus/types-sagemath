@@ -1,1 +1,5 @@
-from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.manifolds.manifold import Manifold as Manifold
+from sage.manifolds.differentiable.examples.euclidean import (
+    EuclideanSpace as EuclideanSpace
+)
+from sage.manifolds import catalog as manifolds

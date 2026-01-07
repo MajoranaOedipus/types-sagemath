@@ -27,6 +27,7 @@ AUTHORS:
 - \R. Andrew Ohana (2012): initial version
 """
 from _typeshed import Incomplete
+from collections.abc import Iterable
 from sage import version as version
 
 SAGE_ENV: dict
@@ -117,72 +118,72 @@ def var(key: str, *fallbacks: str | None, force: bool = False) -> str | None:
         'foo'
     """
 
-HOSTNAME: Incomplete
-LOCAL_IDENTIFIER: Incomplete
-SAGE_VERSION: Incomplete
-SAGE_DATE: Incomplete
-SAGE_VERSION_BANNER: Incomplete
-SAGE_VENV: Incomplete
-SAGE_LIB: Incomplete
-SAGE_EXTCODE: Incomplete
-SAGE_VENV_SPKG_INST: Incomplete
-SAGE_LOCAL: Incomplete
-SAGE_SHARE: Incomplete
-SAGE_DOC: Incomplete
-SAGE_LOCAL_SPKG_INST: Incomplete
-SAGE_SPKG_INST: Incomplete
-SAGE_ROOT: Incomplete
-SAGE_SRC: Incomplete
-SAGE_DOC_SRC: Incomplete
-SAGE_PKGS: Incomplete
-SAGE_ROOT_GIT: Incomplete
-SAGE_DOC_SERVER_URL: Incomplete
-SAGE_DOC_LOCAL_PORT: Incomplete
-home_dir: Incomplete
-DOT_SAGE: Incomplete
-SAGE_STARTUP_FILE: Incomplete
-SAGE_ARCHFLAGS: Incomplete
-SAGE_PKG_CONFIG_PATH: Incomplete
-SAGE_DATA_PATH: Incomplete
-CREMONA_LARGE_DATA_DIR: Incomplete
-CREMONA_MINI_DATA_DIR: Incomplete
-ELLCURVE_DATA_DIR: Incomplete
-GRAPHS_DATA_DIR: Incomplete
-POLYTOPE_DATA_DIR: Incomplete
-JMOL_DIR: Incomplete
-MATHJAX_DIR: Incomplete
-MTXLIB: Incomplete
-THREEJS_DIR: Incomplete
-PPLPY_DOCS: Incomplete
-MAXIMA: Incomplete
-MAXIMA_FAS: Incomplete
-MAXIMA_SHARE: Incomplete
-KENZO_FAS: Incomplete
-SAGE_NAUTY_BINS_PREFIX: Incomplete
-SAGE_ECMBIN: Incomplete
-RUBIKS_BINS_PREFIX: Incomplete
-FOURTITWO_HILBERT: Incomplete
-FOURTITWO_MARKOV: Incomplete
-FOURTITWO_GRAVER: Incomplete
-FOURTITWO_ZSOLVE: Incomplete
-FOURTITWO_QSOLVE: Incomplete
-FOURTITWO_RAYS: Incomplete
-FOURTITWO_PPI: Incomplete
-FOURTITWO_CIRCUITS: Incomplete
-FOURTITWO_GROEBNER: Incomplete
-CBLAS_PC_MODULES: Incomplete
-ECL_CONFIG: Incomplete
-NTL_INCDIR: Incomplete
-NTL_LIBDIR: Incomplete
-LIE_INFO_DIR: Incomplete
-SINGULAR_BIN: Incomplete
-OPENMP_CFLAGS: Incomplete
-OPENMP_CXXFLAGS: Incomplete
-SAGE_BANNER: Incomplete
-SAGE_IMPORTALL: Incomplete
-SAGE_GAP_MEMORY: Incomplete
-SAGE_GAP_COMMAND: Incomplete
-GAP_ROOT_PATHS: Incomplete
+HOSTNAME: str
+LOCAL_IDENTIFIER: str
+SAGE_VERSION: str
+SAGE_DATE: str
+SAGE_VERSION_BANNER: str
+SAGE_VENV: str
+SAGE_LIB: str
+SAGE_EXTCODE: str
+SAGE_VENV_SPKG_INST: str
+SAGE_LOCAL: str
+SAGE_SHARE: str
+SAGE_DOC: str
+SAGE_LOCAL_SPKG_INST: str
+SAGE_SPKG_INST: str
+SAGE_ROOT: str
+SAGE_SRC: str
+SAGE_DOC_SRC: str
+SAGE_PKGS: str
+SAGE_ROOT_GIT: str
+SAGE_DOC_SERVER_URL: str
+SAGE_DOC_LOCAL_PORT: str
+home_dir: str
+DOT_SAGE: str
+SAGE_STARTUP_FILE: str
+SAGE_ARCHFLAGS: str
+SAGE_PKG_CONFIG_PATH: str
+SAGE_DATA_PATH: str
+CREMONA_LARGE_DATA_DIR: str
+CREMONA_MINI_DATA_DIR: str
+ELLCURVE_DATA_DIR: str
+GRAPHS_DATA_DIR: str
+POLYTOPE_DATA_DIR: str
+JMOL_DIR: str
+MATHJAX_DIR: str
+MTXLIB: str
+THREEJS_DIR: str
+PPLPY_DOCS: str
+MAXIMA: str
+MAXIMA_FAS: str
+MAXIMA_SHARE: str
+KENZO_FAS: str
+SAGE_NAUTY_BINS_PREFIX: str
+SAGE_ECMBIN: str
+RUBIKS_BINS_PREFIX: str
+FOURTITWO_HILBERT: str
+FOURTITWO_MARKOV: str
+FOURTITWO_GRAVER: str
+FOURTITWO_ZSOLVE: str
+FOURTITWO_QSOLVE: str
+FOURTITWO_RAYS: str
+FOURTITWO_PPI: str
+FOURTITWO_CIRCUITS: str
+FOURTITWO_GROEBNER: str
+CBLAS_PC_MODULES: str
+ECL_CONFIG: str
+NTL_INCDIR: str
+NTL_LIBDIR: str
+LIE_INFO_DIR: str
+SINGULAR_BIN: str
+OPENMP_CFLAGS: str
+OPENMP_CXXFLAGS: str
+SAGE_BANNER: str
+SAGE_IMPORTALL: str
+SAGE_GAP_MEMORY: str
+SAGE_GAP_COMMAND: str
+GAP_ROOT_PATHS: str
 
 def sage_include_directories(use_sources: bool = False):
     '''
@@ -229,10 +230,10 @@ def get_cblas_pc_module_name() -> str:
     Return the name of the BLAS libraries to be used.
     """
 
-default_required_modules: Incomplete
-default_optional_modules: Incomplete
+default_required_modules: tuple[str, ...]
+default_optional_modules: tuple[str, ...]
 
-def cython_aliases(required_modules=None, optional_modules=None):
+def cython_aliases(required_modules: Iterable[str] | None = None, optional_modules: Iterable[str] | None = None) -> dict[str, list[str]]:
     """
     Return the aliases for compiling Cython code. These aliases are
     macros which can occur in ``# distutils`` headers.

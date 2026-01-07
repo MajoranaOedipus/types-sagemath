@@ -1,4 +1,225 @@
-from _typeshed import Incomplete
+r"""
+Access to the KnotInfo database
+
+This module contains the class :class:`KnotInfoBase` which is derived from
+:class:`Enum` and provides knots and links listed in the databases at the
+web-pages `KnotInfo <https://knotinfo.org/>`__
+and `LinkInfo <https://link-info-repo.onrender.com/>`__ as its items.
+
+This interface contains a set of about twenty knots and links statically as
+demonstration cases. The complete database can be installed as an optional Sage
+package using
+
+- ``sage -i database_knotinfo`` (does not install if the current version is present)
+- ``sage -f database_knotinfo`` (installs even if the current version is present)
+
+This will install a `Python wrapper <https://github.com/soehms/database_knotinfo#readme>`__
+for the original databases in Sage. This wrapper performs an automatic progress
+of version numbers. For more details and further install instructions please see
+the corresponding web-page.
+
+To perform all the doctests concerning the usage of the database on the installation
+add the option ``-c``. In this case (for instance ``sage -f -c database_knotinfo``)
+the installation breaks on failing tests.
+
+The installation of the complete database  will be necessary in order to have
+access to all the properties recorded in the databases, as well.
+
+If the entire database is installed as explained above, the import instructions
+for :class:`KnotInfo` and :class:`KnotInfoSeries`, which can be seen in the opening
+lines of the examples, are unnecessary.
+
+Be aware that there are a couple of conventions used differently on KnotInfo as
+in Sage.
+
+For different conventions regarding normalization of the polynomial invariants see
+the according documentation of :meth:`KnotInfoBase.homfly_polynomial`,
+:meth:`KnotInfoBase.jones_polynomial` and :meth:`KnotInfoBase.alexander_polynomial`.
+
+Also, note that the braid notation is used according to Sage, even thought in
+the source where it is taken from, the braid generators are assumed to have a
+negative crossing which would be opposite to the convention in Sage (see definition
+3 of
+:arxiv:`Gittings, T., "Minimum Braids: A Complete Invariant of Knots and Links" <math/0401051>`).
+
+Furthermore, note that not all columns available in the database are visible on the web
+pages. It is planned to remove non-visible columns from the database in the future (see
+the `Python Wrapper <https://github.com/soehms/database_knotinfo#readme>`__ for
+updated information).
+
+EXAMPLES::
+
+    sage: L = KnotInfo.L4a1_0
+    sage: L.pd_notation()
+    [[6, 1, 7, 2], [8, 3, 5, 4], [2, 5, 3, 6], [4, 7, 1, 8]]
+    sage: L.pd_notation(original=True)
+    '{{6, 1, 7, 2}, {8, 3, 5, 4}, {2, 5, 3, 6}, {4, 7, 1, 8}}'
+    sage: L.is_knot()
+    False
+    sage: L.num_components()
+    2
+
+Items for knots need a leading ``K`` for technical reason::
+
+    sage: K = KnotInfo.K4_1
+    sage: K.is_knot()
+    True
+
+Injecting the variable name into the namespace::
+
+    sage: KnotInfo.K5_1.inject()
+    Defining K5_1
+    sage: K5_1.dt_notation()
+    [6, 8, 10, 2, 4]
+
+Defining a link from the original name string::
+
+    sage: KnotInfo('L6a1{1}').inject()
+    Defining L6a1_1
+    sage: L6a1_1.is_alternating()
+    True
+
+Obtaining an instance of :class:`~sage.groups.braid.Braid`::
+
+    sage: L.braid()
+    s1^-2*s0^-1*s1*s0^-1
+    sage: type(_)
+    <class 'sage.groups.braid.BraidGroup_class_with_category.element_class'>
+
+Obtaining an instance of :class:`Link`::
+
+    sage: l = L.link(); l
+    Link with 2 components represented by 4 crossings
+    sage: type(l)
+    <class 'sage.knots.link.Link'>
+
+If you have `SnapPy <https://snappy.math.uic.edu/index.html>`__ installed inside
+Sage, you can obtain an instance of :class:`~spherogram.links.links_base.Link`,
+too::
+
+    sage: # optional - snappy
+    sage: L6 = KnotInfo.L6a1_0
+    sage: l6s = L6.link(snappy=True); l6s
+    ...
+    <Link: 2 comp; 6 cross>
+    sage: type(l6s)
+    <class 'spherogram.links.invariants.Link'>
+    sage: l6  = L6.link()
+    sage: l6 == l6s.sage_link()
+    True
+    sage: L6.link(L6.items.name, snappy=True)
+    <Link L6a1: 2 comp; 6 cross>
+    sage: l6sn = _
+    sage: l6s == l6sn
+    False
+    sage: l6m = l6.mirror_image()
+    sage: l6sn.sage_link().is_isotopic(l6m)
+    True
+
+But observe that the name conversion to SnapPy does not distinguish orientation
+types::
+
+    sage: L6b = KnotInfo.L6a1_1
+    sage: L6b.link(L6b.items.name, snappy=True)  # optional - snappy
+    <Link L6a1: 2 comp; 6 cross>
+    sage: _.PD_code() == l6sn.PD_code()          # optional - snappy
+    True
+
+Obtaining the HOMFLY-PT polynomial::
+
+    sage: L.homfly_polynomial()
+    -v^-1*z - v^-3*z - v^-3*z^-1 + v^-5*z^-1
+    sage: _ == l.homfly_polynomial(normalization='vz')
+    True
+
+
+Obtaining the original string from the database for an arbitrary property::
+
+    sage: K[K.items.classical_conway_name]  # optional - database_knotinfo
+    '4_1'
+
+Further methods::
+
+    sage: K.crossing_number()
+    4
+    sage: K.gauss_notation()
+    [-1, 2, -3, 1, -4, 3, -2, 4]
+    sage: K.dt_notation()
+    [4, 6, 8, 2]
+    sage: K.determinant()
+    5
+    sage: K.symmetry_type()
+    'fully amphicheiral'
+    sage: _ == K[K.items.symmetry_type]
+    True
+    sage: K.is_reversible()
+    True
+    sage: K.is_amphicheiral()
+    True
+    sage: K.jones_polynomial()                                                          # needs sage.symbolic
+    t^2 - t - 1/t + 1/t^2 + 1
+    sage: K.kauffman_polynomial()
+    a^2*z^2 + a*z^3 - a^2 - a*z + 2*z^2 + a^-1*z^3 - 1 - a^-1*z + a^-2*z^2 - a^-2
+    sage: K.alexander_polynomial()
+    t^2 - 3*t + 1
+
+Using the ``column_type`` of a property::
+
+    sage: def select_column(i):
+    ....:     return i.column_type() != i.types.OnlyLinks and K[i] == 'Y'
+    sage: [i.column_name() for i in K.items if select_column(i)]  # optional - database_knotinfo
+    ['Alternating', 'Fibered', 'Quasialternating', 'Adequate']
+
+You can launch web-pages attached to the links::
+
+    sage: # not tested
+    sage: K.diagram()
+    True
+    sage: L.diagram(single=True)
+    True
+    sage: L.knot_atlas_webpage()
+    True
+    sage: K.knotilus_webpage()
+    True
+
+and the description web-pages of the properties::
+
+    sage: K.items.positive.description_webpage()  # not tested
+    True
+
+To see all the properties available in this interface you can use "tab-completion".
+For example type ``K.items.`` and than hit the :kbd:`Tab` key. You can select the item
+you want from the list. If you know some first letters type them first to obtain a
+reduced selection list.
+
+In a similar way you may select the knots and links. Here you have to type ``KnotInfo.``
+or ``KnotInfo.L7`` before stroking the :kbd:`Tab` key. In the latter case  the selection list
+will be reduced to proper links with 7 crossings.
+
+Finally there is a method :meth:`Link.get_knotinfo` of class :class:`Link` to find an instance
+in the KnotInfo database::
+
+    sage: L = Link([[3,1,2,4], [8,9,1,7], [5,6,7,3], [4,18,6,5],
+    ....:           [17,19,8,18], [9,10,11,14], [10,12,13,11],
+    ....:           [12,19,15,13], [20,16,14,15], [16,20,17,2]])
+    sage: L.get_knotinfo()
+    KnotInfo['K0_1']
+
+
+REFERENCES:
+
+- `KnotInfo <https://knotinfo.org/>`__
+- `LinkInfo <https://link-info-repo.onrender.com/>`__
+
+
+AUTHORS:
+
+- Sebastian Oehms August 2020: initial version
+- Sebastian Oehms June   2022: add :meth:`conway_polynomial` and :meth:`khovanov_polynomial` (:issue:`33969`)
+
+Thanks to Chuck Livingston and Allison Moore for their support. For further acknowledgments see the corresponding hompages.
+"""
+
 from enum import Enum
 from sage.databases.knotinfo_db import KnotInfoColumns as KnotInfoColumns, db as db
 from sage.knots.knot import Knots as Knots
@@ -1782,4 +2003,4 @@ class KnotInfoSeries(UniqueRepresentation, SageObject):
             <KnotInfo.K6_2: '6_2'>
         """
 
-KnotInfo: Incomplete
+KnotInfo: KnotInfoBase
