@@ -1,5 +1,21 @@
-import sage.ext.fast_callable
+from collections.abc import Callable, Sequence
+from typing import Any, TypedDict
+from sage.ext.fast_callable import Wrapper
+
 from sage.ext.fast_callable import CompilerInstrSpec as CompilerInstrSpec, InterpreterMetadata as InterpreterMetadata
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 
-metadata: sage.ext.fast_callable.InterpreterMetadata
+metadata: InterpreterMetadata
+
+class _Args[_DomainElement](TypedDict):
+    args: int
+    constants: Sequence[object]
+    py_constants: Sequence[object]
+    stack: int
+    code: Sequence[int]
+    domain: Callable[[Any], _DomainElement]
+
+class Wrapper_el[_DomainElement](Wrapper):
+    def __init__(self, args: _Args): ...
+    def __dealloc__(self) -> None: ...
+    def __call__(self, *args: object) -> _DomainElement: ...
