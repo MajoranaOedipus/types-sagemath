@@ -32,10 +32,37 @@ other types will also coerce to the integers, when it makes sense.
     sage: Z('94803849083985934859834583945394')
     94803849083985934859834583945394
 """
-import _cython_3_2_1
+
+from typing import Annotated, Any, Literal, Self, TypeGuard, overload
+from collections.abc import Callable, Iterable, Iterator
+from typings_sagemath import Int
+from sage.rings.ring import PrincipalIdealDomain
+from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
+from sage.rings.polynomial.multi_polynomial import MPolynomial
+from sage.rings.polynomial.polynomial_ring import PolynomialRing_integral_domain
+    # TODO: with: Join category of 
+    # [Category of unique factorization domains,
+    #  Category of algebras with basis over (Dedekind domains and euclidean domains and noetherian rings and infinite enumerated sets and metric spaces),
+    #  Category of commutative algebras over (Dedekind domains and euclidean domains and noetherian rings and infinite enumerated sets and metric spaces),
+    #  Category of infinite sets]
+from sage.rings.polynomial.polynomial_element import Polynomial
+from sage.rings.number_field.order import Order
+from sage.rings.integer import Integer
+from sage.rings.finite_rings.integer_mod_ring import IntegerModRing_generic
+from sage.rings.rational_field import RationalField # TODO: with 
+    # [Category of number fields,
+    # Category of quotient fields,
+    # Category of metric spaces]
+from sage.rings.ideal import Ideal_generic
+from sage.rings.finite_rings.residue_field import ResidueField_generic
+from sage.rings.infinity import PlusInfinity
+from sage.rings.padics.padic_base_leaves import pAdicRingCappedRelative # with
+    # [Category of complete discrete valuation rings,
+    # Category of infinite sets,
+    # Category of complete metric spaces]
+from sage.rings.padics.padic_valuation import pAdicValuation_int # with Category of homsets of sets
+
 import sage as sage
-import sage.rings.integer
-import sage.rings.ring
 from sage.categories.dedekind_domains import DedekindDomains as DedekindDomains
 from sage.categories.euclidean_domains import EuclideanDomains as EuclideanDomains
 from sage.categories.infinite_enumerated_sets import InfiniteEnumeratedSets as InfiniteEnumeratedSets
@@ -44,13 +71,12 @@ from sage.misc.misc_c import prod as prod
 from sage.rings.number_field.number_field_element_base import NumberFieldElement_base as NumberFieldElement_base
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, TypeGuard, overload
+import sage.arith.all as arith
+
+type _NotUsed = object
 
 def IntegerRing() -> IntegerRing_class:
-    """IntegerRing()
-
-File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1599)
-
+    """
 Return the integer ring.
 
 EXAMPLES::
@@ -62,10 +88,7 @@ EXAMPLES::
 
 """
 
-from typings_sagemath import Int
-
-import sage.arith.all as arith
-def crt_basis(X: list[Int], xgcd=None):
+def crt_basis(X: list[Integer], xgcd: _NotUsed = None) -> list[Integer]:
     r"""
     Compute and return a Chinese Remainder Theorem basis for the list ``X``
     of coprime integers.
@@ -145,11 +168,8 @@ def is_IntegerRing(x) -> TypeGuard[IntegerRing_class]:
         False
     """
 
-class IntegerRing_class(sage.rings.ring.CommutativeRing):
-    '''IntegerRing_class()
-
-    File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 116)
-
+class IntegerRing_class(PrincipalIdealDomain):
+    '''
     The ring of integers.
 
     In order to introduce the ring `\\ZZ` of integers, we illustrate
@@ -338,10 +358,9 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
         False
         sage: ZZ.cardinality()
         +Infinity'''
-    _element_constructor_: ClassVar[type[sage.rings.integer.Integer]] = ...
-    def __init__(self) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 308)
-
+    
+    def __init__(self):
+        """
                 Initialize ``self``.
 
                 TESTS::
@@ -355,12 +374,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
                     sage: A in InfiniteEnumeratedSets()
                     True
         """
-    @overload
-    def absolute_degree(self) -> Any:
-        """IntegerRing_class.absolute_degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1103)
-
+    def absolute_degree(self) -> Literal[1]:
+        """
         Return the absolute degree of the integers, which is 1.
 
         Here, absolute degree refers to the rank of the ring as a module
@@ -370,50 +385,16 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.absolute_degree()
             1"""
-    @overload
-    def absolute_degree(self) -> Any:
-        """IntegerRing_class.absolute_degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1103)
-
-        Return the absolute degree of the integers, which is 1.
-
-        Here, absolute degree refers to the rank of the ring as a module
-        over the integers.
-
-        EXAMPLES::
-
-            sage: ZZ.absolute_degree()
-            1"""
-    @overload
-    def characteristic(self) -> Any:
-        """IntegerRing_class.characteristic(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1117)
-
+    def characteristic(self) -> Annotated[Integer, 0]:
+        """
         Return the characteristic of the integers, which is 0.
 
         EXAMPLES::
 
             sage: ZZ.characteristic()
             0"""
-    @overload
-    def characteristic(self) -> Any:
-        """IntegerRing_class.characteristic(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1117)
-
-        Return the characteristic of the integers, which is 0.
-
-        EXAMPLES::
-
-            sage: ZZ.characteristic()
-            0"""
-    def completion(self, p, prec, extras=...) -> Any:
-        """IntegerRing_class.completion(self, p, prec, extras={})
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1144)
-
+    def completion(self, p: Int | PlusInfinity, prec: Int, extras: dict[str, Any]={}) -> pAdicRingCappedRelative:
+        """
         Return the metric completion of the integers at the prime `p`.
 
         INPUT:
@@ -433,12 +414,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Integer Ring
             sage: ZZ.completion(5, 15, {'print_mode': 'bars'})                          # needs sage.rings.padics
             5-adic Ring with capped relative precision 15"""
-    @overload
-    def degree(self) -> Any:
-        """IntegerRing_class.degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1089)
-
+    def degree(self) -> Literal[1]:
+        """
         Return the degree of the integers, which is 1.
 
         Here, degree refers to the rank of the ring as a module over the
@@ -448,26 +425,13 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.degree()
             1"""
-    @overload
-    def degree(self) -> Any:
-        """IntegerRing_class.degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1089)
-
-        Return the degree of the integers, which is 1.
-
-        Here, degree refers to the rank of the ring as a module over the
-        integers.
-
-        EXAMPLES::
-
-            sage: ZZ.degree()
-            1"""
-    def extension(self, poly, names, **kwds) -> Any:
-        """IntegerRing_class.extension(self, poly, names, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 903)
-
+    def extension( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        poly: Polynomial | MPolynomial | Iterable[Polynomial | MPolynomial],
+        names: str | Iterable[str], 
+        embedding = None, 
+        **kwds) -> Order:
+        """
         Return the order generated by the specified list of polynomials.
 
         INPUT:
@@ -498,12 +462,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             sage: ZZ.extension([x^2 + 1, x^2 + 2], 'a,b')                               # needs sage.rings.number_field
             Relative Order generated by [-b*a - 1, -3*a + 2*b] in Number Field in a
              with defining polynomial x^2 + 1 over its base field"""
-    @overload
-    def fraction_field(self) -> Any:
-        """IntegerRing_class.fraction_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 889)
-
+    def fraction_field(self) -> RationalField:
+        """
         Return the field of rational numbers - the fraction field of the
         integers.
 
@@ -513,42 +473,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Rational Field
             sage: ZZ.fraction_field() == QQ
             True"""
-    @overload
-    def fraction_field(self) -> Any:
-        """IntegerRing_class.fraction_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 889)
-
-        Return the field of rational numbers - the fraction field of the
-        integers.
-
-        EXAMPLES::
-
-            sage: ZZ.fraction_field()
-            Rational Field
-            sage: ZZ.fraction_field() == QQ
-            True"""
-    @overload
-    def fraction_field(self) -> Any:
-        """IntegerRing_class.fraction_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 889)
-
-        Return the field of rational numbers - the fraction field of the
-        integers.
-
-        EXAMPLES::
-
-            sage: ZZ.fraction_field()
-            Rational Field
-            sage: ZZ.fraction_field() == QQ
-            True"""
-    @overload
-    def from_bytes(self, input_bytes, byteorder=..., is_signed=...) -> Any:
-        """IntegerRing_class.from_bytes(self, input_bytes, byteorder='big', is_signed=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1563)
-
+    def from_bytes(self, input_bytes: bytes, byteorder: Literal["little", "big"]="big", is_signed: bool =False) -> Integer:
+        """
         Return the integer represented by the given array of bytes.
 
         Internally relies on the python ``int.from_bytes()`` method.
@@ -575,44 +501,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             16711680
             sage: type(_)
             <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def from_bytes(self) -> Any:
-        """IntegerRing_class.from_bytes(self, input_bytes, byteorder='big', is_signed=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1563)
-
-        Return the integer represented by the given array of bytes.
-
-        Internally relies on the python ``int.from_bytes()`` method.
-
-        INPUT:
-
-        - ``input_bytes`` -- a bytes-like object or iterable producing bytes
-        - ``byteorder`` -- string (default: ``'big'``); determines the byte order of
-          ``input_bytes`` (can only be ``'big'`` or ``'little'``)
-        - ``is_signed`` -- boolean (default: ``False``); determines whether to use two's
-          compliment to represent the integer
-
-        EXAMPLES::
-
-            sage: ZZ.from_bytes(b'\\x00\\x10', byteorder='big')
-            16
-            sage: ZZ.from_bytes(b'\\x00\\x10', byteorder='little')
-            4096
-            sage: ZZ.from_bytes(b'\\xfc\\x00', byteorder='big', is_signed=True)
-            -1024
-            sage: ZZ.from_bytes(b'\\xfc\\x00', byteorder='big', is_signed=False)
-            64512
-            sage: ZZ.from_bytes([255, 0, 0], byteorder='big')
-            16711680
-            sage: type(_)
-            <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gen(self, n=...) -> Any:
-        """IntegerRing_class.gen(self, n=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1053)
-
+    def gen(self, n: Literal[0] = 0) -> Integer: # pyright: ignore[reportIncompatibleMethodOverride]
+        """
         Return the additive generator of the integers, which is 1.
 
         INPUT:
@@ -628,54 +518,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             1
             sage: type(ZZ.gen())
             <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gen(self) -> Any:
-        """IntegerRing_class.gen(self, n=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1053)
-
-        Return the additive generator of the integers, which is 1.
-
-        INPUT:
-
-        - ``n`` -- (default: 0) in a ring with more than one generator, the
-          optional parameter `n` indicates which generator to return; since
-          there is only one generator in this case, the only valid value for
-          `n` is 0
-
-        EXAMPLES::
-
-            sage: ZZ.gen()
-            1
-            sage: type(ZZ.gen())
-            <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gen(self) -> Any:
-        """IntegerRing_class.gen(self, n=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1053)
-
-        Return the additive generator of the integers, which is 1.
-
-        INPUT:
-
-        - ``n`` -- (default: 0) in a ring with more than one generator, the
-          optional parameter `n` indicates which generator to return; since
-          there is only one generator in this case, the only valid value for
-          `n` is 0
-
-        EXAMPLES::
-
-            sage: ZZ.gen()
-            1
-            sage: type(ZZ.gen())
-            <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gens(self) -> tuple:
-        """IntegerRing_class.gens(self) -> tuple
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1038)
-
+    def gens(self) -> tuple[Integer]:
+        """
         Return the tuple ``(1,)`` containing a single element, the additive
         generator of the integers, which is 1.
 
@@ -686,68 +530,16 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             1
             sage: type(ZZ.gens()[0])
             <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gens(self) -> Any:
-        """IntegerRing_class.gens(self) -> tuple
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1038)
-
-        Return the tuple ``(1,)`` containing a single element, the additive
-        generator of the integers, which is 1.
-
-        EXAMPLES::
-
-            sage: ZZ.gens(); ZZ.gens()[0]
-            (1,)
-            1
-            sage: type(ZZ.gens()[0])
-            <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def gens(self) -> Any:
-        """IntegerRing_class.gens(self) -> tuple
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1038)
-
-        Return the tuple ``(1,)`` containing a single element, the additive
-        generator of the integers, which is 1.
-
-        EXAMPLES::
-
-            sage: ZZ.gens(); ZZ.gens()[0]
-            (1,)
-            1
-            sage: type(ZZ.gens()[0])
-            <class 'sage.rings.integer.Integer'>"""
-    @overload
-    def is_field(self, proof=...) -> Any:
-        """IntegerRing_class.is_field(self, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 878)
-
+    def is_field(self, proof: bool = True) -> Literal[False]:
+        """
         Return ``False`` since the integers are not a field.
 
         EXAMPLES::
 
             sage: ZZ.is_field()
             False"""
-    @overload
-    def is_field(self) -> Any:
-        """IntegerRing_class.is_field(self, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 878)
-
-        Return ``False`` since the integers are not a field.
-
-        EXAMPLES::
-
-            sage: ZZ.is_field()
-            False"""
-    @overload
-    def krull_dimension(self) -> Any:
-        """IntegerRing_class.krull_dimension(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1128)
-
+    def krull_dimension(self) -> Literal[1]:
+        """
         Return the Krull dimension of the integers, which is 1.
 
         .. NOTE::
@@ -759,29 +551,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.krull_dimension()
             1"""
-    @overload
-    def krull_dimension(self) -> Any:
-        """IntegerRing_class.krull_dimension(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1128)
-
-        Return the Krull dimension of the integers, which is 1.
-
-        .. NOTE::
-
-            This should rather be inherited from the category
-            of ``DedekindDomains``.
-
-        EXAMPLES::
-
-            sage: ZZ.krull_dimension()
-            1"""
-    @overload
-    def ngens(self) -> Any:
-        """IntegerRing_class.ngens(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1076)
-
+    def ngens(self) -> Literal[1]:
+        """
         Return the number of additive generators of the ring, which is 1.
 
         EXAMPLES::
@@ -790,26 +561,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             1
             sage: len(ZZ.gens())
             1"""
-    @overload
-    def ngens(self) -> Any:
-        """IntegerRing_class.ngens(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1076)
-
-        Return the number of additive generators of the ring, which is 1.
-
-        EXAMPLES::
-
-            sage: ZZ.ngens()
-            1
-            sage: len(ZZ.gens())
-            1"""
-    @overload
-    def order(self) -> Any:
-        """IntegerRing_class.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1172)
-
+    def order(self) -> PlusInfinity:
+        """
         Return the order (cardinality) of the integers, which is
         ``+Infinity``.
 
@@ -817,37 +570,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.order()
             +Infinity"""
-    @overload
-    def order(self, cardinality) -> Any:
-        """IntegerRing_class.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1172)
-
-        Return the order (cardinality) of the integers, which is
-        ``+Infinity``.
-
-        EXAMPLES::
-
-            sage: ZZ.order()
-            +Infinity"""
-    @overload
-    def order(self) -> Any:
-        """IntegerRing_class.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1172)
-
-        Return the order (cardinality) of the integers, which is
-        ``+Infinity``.
-
-        EXAMPLES::
-
-            sage: ZZ.order()
-            +Infinity"""
-    def parameter(self) -> Any:
-        """IntegerRing_class.parameter(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1221)
-
+    def parameter(self) -> Annotated[Integer, 1]:
+        """
         Return an integer of degree 1 for the Euclidean property of `\\ZZ`,
         namely 1.
 
@@ -855,11 +579,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.parameter()
             1"""
-    def quotient(self, I, names=..., **kwds) -> Any:
-        """IntegerRing_class.quotient(self, I, names=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 939)
-
+    def quotient(self, I: Integer | Ideal_generic, names: _NotUsed = None, **kwds) -> IntegerModRing_generic:
+        """
         Return the quotient of `\\ZZ` by the ideal or integer ``I``.
 
         EXAMPLES::
@@ -874,11 +595,14 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Traceback (most recent call last):
             ...
             TypeError: I must be an ideal of ZZ"""
-    def random_element(self, x=..., y=..., distribution=...) -> Any:
-        '''IntegerRing_class.random_element(self, x=None, y=None, distribution=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 609)
-
+    def random_element(
+        self, 
+        x: int | None = None, 
+        y: Int | None = None, 
+        distribution: Literal[
+            "uniform", "mpz_rrandomb", "1/n", "gaussian"] | None = None
+    ) -> Integer:
+        '''
         Return a random integer.
 
         INPUT:
@@ -1036,11 +760,11 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Traceback (most recent call last):
             ...
             TypeError: x must be < y'''
-    def range(self, start, end=..., step=...) -> Any:
-        """IntegerRing_class.range(self, start, end=None, step=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 437)
-
+    @overload
+    def range(self, end: Int) -> list[Integer]: ...
+    @overload
+    def range(self, start: Int, end: Int, step: Int = 1) -> list[Integer]:
+        """
         Optimized range function for Sage integers.
 
         AUTHORS:
@@ -1075,11 +799,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             sage: ZZ.range(1r, 10r)
             [1, 2, 3, 4, 5, 6, 7, 8, 9]"""
-    def residue_field(self, prime, check=..., names=...) -> Any:
-        """IntegerRing_class.residue_field(self, prime, check=True, names=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 968)
-
+    def residue_field(self, prime: Integer | Ideal_generic, check: bool = True, names: _NotUsed = None) -> ResidueField_generic:
+        """
         Return the residue field of the integers modulo the given prime, i.e.
         `\\ZZ/p\\ZZ`.
 
@@ -1134,12 +855,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Traceback (most recent call last):
             ...
             TypeError: 96 is not prime"""
-    @overload
-    def valuation(self, p) -> Any:
-        """IntegerRing_class.valuation(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1544)
-
+    def valuation(self) -> pAdicValuation_int:
+        """
         Return the discrete valuation with uniformizer ``p``.
 
         EXAMPLES::
@@ -1153,49 +870,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
 
             :meth:`Order.valuation() <sage.rings.number_field.order.Order.valuation>`,
             :meth:`RationalField.valuation() <sage.rings.rational_field.RationalField.valuation>`"""
-    @overload
-    def valuation(self) -> Any:
-        """IntegerRing_class.valuation(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1544)
-
-        Return the discrete valuation with uniformizer ``p``.
-
-        EXAMPLES::
-
-            sage: v = ZZ.valuation(3); v                                                # needs sage.rings.padics
-            3-adic valuation
-            sage: v(3)                                                                  # needs sage.rings.padics
-            1
-
-        .. SEEALSO::
-
-            :meth:`Order.valuation() <sage.rings.number_field.order.Order.valuation>`,
-            :meth:`RationalField.valuation() <sage.rings.rational_field.RationalField.valuation>`"""
-    @overload
-    def valuation(self) -> Any:
-        """IntegerRing_class.valuation(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1544)
-
-        Return the discrete valuation with uniformizer ``p``.
-
-        EXAMPLES::
-
-            sage: v = ZZ.valuation(3); v                                                # needs sage.rings.padics
-            3-adic valuation
-            sage: v(3)                                                                  # needs sage.rings.padics
-            1
-
-        .. SEEALSO::
-
-            :meth:`Order.valuation() <sage.rings.number_field.order.Order.valuation>`,
-            :meth:`RationalField.valuation() <sage.rings.rational_field.RationalField.valuation>`"""
-    def zeta(self, n=...) -> Any:
-        """IntegerRing_class.zeta(self, n=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 1184)
-
+    def zeta(self, n: Literal[1, 2] = 2) -> Integer:
+        """
         Return a primitive ``n``-th root of unity in the integers, or raise an
         error if none exists.
 
@@ -1221,15 +897,23 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             Traceback (most recent call last):
             ...
             ValueError: n must be positive in zeta()"""
-    def __eq__(self, other: object) -> bool:
-        """Return self==value."""
-    def __ge__(self, other: object) -> bool:
-        """Return self>=value."""
-    def __getitem__(self, x) -> Any:
-        """IntegerRing_class.__getitem__(self, x)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 401)
-
+    @overload
+    def __eq__(self, other: IntegerRing_class) -> Literal[True]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __eq__(self, other: object) -> Literal[False]: ...
+    @overload
+    def __ge__(self, other: IntegerRing_class) -> Literal[True]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __ge__(self, other: object) -> bool: ...
+    @overload
+    def __getitem__(self, x: Int) -> Self: ...
+    @overload
+    def __getitem__(self, x: NumberFieldElement_base) -> Order: ...
+    @overload
+    def __getitem__(self, x: str) -> PolynomialRing_integral_domain | MPolynomialRing_base: ...
+    @overload
+    def __getitem__(self, x):   # CommutativeRing.__getitem__(self, x)
+        """
         Return the ring `\\ZZ[...]` obtained by adjoining to the integers one
         or several elements.
 
@@ -1254,14 +938,9 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
              with defining polynomial x^2 - x - 1 with a = 1.618033988749895?
             sage: R.is_maximal()
             True"""
-    def __gt__(self, other: object) -> bool:
-        """Return self>value."""
-    @overload
-    def __hash__(self) -> Any:
-        """IntegerRing_class.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 343)
-
+    def __gt__(self, other: object) -> Literal[False]: ...
+    def __hash__(self) -> Literal[554590422]:
+        """
         Return the hash value of ``self``.
 
         TESTS::
@@ -1270,25 +949,8 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             sage: A = IntegerRing_class()
             sage: A.__hash__()
             554590422"""
-    @overload
-    def __hash__(self) -> Any:
-        """IntegerRing_class.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 343)
-
-        Return the hash value of ``self``.
-
-        TESTS::
-
-            sage: from sage.rings.integer_ring import IntegerRing_class
-            sage: A = IntegerRing_class()
-            sage: A.__hash__()
-            554590422"""
-    def __iter__(self) -> Any:
-        """IntegerRing_class.__iter__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 518)
-
+    def __iter__(self) -> Iterator[Integer]:
+        """
         Iterate over all integers: 0 1 -1 2 -2 3 -3 ...
 
         EXAMPLES::
@@ -1301,22 +963,38 @@ class IntegerRing_class(sage.rings.ring.CommutativeRing):
             -1
             2
             -2"""
-    def __le__(self, other: object) -> bool:
-        """Return self<=value."""
-    def __lt__(self, other: object) -> bool:
-        """Return self<value."""
-    def __ne__(self, other: object) -> bool:
-        """Return self!=value."""
-    def __reduce__(self) -> Any:
-        """IntegerRing_class.__reduce__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer_ring.pyx (starting at line 332)
-
+    @overload
+    def __le__(self, other: IntegerRing_class | RationalField) -> Literal[True]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __le__(self, other: object) -> Literal[False]: ...
+    @overload
+    def __lt__(self, other: RationalField) -> Literal[True]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __lt__(self, other: object) -> Literal[False]: ...
+    @overload
+    def __ne__(self, other: IntegerRing_class) -> Literal[False]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __ne__(self, other: object) -> Literal[True]: ...
+    def __reduce__(self) -> tuple[Callable[[], IntegerRing_class], tuple[()]]:
+        """
         For pickling.
 
         TESTS::
 
             sage: loads(dumps(ZZ)) is ZZ
             True"""
+    def __richcmp__(left, right, op: int) -> bool:  # pyright: ignore[reportSelfClsParameterName]
+        """
+        Rich comparison of ``left`` and ``right``.
+
+        TESTS::
+
+            sage: from sage.rings.integer_ring import IntegerRing_class
+            sage: ZZ == ZZ
+            True
+            sage: ZZ != QQ
+            True
+        """
+        ...
 
 ZZ: IntegerRing_class

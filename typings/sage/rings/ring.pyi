@@ -719,27 +719,8 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
 
             sage: ZZ.zero() is ZZ.zero()
             True"""
-    @overload
-    def __iter__(self) -> Any:
-        """Ring.__iter__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 262)
-
-        Return an iterator through the elements of ``self``.
-        Not implemented in general.
-
-        EXAMPLES::
-
-            sage: sage.rings.ring.Ring.__iter__(ZZ)
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: object does not support iteration"""
-    @overload
-    def __iter__(self, ZZ) -> Any:
-        """Ring.__iter__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 262)
-
+    def __iter__(ZZ) -> Any:
+        """
         Return an iterator through the elements of ``self``.
         Not implemented in general.
 
