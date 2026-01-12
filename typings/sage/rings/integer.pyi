@@ -1,4 +1,147 @@
-from numbers import Complex, Number
+# pyright: reportSelfClsParameterName=false
+r"""
+Elements of the ring `\ZZ` of integers
+
+Sage has highly optimized and extensive functionality for arithmetic with integers
+and the ring of integers.
+
+EXAMPLES:
+
+Add 2 integers::
+
+    sage: a = Integer(3); b = Integer(4)
+    sage: a + b == 7
+    True
+
+Add an integer and a real number::
+
+    sage: a + 4.0                                                                       # needs sage.rings.real_mpfr
+    7.00000000000000
+
+Add an integer and a rational number::
+
+    sage: a + Rational(2)/5
+    17/5
+
+Add an integer and a complex number::
+
+    sage: # needs sage.rings.real_mpfr
+    sage: b = ComplexField().0 + 1.5
+    sage: loads((a + b).dumps()) == a + b
+    True
+
+    sage: z = 32
+    sage: -z
+    -32
+    sage: z = 0; -z
+    0
+    sage: z = -0; -z
+    0
+    sage: z = -1; -z
+    1
+
+Multiplication::
+
+    sage: a = Integer(3); b = Integer(4)
+    sage: a * b == 12
+    True
+    sage: loads((a * 4.0).dumps()) == a*b
+    True
+    sage: a * Rational(2)/5
+    6/5
+
+::
+
+    sage: [2,3] * 4
+    [2, 3, 2, 3, 2, 3, 2, 3]
+
+::
+
+    sage: 'sage' * Integer(3)
+    'sagesagesage'
+
+COERCIONS:
+
+Return version of this integer in the multi-precision floating
+real field `\RR`::
+
+    sage: n = 9390823
+    sage: RR = RealField(200)                                                           # needs sage.rings.real_mpfr
+    sage: RR(n)                                                                         # needs sage.rings.real_mpfr
+    9.3908230000000000000000000000000000000000000000000000000000e6
+
+AUTHORS:
+
+- William Stein (2005): initial version
+
+- Gonzalo Tornaria (2006-03-02): vastly improved python/GMP
+  conversion; hashing
+
+- Didier Deshommes (2006-03-06): numerous examples
+  and docstrings
+
+- William Stein (2006-03-31): changes to reflect GMP bug fixes
+
+- William Stein (2006-04-14): added GMP factorial method (since it's
+  now very fast).
+
+- David Harvey (2006-09-15): added nth_root, exact_log
+
+- David Harvey (2006-09-16): attempt to optimise Integer constructor
+
+- Rishikesh (2007-02-25): changed quo_rem so that the rem is positive
+
+- David Harvey, Martin Albrecht, Robert Bradshaw (2007-03-01):
+  optimized Integer constructor and pool
+
+- Pablo De Napoli (2007-04-01): multiplicative_order should return
+  +infinity for non zero numbers
+
+- Robert Bradshaw (2007-04-12): is_perfect_power, Jacobi symbol (with
+  Kronecker extension).  Convert some methods to use GMP directly
+  rather than PARI, Integer(), PY_NEW(Integer)
+
+- David Roe (2007-03-21): sped up valuation and is_square, added
+  val_unit, is_power, is_power_of and divide_knowing_divisible_by
+
+- Robert Bradshaw (2008-03-26): gamma function, multifactorials
+
+- Robert Bradshaw (2008-10-02): bounded squarefree part
+
+- David Loeffler (2011-01-15): fixed bug #10625 (inverse_mod should accept an ideal as argument)
+
+- Vincent Delecroix (2010-12-28): added unicode in Integer.__init__
+
+- David Roe (2012-03): deprecate :meth:`~sage.rings.integer.Integer.is_power`
+  in favour of :meth:`~sage.rings.integer.Integer.is_perfect_power` (see
+  :issue:`12116`)
+
+- Vincent Delecroix (2017-05-03): faster integer-rational comparisons
+
+- Vincent Klein (2017-05-11): add __mpz__() to class Integer
+
+- Vincent Klein (2017-05-22): Integer constructor support gmpy2.mpz parameter
+
+- Samuel Lelièvre (2018-08-02): document that divisors are sorted (:issue:`25983`)
+"""
+
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar, Literal, Self, overload, SupportsInt
+from typings_sagemath import ComplexInexact, ComplexInexactSage, Int, ConvertibleToInteger, Num, RealInexact, RealInexactSage, IntSupportingBitwiseOp
+from sage.rings.rational import Rational
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
+from numpy import (
+    float64, int64, uint64, complex128,
+    integer as NumPyInteger, 
+    unsignedinteger as NumPyUInt, 
+    signedinteger as NumPySignedInt, 
+    floating as NumPyFloat, 
+    complexfloating as NumPyComplex
+)
+from gmpy2 import mpfr, mpz
+
+type _NotUsed = object
+
 import _cython_3_2_1
 import sage as sage
 import sage.categories.morphism
@@ -8,7 +151,7 @@ from _typeshed import Incomplete
 from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
 from sage.structure.element import coerce_binop as coerce_binop, have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
-from typing import Any, ClassVar, overload
+
 
 GCD_list: _cython_3_2_1.cython_function_or_method
 __pyx_capi__: dict
@@ -24,11 +167,8 @@ pari_is_prime: None
 pari_is_prime_power: None
 set_integer_from_gen: None
 
-class Integer(sage.structure.element.EuclideanDomainElement, Number):
-    '''Integer(x=None, base=0)
-
-    File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 404)
-
+class Integer(sage.structure.element.EuclideanDomainElement):
+    '''
     The :class:`Integer` class represents arbitrary precision
     integers. It derives from the :class:`Element` class, so
     integers can be used as ring elements anywhere in Sage.
@@ -70,178 +210,175 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
         3
 
     .. automethod:: __pow__'''
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
     __array_interface__: Incomplete
-    def __init__(self, x=..., base=...) -> Any:
-        '''File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 454)
-
-                EXAMPLES::
-
-                    sage: a = int(-901824309821093821093812093810928309183091832091)
-                    sage: b = ZZ(a); b
-                    -901824309821093821093812093810928309183091832091
-                    sage: ZZ(b)
-                    -901824309821093821093812093810928309183091832091
-                    sage: ZZ(\'-901824309821093821093812093810928309183091832091\')
-                    -901824309821093821093812093810928309183091832091
-                    sage: ZZ(int(-93820984323))
-                    -93820984323
-                    sage: ZZ(ZZ(-901824309821093821093812093810928309183091832091))
-                    -901824309821093821093812093810928309183091832091
-                    sage: ZZ(QQ(-901824309821093821093812093810928309183091832091))
-                    -901824309821093821093812093810928309183091832091
-                    sage: ZZ(RR(2.0)^80)
-                    1208925819614629174706176
-                    sage: ZZ(QQbar(sqrt(28-10*sqrt(3)) + sqrt(3)))                              # needs sage.rings.number_field sage.symbolic
-                    5
-                    sage: ZZ(AA(32).nth_root(5))                                                # needs sage.rings.number_field
-                    2
-                    sage: ZZ(pari(\'Mod(-3,7)\'))                                                 # needs sage.libs.pari
-                    4
-                    sage: ZZ(\'sage\')
-                    Traceback (most recent call last):
-                    ...
-                    TypeError: unable to convert \'sage\' to an integer
-                    sage: Integer(\'zz\',36).str(36)
-                    \'zz\'
-                    sage: ZZ(\'0x3b\').str(16)
-                    \'3b\'
-                    sage: ZZ( ZZ(5).digits(3) , 3)
-                    5
-                    sage: import numpy                                                          # needs numpy
-                    sage: ZZ(numpy.int64(7^7))                                                  # needs numpy
-                    823543
-                    sage: ZZ(numpy.ubyte(-7))                                                   # needs numpy
-                    249
-                    sage: ZZ(True)
-                    1
-                    sage: ZZ(False)
-                    0
-                    sage: ZZ(1==0)
-                    0
-                    sage: ZZ(\'+10\')
-                    10
-                    sage: from gmpy2 import mpz
-                    sage: ZZ(mpz(42))
-                    42
-
-                ::
-
-                    sage: k = GF(2)
-                    sage: ZZ((k(0),k(1)), 2)
-                    2
-
-                ::
-
-                    sage: ZZ(float(2.0))
-                    2
-                    sage: ZZ(float(1.0/0.0))
-                    Traceback (most recent call last):
-                    ...
-                    OverflowError: cannot convert float infinity to integer
-                    sage: ZZ(float(0.0/0.0))
-                    Traceback (most recent call last):
-                    ...
-                    ValueError: cannot convert float NaN to integer
-
-                ::
-
-                    sage: class MyInt(int):
-                    ....:     pass
-                    sage: class MyFloat(float):
-                    ....:     pass
-                    sage: ZZ(MyInt(3))
-                    3
-                    sage: ZZ(MyFloat(5))
-                    5
-
-                ::
-
-                    sage: Integer(\'0\')
-                    0
-                    sage: Integer(\'0X2AEEF\')
-                    175855
-
-                Test conversion from PARI (:issue:`11685`)::
-
-                    sage: # needs sage.libs.pari
-                    sage: ZZ(pari(-3))
-                    -3
-                    sage: ZZ(pari("-3.0"))
-                    -3
-                    sage: ZZ(pari("-3.5"))
-                    Traceback (most recent call last):
-                    ...
-                    TypeError: Attempt to coerce non-integral real number to an Integer
-                    sage: ZZ(pari("1e100"))
-                    Traceback (most recent call last):
-                    ...
-                    PariError: precision too low in truncr (precision loss in truncation)
-                    sage: ZZ(pari("10^50"))
-                    100000000000000000000000000000000000000000000000000
-                    sage: ZZ(pari("Pol(3)"))
-                    3
-                    sage: ZZ(GF(3^20,\'t\')(1))                                                   # needs sage.rings.finite_rings
-                    1
-                    sage: ZZ(pari(GF(3^20,\'t\')(1)))                                             # needs sage.rings.finite_rings
-                    1
-                    sage: x = polygen(QQ)
-                    sage: K.<a> = NumberField(x^2 + 3)                                          # needs sage.rings.number_field
-                    sage: ZZ(a^2)                                                               # needs sage.rings.number_field
-                    -3
-                    sage: ZZ(pari(a)^2)                                                         # needs sage.rings.number_field
-                    -3
-                    sage: ZZ(pari("Mod(x, x^3+x+1)"))   # Note error message refers to lifted element
-                    Traceback (most recent call last):
-                    ...
-                    TypeError: Unable to coerce PARI x to an Integer
-
-                Test coercion of `p`-adic with negative valuation::
-
-                    sage: ZZ(pari(Qp(11)(11^-7)))                                               # needs sage.libs.pari sage.rings.padics
-                    Traceback (most recent call last):
-                    ...
-                    TypeError: cannot convert p-adic with negative valuation to an integer
-
-                Test converting a list with a very large base::
-
-                    sage: a = ZZ(randint(0, 2^128 - 1))
-                    sage: L = a.digits(2^64)
-                    sage: a == sum([x * 2^(64*i) for i,x in enumerate(L)])
-                    True
-                    sage: a == ZZ(L, base=2^64)
-                    True
-
-                Test comparisons with numpy types (see :issue:`13386` and :issue:`18076`)::
-
-                    sage: # needs numpy
-                    sage: import numpy
-                    sage: if int(numpy.version.short_version[0]) > 1:
-                    ....:     _ = numpy.set_printoptions(legacy="1.25")
-                    sage: numpy.int8(\'12\') == 12
-                    True
-                    sage: 12 == numpy.int8(\'12\')
-                    True
-
-                    sage: float(\'15\') == 15
-                    True
-                    sage: 15 == float(\'15\')
-                    True
-
-                Test underscores as digit separators (PEP 515,
-                https://www.python.org/dev/peps/pep-0515/)::
-
-                    sage: Integer(\'1_3\')
-                    13
-                    sage: Integer(b\'1_3\')
-                    13
+    @overload
+    def __init__(self, x: ConvertibleToInteger = None): ...
+    @overload
+    def __init__(self, x: str | bytes | tuple | list, base: Int = 0):
         '''
-    @overload
+        EXAMPLES::
+
+            sage: a = int(-901824309821093821093812093810928309183091832091)
+            sage: b = ZZ(a); b
+            -901824309821093821093812093810928309183091832091
+            sage: ZZ(b)
+            -901824309821093821093812093810928309183091832091
+            sage: ZZ(\'-901824309821093821093812093810928309183091832091\')
+            -901824309821093821093812093810928309183091832091
+            sage: ZZ(int(-93820984323))
+            -93820984323
+            sage: ZZ(ZZ(-901824309821093821093812093810928309183091832091))
+            -901824309821093821093812093810928309183091832091
+            sage: ZZ(QQ(-901824309821093821093812093810928309183091832091))
+            -901824309821093821093812093810928309183091832091
+            sage: ZZ(RR(2.0)^80)
+            1208925819614629174706176
+            sage: ZZ(QQbar(sqrt(28-10*sqrt(3)) + sqrt(3)))                              # needs sage.rings.number_field sage.symbolic
+            5
+            sage: ZZ(AA(32).nth_root(5))                                                # needs sage.rings.number_field
+            2
+            sage: ZZ(pari(\'Mod(-3,7)\'))                                                 # needs sage.libs.pari
+            4
+            sage: ZZ(\'sage\')
+            Traceback (most recent call last):
+            ...
+            TypeError: unable to convert \'sage\' to an integer
+            sage: Integer(\'zz\',36).str(36)
+            \'zz\'
+            sage: ZZ(\'0x3b\').str(16)
+            \'3b\'
+            sage: ZZ( ZZ(5).digits(3) , 3)
+            5
+            sage: import numpy                                                          # needs numpy
+            sage: ZZ(numpy.int64(7^7))                                                  # needs numpy
+            823543
+            sage: ZZ(numpy.ubyte(-7))                                                   # needs numpy
+            249
+            sage: ZZ(True)
+            1
+            sage: ZZ(False)
+            0
+            sage: ZZ(1==0)
+            0
+            sage: ZZ(\'+10\')
+            10
+            sage: from gmpy2 import mpz
+            sage: ZZ(mpz(42))
+            42
+
+        ::
+
+            sage: k = GF(2)
+            sage: ZZ((k(0),k(1)), 2)
+            2
+
+        ::
+
+            sage: ZZ(float(2.0))
+            2
+            sage: ZZ(float(1.0/0.0))
+            Traceback (most recent call last):
+            ...
+            OverflowError: cannot convert float infinity to integer
+            sage: ZZ(float(0.0/0.0))
+            Traceback (most recent call last):
+            ...
+            ValueError: cannot convert float NaN to integer
+
+        ::
+
+            sage: class MyInt(int):
+            ....:     pass
+            sage: class MyFloat(float):
+            ....:     pass
+            sage: ZZ(MyInt(3))
+            3
+            sage: ZZ(MyFloat(5))
+            5
+
+        ::
+
+            sage: Integer(\'0\')
+            0
+            sage: Integer(\'0X2AEEF\')
+            175855
+
+        Test conversion from PARI (:issue:`11685`)::
+
+            sage: # needs sage.libs.pari
+            sage: ZZ(pari(-3))
+            -3
+            sage: ZZ(pari("-3.0"))
+            -3
+            sage: ZZ(pari("-3.5"))
+            Traceback (most recent call last):
+            ...
+            TypeError: Attempt to coerce non-integral real number to an Integer
+            sage: ZZ(pari("1e100"))
+            Traceback (most recent call last):
+            ...
+            PariError: precision too low in truncr (precision loss in truncation)
+            sage: ZZ(pari("10^50"))
+            100000000000000000000000000000000000000000000000000
+            sage: ZZ(pari("Pol(3)"))
+            3
+            sage: ZZ(GF(3^20,\'t\')(1))                                                   # needs sage.rings.finite_rings
+            1
+            sage: ZZ(pari(GF(3^20,\'t\')(1)))                                             # needs sage.rings.finite_rings
+            1
+            sage: x = polygen(QQ)
+            sage: K.<a> = NumberField(x^2 + 3)                                          # needs sage.rings.number_field
+            sage: ZZ(a^2)                                                               # needs sage.rings.number_field
+            -3
+            sage: ZZ(pari(a)^2)                                                         # needs sage.rings.number_field
+            -3
+            sage: ZZ(pari("Mod(x, x^3+x+1)"))   # Note error message refers to lifted element
+            Traceback (most recent call last):
+            ...
+            TypeError: Unable to coerce PARI x to an Integer
+
+        Test coercion of `p`-adic with negative valuation::
+
+            sage: ZZ(pari(Qp(11)(11^-7)))                                               # needs sage.libs.pari sage.rings.padics
+            Traceback (most recent call last):
+            ...
+            TypeError: cannot convert p-adic with negative valuation to an integer
+
+        Test converting a list with a very large base::
+
+            sage: a = ZZ(randint(0, 2^128 - 1))
+            sage: L = a.digits(2^64)
+            sage: a == sum([x * 2^(64*i) for i,x in enumerate(L)])
+            True
+            sage: a == ZZ(L, base=2^64)
+            True
+
+        Test comparisons with numpy types (see :issue:`13386` and :issue:`18076`)::
+
+            sage: # needs numpy
+            sage: import numpy
+            sage: if int(numpy.version.short_version[0]) > 1:
+            ....:     _ = numpy.set_printoptions(legacy="1.25")
+            sage: numpy.int8(\'12\') == 12
+            True
+            sage: 12 == numpy.int8(\'12\')
+            True
+
+            sage: float(\'15\') == 15
+            True
+            sage: 15 == float(\'15\')
+            True
+
+        Test underscores as digit separators (PEP 515,
+        https://www.python.org/dev/peps/pep-0515/)::
+
+            sage: Integer(\'1_3\')
+            13
+            sage: Integer(b\'1_3\')
+            13
+        '''
     def additive_order(self) -> Any:
-        """Integer.additive_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6105)
-
+        """
         Return the additive order of ``self``.
 
         EXAMPLES::
@@ -250,40 +387,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             1
             sage: ZZ(1).additive_order()
             +Infinity"""
-    @overload
-    def additive_order(self) -> Any:
-        """Integer.additive_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6105)
-
-        Return the additive order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(0).additive_order()
-            1
-            sage: ZZ(1).additive_order()
-            +Infinity"""
-    @overload
-    def additive_order(self) -> Any:
-        """Integer.additive_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6105)
-
-        Return the additive order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(0).additive_order()
-            1
-            sage: ZZ(1).additive_order()
-            +Infinity"""
-    @overload
     def as_integer_ratio(self) -> Any:
-        """Integer.as_integer_ratio(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4528)
-
+        """
         Return the pair ``(self.numerator(), self.denominator())``,
         which is ``(self, 1)``.
 
@@ -292,494 +397,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: x = -12
             sage: x.as_integer_ratio()
             (-12, 1)"""
-    @overload
-    def as_integer_ratio(self) -> Any:
-        """Integer.as_integer_ratio(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4528)
-
-        Return the pair ``(self.numerator(), self.denominator())``,
-        which is ``(self, 1)``.
-
-        EXAMPLES::
-
-            sage: x = -12
-            sage: x.as_integer_ratio()
-            (-12, 1)"""
-    @overload
-    def balanced_digits(self, base=..., positive_shift=...) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
-    def balanced_digits(self) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
-    def balanced_digits(self, positive_shift=...) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
-    def balanced_digits(self, base) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
-    def balanced_digits(self, base) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
-    def balanced_digits(self, base) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
-        Return the list of balanced digits for ``self`` in the given base.
-
-        The balanced base ``b`` uses ``b`` digits centered around zero. Thus
-        if ``b`` is odd, there is only one possibility, namely digits
-        between ``-b//2`` and ``b//2`` (both included). For instance in base 9,
-        one uses digits from -4 to 4. If ``b`` is even, one has to choose
-        between digits from ``-b//2`` to ``b//2 - 1`` or ``-b//2 + 1`` to ``b//2``
-        (base 10 for instance: either `-5` to `4` or `-4` to `5`), and this is
-        defined by the value of ``positive_shift``.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10); when ``base`` is 2, only the
-          nonnegative or the nonpositive integers can be represented by
-          ``balanced_digits``. Thus we say base must be greater than 2.
-
-        - ``positive_shift`` -- boolean (default: ``True``); for even bases, the
-          representation uses digits from ``-b//2 + 1`` to ``b//2`` if set to
-          ``True``, and from ``-b//2`` to ``b//2 - 1`` otherwise. This has no
-          effect for odd bases.
-
-        EXAMPLES::
-
-            sage: 8.balanced_digits(3)
-            [-1, 0, 1]
-            sage: (-15).balanced_digits(5)
-            [0, 2, -1]
-            sage: 17.balanced_digits(6)
-            [-1, 3]
-            sage: 17.balanced_digits(6, positive_shift=False)
-            [-1, -3, 1]
-            sage: (-46).balanced_digits()
-            [4, 5, -1]
-            sage: (-46).balanced_digits(positive_shift=False)
-            [4, -5]
-            sage: (-23).balanced_digits(12)
-            [1, -2]
-            sage: (-23).balanced_digits(12, positive_shift=False)
-            [1, -2]
-            sage: 0.balanced_digits(7)
-            []
-            sage: 14.balanced_digits(5.8)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be an integer
-            sage: 14.balanced_digits(2)
-            Traceback (most recent call last):
-            ...
-            ValueError: base must be > 2
-
-        TESTS::
-
-            sage: base = 5; n = 39
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 12; n = -52
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-            sage: base = 8; n = 37
-            sage: l = n.balanced_digits(base, positive_shift=False)
-            sage: sum(l[i]*base^i for i in range(len(l))) == n
-            True
-
-        .. SEEALSO::
-
-            :func:`digits <digits>`"""
-    @overload
     def balanced_digits(self, base, positive_shift=...) -> Any:
-        """Integer.balanced_digits(self, base=10, positive_shift=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1609)
-
+        """
         Return the list of balanced digits for ``self`` in the given base.
 
         The balanced base ``b`` uses ``b`` digits centered around zero. Thus
@@ -852,60 +471,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
         .. SEEALSO::
 
             :func:`digits <digits>`"""
-    @overload
-    def binary(self) -> Any:
-        """Integer.binary(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1248)
-
-        Return the binary digits of ``self`` as a string.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).binary())
-            1111
-            sage: print(Integer(16).binary())
-            10000
-            sage: print(Integer(16938402384092843092843098243).binary())
-            1101101011101100011110001110010010100111010001101010001111111000101000000000101111000010000011"""
-    @overload
-    def binary(self) -> Any:
-        """Integer.binary(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1248)
-
-        Return the binary digits of ``self`` as a string.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).binary())
-            1111
-            sage: print(Integer(16).binary())
-            10000
-            sage: print(Integer(16938402384092843092843098243).binary())
-            1101101011101100011110001110010010100111010001101010001111111000101000000000101111000010000011"""
-    @overload
-    def binary(self) -> Any:
-        """Integer.binary(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1248)
-
-        Return the binary digits of ``self`` as a string.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).binary())
-            1111
-            sage: print(Integer(16).binary())
-            10000
-            sage: print(Integer(16938402384092843092843098243).binary())
-            1101101011101100011110001110010010100111010001101010001111111000101000000000101111000010000011"""
-    @overload
-    def binary(self) -> Any:
-        """Integer.binary(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1248)
-
+    def binary(self) -> str:
+        """
         Return the binary digits of ``self`` as a string.
 
         EXAMPLES::
@@ -917,10 +484,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: print(Integer(16938402384092843092843098243).binary())
             1101101011101100011110001110010010100111010001101010001111111000101000000000101111000010000011"""
     def binomial(self, m, algorithm=...) -> Any:
-        '''Integer.binomial(self, m, algorithm=\'gmp\')
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7094)
-
+        '''
         Return the binomial coefficient "``self`` choose ``m``".
 
         INPUT:
@@ -981,12 +545,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ....:     with ensure_interruptible_after(i/11):
             ....:         (2^100).binomial(2^22, algorithm=\'pari\')
             doctest:...: RuntimeWarning: cypari2 leaked ... bytes on the PARI stack...'''
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
+    def bit_length(self) -> int:
+        """
         Return the number of bits required to represent this integer.
 
         Identical to :meth:`int.bit_length`.
@@ -1019,392 +579,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = randrange(-2^9999, 2^9999)
             sage: ZZ(n).bit_length() == int(n).bit_length()
             True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bit_length(self) -> Any:
-        """Integer.bit_length(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1294)
-
-        Return the number of bits required to represent this integer.
-
-        Identical to :meth:`int.bit_length`.
-
-        EXAMPLES::
-
-            sage: 500.bit_length()
-            9
-            sage: 5.bit_length()
-            3
-            sage: 0.bit_length() == len(0.bits()) == 0.ndigits(base=2)
-            True
-            sage: 12345.bit_length() == len(12345.binary())
-            True
-            sage: 1023.bit_length()
-            10
-            sage: 1024.bit_length()
-            11
-
-        TESTS::
-
-            sage: {ZZ(n).bit_length() == int(n).bit_length() for n in range(-9999, 9999)}
-            {True}
-            sage: n = randrange(-2^99, 2^99)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^999, 2^999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True
-            sage: n = randrange(-2^9999, 2^9999)
-            sage: ZZ(n).bit_length() == int(n).bit_length()
-            True"""
-    @overload
-    def bits(self) -> Any:
-        '''Integer.bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1263)
-
+    def bits(self) -> list[Integer]:
+        '''
         Return the bits in ``self`` as a list, least significant first. The
         result satisfies the identity
 
@@ -1431,44 +607,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             [1, 1, 0, 1]
             sage: (-99).bits()
             [-1, -1, 0, 0, 0, -1, -1]'''
-    @overload
-    def bits(self) -> Any:
-        '''Integer.bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1263)
-
-        Return the bits in ``self`` as a list, least significant first. The
-        result satisfies the identity
-
-        ::
-
-            x == sum(b*2^e for e, b in enumerate(x.bits()))
-
-        Negative numbers will have negative "bits". (So, strictly
-        speaking, the entries of the returned list are not really
-        members of `\\ZZ/2\\ZZ`.)
-
-        This method just calls :func:`digits` with ``base=2``.
-
-        .. SEEALSO::
-
-            - :meth:`bit_length`, a faster way to compute ``len(x.bits())``
-            - :meth:`binary`, which returns a string in perhaps more familiar notation
-
-        EXAMPLES::
-
-            sage: 500.bits()
-            [0, 0, 1, 0, 1, 1, 1, 1, 1]
-            sage: 11.bits()
-            [1, 1, 0, 1]
-            sage: (-99).bits()
-            [-1, -1, 0, 0, 0, -1, -1]'''
-    @overload
     def canonical_associate(self) -> Any:
-        """Integer.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7227)
-
+        """
         Return a canonical associate.
 
         EXAMPLES::
@@ -1481,80 +621,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: b, u = a.canonical_associate()
             sage: b*u == a
             True"""
-    @overload
-    def canonical_associate(self) -> Any:
-        """Integer.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7227)
-
-        Return a canonical associate.
-
-        EXAMPLES::
-
-            sage: (-2).canonical_associate()
-            (2, -1)
-            sage: (0).canonical_associate()
-            (0, 1)
-            sage: a = -17
-            sage: b, u = a.canonical_associate()
-            sage: b*u == a
-            True"""
-    @overload
-    def canonical_associate(self) -> Any:
-        """Integer.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7227)
-
-        Return a canonical associate.
-
-        EXAMPLES::
-
-            sage: (-2).canonical_associate()
-            (2, -1)
-            sage: (0).canonical_associate()
-            (0, 1)
-            sage: a = -17
-            sage: b, u = a.canonical_associate()
-            sage: b*u == a
-            True"""
-    @overload
-    def canonical_associate(self) -> Any:
-        """Integer.canonical_associate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7227)
-
-        Return a canonical associate.
-
-        EXAMPLES::
-
-            sage: (-2).canonical_associate()
-            (2, -1)
-            sage: (0).canonical_associate()
-            (0, 1)
-            sage: a = -17
-            sage: b, u = a.canonical_associate()
-            sage: b*u == a
-            True"""
-    @overload
     def ceil(self) -> Any:
-        """Integer.ceil(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4704)
-
-        Return the ceiling of ``self``, which is ``self`` since ``self`` is an
-        integer.
-
-        EXAMPLES::
-
-            sage: n = 6
-            sage: n.ceil()
-            6"""
-    @overload
-    def ceil(self) -> Any:
-        """Integer.ceil(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4704)
-
+        """
         Return the ceiling of ``self``, which is ``self`` since ``self`` is an
         integer.
 
@@ -1564,10 +632,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n.ceil()
             6"""
     def class_number(self, proof=...) -> Any:
-        """Integer.class_number(self, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5699)
-
+        """
         Return the class number of the quadratic order with this discriminant.
 
         INPUT:
@@ -1632,12 +697,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
            Traceback (most recent call last):
            ...
            ValueError: class_number only defined for integers congruent to 0 or 1 modulo 4"""
-    @overload
     def conjugate(self) -> Any:
-        """Integer.conjugate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7081)
-
+        """
         Return the complex conjugate of this integer, which is the
         integer itself.
 
@@ -1646,122 +707,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = 205
             sage: n.conjugate()
             205"""
-    @overload
-    def conjugate(self) -> Any:
-        """Integer.conjugate(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7081)
-
-        Return the complex conjugate of this integer, which is the
-        integer itself.
-
-        EXAMPLES::
-
-            sage: n = 205
-            sage: n.conjugate()
-            205"""
-    @overload
     def coprime_integers(self, m) -> Any:
-        """Integer.coprime_integers(self, m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4106)
-
-        Return the nonnegative integers `< m` that are coprime to
-        this integer.
-
-        EXAMPLES::
-
-            sage: n = 8
-            sage: n.coprime_integers(8)
-            [1, 3, 5, 7]
-            sage: n.coprime_integers(11)
-            [1, 3, 5, 7, 9]
-            sage: n = 5; n.coprime_integers(10)
-            [1, 2, 3, 4, 6, 7, 8, 9]
-            sage: n.coprime_integers(5)
-            [1, 2, 3, 4]
-            sage: n = 99; n.coprime_integers(99)
-            [1, 2, 4, 5, 7, 8, 10, 13, 14, 16, 17, 19, 20, 23, 25, 26, 28, 29, 31, 32, 34, 35, 37, 38, 40, 41, 43, 46, 47, 49, 50, 52, 53, 56, 58, 59, 61, 62, 64, 65, 67, 68, 70, 71, 73, 74, 76, 79, 80, 82, 83, 85, 86, 89, 91, 92, 94, 95, 97, 98]
-
-        TESTS::
-
-            sage: 0.coprime_integers(10^100)
-            [1]
-            sage: 1.coprime_integers(10^100)
-            Traceback (most recent call last):
-            ...
-            OverflowError: bound is too large
-            sage: for n in srange(-6, 7):
-            ....:     for m in range(-1, 10):
-            ....:         assert n.coprime_integers(m) == [k for k in srange(0, m) if gcd(k, n) == 1]
-
-        AUTHORS:
-
-        - Naqi Jaffery (2006-01-24): examples
-
-        - David Roe (2017-10-02): Use sieving
-
-        - Jeroen Demeyer (2018-06-25): allow returning zero (only relevant for 1.coprime_integers(n))
-
-        ALGORITHM:
-
-        Create an integer with `m` bits and set bits at every multiple
-        of a prime `p` that divides this integer and is less than `m`.
-        Then return a list of integers corresponding to the unset bits."""
-    @overload
-    def coprime_integers(self, m) -> Any:
-        """Integer.coprime_integers(self, m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4106)
-
-        Return the nonnegative integers `< m` that are coprime to
-        this integer.
-
-        EXAMPLES::
-
-            sage: n = 8
-            sage: n.coprime_integers(8)
-            [1, 3, 5, 7]
-            sage: n.coprime_integers(11)
-            [1, 3, 5, 7, 9]
-            sage: n = 5; n.coprime_integers(10)
-            [1, 2, 3, 4, 6, 7, 8, 9]
-            sage: n.coprime_integers(5)
-            [1, 2, 3, 4]
-            sage: n = 99; n.coprime_integers(99)
-            [1, 2, 4, 5, 7, 8, 10, 13, 14, 16, 17, 19, 20, 23, 25, 26, 28, 29, 31, 32, 34, 35, 37, 38, 40, 41, 43, 46, 47, 49, 50, 52, 53, 56, 58, 59, 61, 62, 64, 65, 67, 68, 70, 71, 73, 74, 76, 79, 80, 82, 83, 85, 86, 89, 91, 92, 94, 95, 97, 98]
-
-        TESTS::
-
-            sage: 0.coprime_integers(10^100)
-            [1]
-            sage: 1.coprime_integers(10^100)
-            Traceback (most recent call last):
-            ...
-            OverflowError: bound is too large
-            sage: for n in srange(-6, 7):
-            ....:     for m in range(-1, 10):
-            ....:         assert n.coprime_integers(m) == [k for k in srange(0, m) if gcd(k, n) == 1]
-
-        AUTHORS:
-
-        - Naqi Jaffery (2006-01-24): examples
-
-        - David Roe (2017-10-02): Use sieving
-
-        - Jeroen Demeyer (2018-06-25): allow returning zero (only relevant for 1.coprime_integers(n))
-
-        ALGORITHM:
-
-        Create an integer with `m` bits and set bits at every multiple
-        of a prime `p` that divides this integer and is less than `m`.
-        Then return a list of integers corresponding to the unset bits."""
-    @overload
-    def coprime_integers(self, n) -> Any:
-        """Integer.coprime_integers(self, m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4106)
-
+        """
         Return the nonnegative integers `< m` that are coprime to
         this integer.
 
@@ -1805,10 +752,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
         of a prime `p` that divides this integer and is less than `m`.
         Then return a list of integers corresponding to the unset bits."""
     def crt(self, y, m, n) -> Any:
-        """Integer.crt(self, y, m, n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6987)
-
+        """
         Return the unique integer between `0` and `\\lcm(m,n)` that is congruent
         to the integer modulo `m` and to `y` modulo `n`.
 
@@ -1831,12 +775,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ...
             ValueError: no solution to crt problem since gcd(10,10) does not
             divide 6 - 0"""
-    @overload
     def denominator(self) -> Any:
-        """Integer.denominator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4494)
-
+        """
         Return the denominator of this integer, which of course is
         always 1.
 
@@ -1849,45 +789,19 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: x.denominator()
             1"""
     @overload
-    def denominator(self) -> Any:
-        """Integer.denominator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4494)
-
-        Return the denominator of this integer, which of course is
-        always 1.
-
-        EXAMPLES::
-
-            sage: x = 5
-            sage: x.denominator()
-            1
-            sage: x = 0
-            sage: x.denominator()
-            1"""
+    def digits(
+        self, 
+        base: ConvertibleToInteger = 10,  
+        padto: Int = 0
+        ) -> list[Integer]: ...
     @overload
-    def denominator(self) -> Any:
-        """Integer.denominator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4494)
-
-        Return the denominator of this integer, which of course is
-        always 1.
-
-        EXAMPLES::
-
-            sage: x = 5
-            sage: x.denominator()
-            1
-            sage: x = 0
-            sage: x.denominator()
-            1"""
-    @overload
-    def digits(self, base=..., digits=..., padto=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
+    def digits[T](
+        self, 
+        base: ConvertibleToInteger = 10, 
+        digits: Sequence[T] | None = None, 
+        padto: Int = 0
+    ) -> list[T]:
+        '''
         Return a list of digits for ``self`` in the given base in little
         endian order.
 
@@ -2020,1975 +934,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
         AUTHORS:
 
         - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=..., digits=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=..., padto=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=..., padto=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=..., padto=..., digits=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
-    def digits(self, base=...) -> Any:
-        '''Integer.digits(self, base=10, digits=None, padto=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1368)
-
-        Return a list of digits for ``self`` in the given base in little
-        endian order.
-
-        The returned value is unspecified if ``self`` is a negative number
-        and the digits are given.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        - ``digits`` -- (optional) indexable object as source for
-          the digits
-
-        - ``padto`` -- the minimal length of the returned list, sufficient
-          number of zeros are added to make the list minimum that length
-          (default: 0)
-
-        As a shorthand for ``digits(2)``, you can use :meth:`.bits`.
-
-        Also see :meth:`ndigits`.
-
-        EXAMPLES::
-
-            sage: 17.digits()
-            [7, 1]
-            sage: 5.digits(base=2, digits=["zero","one"])
-            [\'one\', \'zero\', \'one\']
-            sage: 5.digits(3)
-            [2, 1]
-            sage: 0.digits(base=10)  # 0 has 0 digits
-            []
-            sage: 0.digits(base=2)  # 0 has 0 digits
-            []
-            sage: 10.digits(16,\'0123456789abcdef\')
-            [\'a\']
-            sage: 0.digits(16,\'0123456789abcdef\')
-            []
-            sage: 0.digits(16,\'0123456789abcdef\',padto=1)
-            [\'0\']
-            sage: 123.digits(base=10,padto=5)
-            [3, 2, 1, 0, 0]
-            sage: 123.digits(base=2,padto=3)       # padto is the minimal length
-            [1, 1, 0, 1, 1, 1, 1]
-            sage: 123.digits(base=2,padto=10,digits=(1,-1))
-            [-1, -1, 1, -1, -1, -1, -1, 1, 1, 1]
-            sage: a=9939082340; a.digits(10)
-            [0, 4, 3, 2, 8, 0, 9, 3, 9, 9]
-            sage: a.digits(512)
-            [100, 302, 26, 74]
-            sage: (-12).digits(10)
-            [-2, -1]
-            sage: (-12).digits(2)
-            [0, 0, -1, -1]
-
-        We can sum the digits of an integer in any base::
-
-            sage: sum(14.digits())
-            5
-            sage: 14.digits(base=2), sum(14.digits(base=2))
-            ([0, 1, 1, 1], 3)
-            sage: sum(13408967.digits())
-            38
-            sage: 13408967.digits(base=7), sum(13408967.digits(base=7))
-            ([5, 2, 1, 5, 5, 6, 1, 2, 2], 29)
-            sage: 13408967.digits(base=1111), sum(13408967.digits(base=1111))
-            ([308, 959, 10], 1277)
-
-        We support large bases.
-
-        ::
-
-            sage: n=2^6000
-            sage: n.digits(2^3000)
-            [0, 0, 1]
-
-        ::
-
-            sage: base=3; n=25
-            sage: l=n.digits(base)
-            sage: # the next relationship should hold for all n,base
-            sage: sum(base^i*l[i] for i in range(len(l)))==n
-            True
-            sage: base=3; n=-30; l=n.digits(base); sum(base^i*l[i] for i in range(len(l)))==n
-            True
-
-        The inverse of this method -- constructing an integer from a
-        list of digits and a base -- can be done using the above method
-        or by simply using :class:`ZZ()
-        <sage.rings.integer_ring.IntegerRing_class>` with a base::
-
-            sage: x = 123; ZZ(x.digits(), 10)
-            123
-            sage: x == ZZ(x.digits(6), 6)
-            True
-            sage: x == ZZ(x.digits(25), 25)
-            True
-
-        Using :func:`sum` and :func:`enumerate` to do the same thing is
-        slightly faster in many cases (and
-        :func:`~sage.misc.misc_c.balanced_sum` may be faster yet). Of
-        course it gives the same result::
-
-            sage: base = 4
-            sage: sum(digit * base^i for i, digit in enumerate(x.digits(base))) == ZZ(x.digits(base), base)
-            True
-
-        Note: In some cases it is faster to give a digits collection. This
-        would be particularly true for computing the digits of a series of
-        small numbers. In these cases, the code is careful to allocate as
-        few python objects as reasonably possible.
-
-        ::
-
-            sage: digits = list(range(15))
-            sage: l = [ZZ(i).digits(15,digits) for i in range(100)]
-            sage: l[16]
-            [1, 1]
-
-        This function is comparable to :func:`str` for speed.
-
-        ::
-
-            sage: n=3^100000
-            sage: n.digits(base=10)[-1]  # slightly slower than str                     # needs sage.rings.real_interval_field
-            1
-            sage: n=10^10000
-            sage: n.digits(base=10)[-1]  # slightly faster than str                     # needs sage.rings.real_interval_field
-            1
-
-        AUTHORS:
-
-        - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    @overload
     def divide_knowing_divisible_by(self, right) -> Any:
-        """Integer.divide_knowing_divisible_by(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4425)
-
-        Return the integer ``self`` / ``right`` when ``self`` is divisible by ``right``.
-
-        If ``self`` is not divisible by right, the return value is undefined,
-        and may not even be close to ``self`` / ``right`` for multi-word integers.
-
-        EXAMPLES::
-
-            sage: a = 8; b = 4
-            sage: a.divide_knowing_divisible_by(b)
-            2
-            sage: (100000).divide_knowing_divisible_by(25)
-            4000
-            sage: (100000).divide_knowing_divisible_by(26) # close (random)
-            3846
-
-        However, often it's way off.
-
-        ::
-
-            sage: a = 2^70; a
-            1180591620717411303424
-            sage: a // 11  # floor divide
-            107326510974310118493
-            sage: a.divide_knowing_divisible_by(11) # way off and possibly random
-            43215361478743422388970455040"""
-    @overload
-    def divide_knowing_divisible_by(self, b) -> Any:
-        """Integer.divide_knowing_divisible_by(self, right)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4425)
-
+        """
         Return the integer ``self`` / ``right`` when ``self`` is divisible by ``right``.
 
         If ``self`` is not divisible by right, the return value is undefined,
@@ -4015,10 +962,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a.divide_knowing_divisible_by(11) # way off and possibly random
             43215361478743422388970455040"""
     def divides(self, n) -> Any:
-        """Integer.divides(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4201)
-
+        """
         Return ``True`` if ``self`` divides ``n``.
 
         EXAMPLES::
@@ -4030,12 +974,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             False
             sage: Z(10).divides(Z(5))
             False"""
-    @overload
     def divisors(self, method=...) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
+        """
         Return the list of all positive integer divisors of this integer,
         sorted in increasing order.
 
@@ -4123,1314 +1063,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
            preserves relative order. One can leverage this fact to
            keep the list in order as one computes it using a process
            similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
-    def divisors(self, method=...) -> Any:
-        """Integer.divisors(self, method=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3030)
-
-        Return the list of all positive integer divisors of this integer,
-        sorted in increasing order.
-
-        EXAMPLES:
-
-        ::
-
-            sage: (-3).divisors()
-            [1, 3]
-            sage: 6.divisors()
-            [1, 2, 3, 6]
-            sage: 28.divisors()
-            [1, 2, 4, 7, 14, 28]
-            sage: (2^5).divisors()
-            [1, 2, 4, 8, 16, 32]
-            sage: 100.divisors()
-            [1, 2, 4, 5, 10, 20, 25, 50, 100]
-            sage: 1.divisors()
-            [1]
-            sage: 0.divisors()
-            Traceback (most recent call last):
-            ...
-            ValueError: n must be nonzero
-            sage: (2^3 * 3^2 * 17).divisors()
-            [1, 2, 3, 4, 6, 8, 9, 12, 17, 18, 24, 34, 36, 51, 68, 72,
-            102, 136, 153, 204, 306, 408, 612, 1224]
-            sage: a = odd_part(factorial(31))
-            sage: v = a.divisors()                                                      # needs sage.libs.pari
-            sage: len(v)                                                                # needs sage.libs.pari
-            172800
-            sage: prod(e + 1 for p, e in factor(a))                                     # needs sage.libs.pari
-            172800
-            sage: all(t.divides(a) for t in v)                                          # needs sage.libs.pari
-            True
-
-        ::
-
-            sage: n = 2^551 - 1
-            sage: L = n.divisors()                                                      # needs sage.libs.pari
-            sage: len(L)                                                                # needs sage.libs.pari
-            256
-            sage: L[-1] == n                                                            # needs sage.libs.pari
-            True
-
-        TESTS:
-
-        Overflow::
-
-            sage: prod(primes_first_n(64)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large
-            sage: prod(primes_first_n(58)).divisors()                                   # needs sage.libs.pari
-            Traceback (most recent call last):
-            ...
-            OverflowError: value too large                                 # 32-bit
-            MemoryError: failed to allocate 288230376151711744 * 24 bytes  # 64-bit
-
-        Check for memory leaks and ability to interrupt
-        (the ``divisors`` call below allocates about 800 MB every time,
-        so a memory leak will not go unnoticed)::
-
-            sage: n = prod(primes_first_n(25))                                          # needs sage.libs.pari
-            sage: for i in range(20):           # long time                             # needs sage.libs.pari
-            ....:     try:
-            ....:         alarm(RDF.random_element(1e-3, 0.5))
-            ....:         _ = n.divisors()
-            ....:         cancel_alarm()  # we never get here
-            ....:     except AlarmInterrupt:
-            ....:         pass
-
-        Test a strange method::
-
-            sage: 100.divisors(method='hey')
-            Traceback (most recent call last):
-            ...
-            ValueError: method must be 'pari' or 'sage'
-
-
-        .. NOTE::
-
-           If one first computes all the divisors and then sorts it,
-           the sorting step can easily dominate the runtime. Note,
-           however, that (nonnegative) multiplication on the left
-           preserves relative order. One can leverage this fact to
-           keep the list in order as one computes it using a process
-           similar to that of the merge sort algorithm."""
-    @overload
     def euclidean_degree(self) -> Any:
-        """Integer.euclidean_degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3302)
-
+        """
         Return the degree of this element as an element of a Euclidean domain.
 
         If this is an element in the ring of integers, this is simply its
@@ -5440,26 +1074,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: ZZ(1).euclidean_degree()
             1"""
-    @overload
-    def euclidean_degree(self) -> Any:
-        """Integer.euclidean_degree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3302)
-
-        Return the degree of this element as an element of a Euclidean domain.
-
-        If this is an element in the ring of integers, this is simply its
-        absolute value.
-
-        EXAMPLES::
-
-            sage: ZZ(1).euclidean_degree()
-            1"""
-    def exact_log(self, m) -> Any:
-        """Integer.exact_log(self, m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2625)
-
+    def exact_log(self, m: ConvertibleToInteger) -> Integer:
+        """
         Return the largest integer `k` such that `m^k \\leq \\text{self}`,
         i.e., the floor of `\\log_m(\\text{self})`.
 
@@ -5535,148 +1151,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             TypeError: Attempt to coerce non-integral RealNumber to Integer"""
-    @overload
     def exp(self, prec=...) -> Any:
-        """Integer.exp(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2906)
-
-        Return the exponential function of ``self`` as a real number.
-
-        This function is provided only so that Sage integers may be treated
-        in the same manner as real numbers when convenient.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(8).exp()                                                      # needs sage.symbolic
-            e^8
-            sage: Integer(8).exp(prec=100)                                              # needs sage.symbolic
-            2980.9579870417282747435920995
-            sage: exp(Integer(8))                                                       # needs sage.symbolic
-            e^8
-
-        For even fairly large numbers, this may not be useful.
-
-        ::
-
-            sage: y = Integer(145^145)
-            sage: y.exp()                                                               # needs sage.symbolic
-            e^25024207011349079210459585279553675697932183658421565260323592409432707306554163224876110094014450895759296242775250476115682350821522931225499163750010280453185147546962559031653355159703678703793369785727108337766011928747055351280379806937944746847277089168867282654496776717056860661614337004721164703369140625
-            sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
-            +infinity"""
-    @overload
-    def exp(self) -> Any:
-        """Integer.exp(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2906)
-
-        Return the exponential function of ``self`` as a real number.
-
-        This function is provided only so that Sage integers may be treated
-        in the same manner as real numbers when convenient.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(8).exp()                                                      # needs sage.symbolic
-            e^8
-            sage: Integer(8).exp(prec=100)                                              # needs sage.symbolic
-            2980.9579870417282747435920995
-            sage: exp(Integer(8))                                                       # needs sage.symbolic
-            e^8
-
-        For even fairly large numbers, this may not be useful.
-
-        ::
-
-            sage: y = Integer(145^145)
-            sage: y.exp()                                                               # needs sage.symbolic
-            e^25024207011349079210459585279553675697932183658421565260323592409432707306554163224876110094014450895759296242775250476115682350821522931225499163750010280453185147546962559031653355159703678703793369785727108337766011928747055351280379806937944746847277089168867282654496776717056860661614337004721164703369140625
-            sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
-            +infinity"""
-    @overload
-    def exp(self, prec=...) -> Any:
-        """Integer.exp(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2906)
-
-        Return the exponential function of ``self`` as a real number.
-
-        This function is provided only so that Sage integers may be treated
-        in the same manner as real numbers when convenient.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(8).exp()                                                      # needs sage.symbolic
-            e^8
-            sage: Integer(8).exp(prec=100)                                              # needs sage.symbolic
-            2980.9579870417282747435920995
-            sage: exp(Integer(8))                                                       # needs sage.symbolic
-            e^8
-
-        For even fairly large numbers, this may not be useful.
-
-        ::
-
-            sage: y = Integer(145^145)
-            sage: y.exp()                                                               # needs sage.symbolic
-            e^25024207011349079210459585279553675697932183658421565260323592409432707306554163224876110094014450895759296242775250476115682350821522931225499163750010280453185147546962559031653355159703678703793369785727108337766011928747055351280379806937944746847277089168867282654496776717056860661614337004721164703369140625
-            sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
-            +infinity"""
-    @overload
-    def exp(self) -> Any:
-        """Integer.exp(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2906)
-
-        Return the exponential function of ``self`` as a real number.
-
-        This function is provided only so that Sage integers may be treated
-        in the same manner as real numbers when convenient.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(8).exp()                                                      # needs sage.symbolic
-            e^8
-            sage: Integer(8).exp(prec=100)                                              # needs sage.symbolic
-            2980.9579870417282747435920995
-            sage: exp(Integer(8))                                                       # needs sage.symbolic
-            e^8
-
-        For even fairly large numbers, this may not be useful.
-
-        ::
-
-            sage: y = Integer(145^145)
-            sage: y.exp()                                                               # needs sage.symbolic
-            e^25024207011349079210459585279553675697932183658421565260323592409432707306554163224876110094014450895759296242775250476115682350821522931225499163750010280453185147546962559031653355159703678703793369785727108337766011928747055351280379806937944746847277089168867282654496776717056860661614337004721164703369140625
-            sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
-            +infinity"""
-    @overload
-    def exp(self, prec=...) -> Any:
-        """Integer.exp(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2906)
-
+        """
         Return the exponential function of ``self`` as a real number.
 
         This function is provided only so that Sage integers may be treated
@@ -5706,10 +1182,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
             +infinity"""
     def factor(self, algorithm=..., proof=..., limit=..., int_=..., verbose=...) -> Any:
-        """Integer.factor(self, algorithm='pari', proof=None, limit=None, int_=False, verbose=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3879)
-
+        """
         Return the prime factorization of this integer as a
         formal Factorization object.
 
@@ -5818,10 +1291,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ...
             ValueError: Algorithm is not known"""
     def factorial(self) -> Any:
-        '''Integer.factorial(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4541)
-
+        '''
         Return the factorial `n! = 1 \\cdot 2 \\cdot 3 \\cdots n`.
 
         If the input does not fit in an ``unsigned long int``, an :exc:`OverflowError`
@@ -5852,26 +1322,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ValueError: factorial only defined for nonnegative integers'''
-    @overload
     def floor(self) -> Any:
-        """Integer.floor(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4691)
-
-        Return the floor of ``self``, which is just ``self`` since ``self`` is an
-        integer.
-
-        EXAMPLES::
-
-            sage: n = 6
-            sage: n.floor()
-            6"""
-    @overload
-    def floor(self) -> Any:
-        """Integer.floor(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4691)
-
+        """
         Return the floor of ``self``, which is just ``self`` since ``self`` is an
         integer.
 
@@ -5881,10 +1333,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n.floor()
             6"""
     def gamma(self) -> Any:
-        """Integer.gamma(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4669)
-
+        """
         The gamma function on integers is the factorial function (shifted by
         one) on positive integers, and `\\pm \\infty` on nonpositive integers.
 
@@ -5900,10 +1349,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: gamma(-2^150)
             Infinity"""
     def global_height(self, prec=...) -> Any:
-        """Integer.global_height(self, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4916)
-
+        """
         Return the absolute logarithmic height of this rational integer.
 
         INPUT:
@@ -5928,12 +1374,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             0.69314718055994530941723212146
             sage: exp(_)
             2.0000000000000000000000000000"""
-    @overload
-    def hex(self) -> Any:
-        """Integer.hex(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1184)
-
+    def hex(self) -> str:
+        """
         Return the hexadecimal digits of ``self`` in lower case.
 
         .. NOTE::
@@ -5953,99 +1395,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             10
             sage: print(Integer(16938402384092843092843098243).hex())
             36bb1e3929d1a8fe2802f083"""
-    @overload
-    def hex(self) -> Any:
-        """Integer.hex(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1184)
-
-        Return the hexadecimal digits of ``self`` in lower case.
-
-        .. NOTE::
-
-           '0x' is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).hex())
-            f
-            sage: print(Integer(16).hex())
-            10
-            sage: print(Integer(16938402384092843092843098243).hex())
-            36bb1e3929d1a8fe2802f083"""
-    @overload
-    def hex(self) -> Any:
-        """Integer.hex(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1184)
-
-        Return the hexadecimal digits of ``self`` in lower case.
-
-        .. NOTE::
-
-           '0x' is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).hex())
-            f
-            sage: print(Integer(16).hex())
-            10
-            sage: print(Integer(16938402384092843092843098243).hex())
-            36bb1e3929d1a8fe2802f083"""
-    @overload
-    def hex(self) -> Any:
-        """Integer.hex(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1184)
-
-        Return the hexadecimal digits of ``self`` in lower case.
-
-        .. NOTE::
-
-           '0x' is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(15).hex())
-            f
-            sage: print(Integer(16).hex())
-            10
-            sage: print(Integer(16938402384092843092843098243).hex())
-            36bb1e3929d1a8fe2802f083"""
-    @overload
     def imag(self) -> Any:
-        """Integer.imag(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4756)
-
-        Return the imaginary part of ``self``, which is zero.
-
-        EXAMPLES::
-
-            sage: Integer(9).imag()
-            0"""
-    @overload
-    def imag(self) -> Any:
-        """Integer.imag(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4756)
-
+        """
         Return the imaginary part of ``self``, which is zero.
 
         EXAMPLES::
@@ -6053,10 +1404,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: Integer(9).imag()
             0"""
     def inverse_mod(self, n) -> Any:
-        """Integer.inverse_mod(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6925)
-
+        """
         Return the inverse of ``self`` modulo `n`, if this inverse exists.
 
         Otherwise, raise a :exc:`ZeroDivisionError` exception.
@@ -6102,12 +1450,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: Rational(3) % Rational(-1)
             0"""
-    @overload
     def inverse_of_unit(self) -> Any:
-        """Integer.inverse_of_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6900)
-
+        """
         Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
         ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
 
@@ -6125,104 +1469,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ArithmeticError: inverse does not exist"""
-    @overload
-    def inverse_of_unit(self) -> Any:
-        """Integer.inverse_of_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6900)
-
-        Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
-        ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
-
-        EXAMPLES::
-
-            sage: (1).inverse_of_unit()
-            1
-            sage: (-1).inverse_of_unit()
-            -1
-            sage: 5.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist
-            sage: 0.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist"""
-    @overload
-    def inverse_of_unit(self) -> Any:
-        """Integer.inverse_of_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6900)
-
-        Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
-        ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
-
-        EXAMPLES::
-
-            sage: (1).inverse_of_unit()
-            1
-            sage: (-1).inverse_of_unit()
-            -1
-            sage: 5.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist
-            sage: 0.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist"""
-    @overload
-    def inverse_of_unit(self) -> Any:
-        """Integer.inverse_of_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6900)
-
-        Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
-        ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
-
-        EXAMPLES::
-
-            sage: (1).inverse_of_unit()
-            1
-            sage: (-1).inverse_of_unit()
-            -1
-            sage: 5.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist
-            sage: 0.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist"""
-    @overload
-    def inverse_of_unit(self) -> Any:
-        """Integer.inverse_of_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6900)
-
-        Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
-        ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
-
-        EXAMPLES::
-
-            sage: (1).inverse_of_unit()
-            1
-            sage: (-1).inverse_of_unit()
-            -1
-            sage: 5.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist
-            sage: 0.inverse_of_unit()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: inverse does not exist"""
-    @overload
     def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
+        """
         Return ``True`` if this integer is a discriminant.
 
         .. NOTE::
@@ -6248,260 +1496,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             True
             sage: len([D for D in srange(-100,100) if D.is_discriminant()])
             100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_discriminant(self) -> Any:
-        """Integer.is_discriminant(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6159)
-
-        Return ``True`` if this integer is a discriminant.
-
-        .. NOTE::
-
-            A discriminant is an integer congruent to 0 or 1 modulo 4.
-
-        EXAMPLES::
-
-            sage: (-1).is_discriminant()
-            False
-            sage: (-4).is_discriminant()
-            True
-            sage: 100.is_discriminant()
-            True
-            sage: 101.is_discriminant()
-            True
-
-        TESTS::
-
-            sage: 0.is_discriminant()
-            True
-            sage: 1.is_discriminant()
-            True
-            sage: len([D for D in srange(-100,100) if D.is_discriminant()])
-            100"""
-    @overload
-    def is_fundamental_discriminant(self) -> bool:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
     def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
+        """
         Return ``True`` if this integer is a fundamental discriminant.
 
         .. NOTE::
@@ -6527,191 +1523,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
             ....:      if D.is_fundamental_discriminant()])
             61"""
-    @overload
-    def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
-    def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
-    def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
-    def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
-    def is_fundamental_discriminant(self) -> Any:
-        """Integer.is_fundamental_discriminant(self) -> bool
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6189)
-
-        Return ``True`` if this integer is a fundamental discriminant.
-
-        .. NOTE::
-
-            A fundamental discriminant is a discriminant, not 0 or 1
-            and not a square multiple of a smaller discriminant.
-
-        EXAMPLES::
-
-            sage: (-4).is_fundamental_discriminant()                                    # needs sage.libs.pari
-            True
-            sage: (-12).is_fundamental_discriminant()
-            False
-            sage: 101.is_fundamental_discriminant()                                     # needs sage.libs.pari
-            True
-
-        TESTS::
-
-            sage: 0.is_fundamental_discriminant()
-            False
-            sage: 1.is_fundamental_discriminant()
-            False
-            sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
-            ....:      if D.is_fundamental_discriminant()])
-            61"""
-    @overload
-    def is_integer(self) -> Any:
-        """Integer.is_integer(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4816)
-
-        Return ``True`` as they are integers.
-
-        EXAMPLES::
-
-            sage: sqrt(4).is_integer()
-            True"""
-    @overload
-    def is_integer(self) -> Any:
-        """Integer.is_integer(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4816)
-
-        Return ``True`` as they are integers.
-
-        EXAMPLES::
-
-            sage: sqrt(4).is_integer()
-            True"""
-    @overload
     def is_integral(self) -> Any:
-        """Integer.is_integral(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4793)
-
+        """
         Return ``True`` since integers are integral, i.e.,
         satisfy a monic polynomial with integer coefficients.
 
@@ -6719,25 +1532,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: Integer(3).is_integral()
             True"""
-    @overload
-    def is_integral(self) -> Any:
-        """Integer.is_integral(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4793)
-
-        Return ``True`` since integers are integral, i.e.,
-        satisfy a monic polynomial with integer coefficients.
-
-        EXAMPLES::
-
-            sage: Integer(3).is_integral()
-            True"""
-    @overload
     def is_irreducible(self) -> Any:
-        """Integer.is_irreducible(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5448)
-
+        """
         Return ``True`` if ``self`` is irreducible, i.e. +/-
         prime
 
@@ -6755,104 +1551,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: z = -7
             sage: z.is_irreducible()
             True"""
-    @overload
-    def is_irreducible(self) -> Any:
-        """Integer.is_irreducible(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5448)
-
-        Return ``True`` if ``self`` is irreducible, i.e. +/-
-        prime
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_irreducible()                                                    # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_irreducible()
-            False
-            sage: z = 7
-            sage: z.is_irreducible()
-            True
-            sage: z = -7
-            sage: z.is_irreducible()
-            True"""
-    @overload
-    def is_irreducible(self) -> Any:
-        """Integer.is_irreducible(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5448)
-
-        Return ``True`` if ``self`` is irreducible, i.e. +/-
-        prime
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_irreducible()                                                    # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_irreducible()
-            False
-            sage: z = 7
-            sage: z.is_irreducible()
-            True
-            sage: z = -7
-            sage: z.is_irreducible()
-            True"""
-    @overload
-    def is_irreducible(self) -> Any:
-        """Integer.is_irreducible(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5448)
-
-        Return ``True`` if ``self`` is irreducible, i.e. +/-
-        prime
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_irreducible()                                                    # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_irreducible()
-            False
-            sage: z = 7
-            sage: z.is_irreducible()
-            True
-            sage: z = -7
-            sage: z.is_irreducible()
-            True"""
-    @overload
-    def is_irreducible(self) -> Any:
-        """Integer.is_irreducible(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5448)
-
-        Return ``True`` if ``self`` is irreducible, i.e. +/-
-        prime
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_irreducible()                                                    # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_irreducible()
-            False
-            sage: z = 7
-            sage: z.is_irreducible()
-            True
-            sage: z = -7
-            sage: z.is_irreducible()
-            True"""
-    @overload
     def is_norm(self, K, element=..., proof=...) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
+        """
         See ``QQ(self).is_norm()``.
 
         EXAMPLES::
@@ -6878,260 +1578,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = 5
             sage: n.is_norm(K, element=True)
             (False, None)"""
-    @overload
-    def is_norm(self) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, QQ) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, QQ, element=...) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, K) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, K) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, K, element=...) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, K, element=...) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
-    def is_norm(self, K, element=...) -> Any:
-        """Integer.is_norm(self, K, element=False, proof=True)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5590)
-
-        See ``QQ(self).is_norm()``.
-
-        EXAMPLES::
-
-            sage: n = 7
-            sage: n.is_norm(QQ)
-            True
-            sage: n.is_norm(QQ, element=True)
-            (True, 7)
-
-            sage: # needs sage.rings.number_field
-            sage: x = polygen(ZZ, 'x')
-            sage: K = NumberField(x^2 - 2, 'beta')
-            sage: n = 4
-            sage: n.is_norm(K)
-            True
-            sage: 5.is_norm(K)
-            False
-            sage: n.is_norm(K, element=True)
-            (True, -4*beta + 6)
-            sage: n.is_norm(K, element=True)[1].norm()
-            4
-            sage: n = 5
-            sage: n.is_norm(K, element=True)
-            (False, None)"""
-    @overload
     def is_one(self) -> Any:
-        """Integer.is_one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4767)
-
+        """
         Return ``True`` if the integer is `1`, otherwise ``False``.
 
         EXAMPLES::
@@ -7140,40 +1588,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             True
             sage: Integer(0).is_one()
             False"""
-    @overload
-    def is_one(self) -> Any:
-        """Integer.is_one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4767)
-
-        Return ``True`` if the integer is `1`, otherwise ``False``.
-
-        EXAMPLES::
-
-            sage: Integer(1).is_one()
-            True
-            sage: Integer(0).is_one()
-            False"""
-    @overload
-    def is_one(self) -> Any:
-        """Integer.is_one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4767)
-
-        Return ``True`` if the integer is `1`, otherwise ``False``.
-
-        EXAMPLES::
-
-            sage: Integer(1).is_one()
-            True
-            sage: Integer(0).is_one()
-            False"""
-    @overload
     def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
+        """
         Return ``True`` if ``self`` is a perfect power, ie if there exist integers
         `a` and `b`, `b > 1` with ``self`` `= a^b`.
 
@@ -7213,371 +1629,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
             []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    @overload
-    def is_perfect_power(self) -> Any:
-        """Integer.is_perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5534)
-
-        Return ``True`` if ``self`` is a perfect power, ie if there exist integers
-        `a` and `b`, `b > 1` with ``self`` `= a^b`.
-
-        .. SEEALSO::
-
-            - :meth:`perfect_power`: Finds the minimal base for which this
-              integer is a perfect power.
-            - :meth:`is_power_of`: If you know the base already, this method is
-              the fastest option.
-            - :meth:`is_prime_power`: Checks whether the base is prime.
-
-        EXAMPLES::
-
-            sage: Integer(-27).is_perfect_power()
-            True
-            sage: Integer(12).is_perfect_power()
-            False
-
-            sage: z = 8
-            sage: z.is_perfect_power()
-            True
-            sage: 144.is_perfect_power()
-            True
-            sage: 10.is_perfect_power()
-            False
-            sage: (-8).is_perfect_power()
-            True
-            sage: (-4).is_perfect_power()
-            False
-
-        TESTS:
-
-        This is a test to make sure we work around a bug in GMP, see
-        :issue:`4612`.
-
-        ::
-
-            sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
-            []"""
-    def is_power_of(self, n) -> Any:
-        """Integer.is_power_of(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5072)
-
+    def is_power_of(self, n) ->Any:
+        """
         Return ``True`` if there is an integer `b` with
         `\\mathtt{self} = n^b`.
 
@@ -7666,544 +1719,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: for a in range(2, 10000): k = b.is_power_of(a)
             sage: cputime(t)      # random
             0.02800199999999986"""
-    @overload
     def is_prime(self, proof=...) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self, proof=...) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self, proof=...) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
-        Test whether ``self`` is prime.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default). If ``False``, use a
-          strong pseudo-primality test (see :meth:`is_pseudoprime`).
-          If ``True``, use a provable primality test.  If unset, use the
-          :mod:`default arithmetic proof flag <sage.structure.proof.proof>`.
-
-        .. NOTE::
-
-           Integer primes are by definition *positive*! This is
-           different than Magma, but the same as in PARI. See also the
-           :meth:`is_irreducible()` method.
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_prime()                                                          # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_prime()
-            False
-            sage: z = 7
-            sage: z.is_prime()
-            True
-            sage: z = -7
-            sage: z.is_prime()
-            False
-            sage: z.is_irreducible()
-            True
-
-        ::
-
-            sage: z = 10^80 + 129
-            sage: z.is_prime(proof=False)                                               # needs sage.libs.pari
-            True
-            sage: z.is_prime(proof=True)                                                # needs sage.libs.pari
-            True
-
-        When starting Sage the arithmetic proof flag is True. We can change
-        it to False as follows::
-
-            sage: proof.arithmetic()
-            True
-            sage: n = 10^100 + 267
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            5 loops, best of 3: 163 ms per loop
-            sage: proof.arithmetic(False)
-            sage: proof.arithmetic()
-            False
-            sage: timeit("n.is_prime()")        # not tested                            # needs sage.libs.pari
-            1000 loops, best of 3: 573 us per loop
-
-        ALGORITHM:
-
-        Calls the PARI function :pari:`isprime`.
-
-        TESTS:
-
-        We compare the output of this method to a straightforward sieve::
-
-            sage: size = 10000
-            sage: tab = [0,0] + [1] * (size-2)
-            sage: for i in range(size):
-            ....:     if tab[i]:
-            ....:         for j in range(2*i, size, i):
-            ....:             tab[j] = 0
-            sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
-            True'''
-    @overload
-    def is_prime(self) -> Any:
-        '''Integer.is_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5323)
-
+        '''
         Test whether ``self`` is prime.
 
         INPUT:
@@ -8275,10 +1792,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
             True'''
     def is_prime_power(self, proof=..., boolget_data=...) -> Any:
-        """Integer.is_prime_power(self, *, proof=None, bool get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5167)
-
+        """
         Return ``True`` if this integer is a prime power, and ``False`` otherwise.
 
         A prime power is a prime number raised to a positive power. Hence `1` is
@@ -8371,10 +1885,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: 512.is_prime_power(get_data=True)
             (2, 9)"""
     def is_pseudoprime(self) -> Any:
-        """Integer.is_pseudoprime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5471)
-
+        """
         Test whether ``self`` is a pseudoprime.
 
         This uses PARI's Baillie-PSW probabilistic primality
@@ -8392,12 +1903,9 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: z = 2^31
             sage: z.is_pseudoprime()                                                    # needs sage.libs.pari
             False"""
-    @overload
+    
     def is_pseudoprime_power(self, get_data=...) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
+        """
         Test if this number is a power of a pseudoprime number.
 
         For large numbers, this method might be faster than
@@ -8434,372 +1942,16 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             False
             sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
             False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self, get_data=...) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
-    def is_pseudoprime_power(self) -> Any:
-        """Integer.is_pseudoprime_power(self, get_data=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5493)
-
-        Test if this number is a power of a pseudoprime number.
-
-        For large numbers, this method might be faster than
-        :meth:`is_prime_power`.
-
-        INPUT:
-
-        - ``get_data`` -- (default: ``False``) if ``True`` return a pair `(p,k)`
-          such that this number equals `p^k` with `p` a pseudoprime and `k` a
-          positive integer or the pair ``(self,0)`` otherwise
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: x = 10^200 + 357
-            sage: x.is_pseudoprime()
-            True
-            sage: (x^12).is_pseudoprime_power()
-            True
-            sage: (x^12).is_pseudoprime_power(get_data=True)
-            (1000...000357, 12)
-            sage: (997^100).is_pseudoprime_power()
-            True
-            sage: (998^100).is_pseudoprime_power()
-            False
-            sage: ((10^1000 + 453)^2).is_pseudoprime_power()
-            True
-
-        TESTS::
-
-            sage: 0.is_pseudoprime_power()
-            False
-            sage: (-1).is_pseudoprime_power()
-            False
-            sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
-            False"""
-    @overload
     def is_rational(self) -> Any:
-        """Integer.is_rational(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4805)
-
+        """
         Return ``True`` as an integer is a rational number.
 
         EXAMPLES::
 
             sage: 5.is_rational()
             True"""
-    @overload
-    def is_rational(self) -> Any:
-        """Integer.is_rational(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4805)
-
-        Return ``True`` as an integer is a rational number.
-
-        EXAMPLES::
-
-            sage: 5.is_rational()
-            True"""
-    @overload
     def is_square(self) -> Any:
-        """Integer.is_square(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4843)
-
+        """
         Return ``True`` if ``self`` is a perfect square.
 
         EXAMPLES::
@@ -8808,40 +1960,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             True
             sage: Integer(41).is_square()
             False"""
-    @overload
-    def is_square(self) -> Any:
-        """Integer.is_square(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4843)
-
-        Return ``True`` if ``self`` is a perfect square.
-
-        EXAMPLES::
-
-            sage: Integer(4).is_square()
-            True
-            sage: Integer(41).is_square()
-            False"""
-    @overload
-    def is_square(self) -> Any:
-        """Integer.is_square(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4843)
-
-        Return ``True`` if ``self`` is a perfect square.
-
-        EXAMPLES::
-
-            sage: Integer(4).is_square()
-            True
-            sage: Integer(41).is_square()
-            False"""
-    @overload
     def is_squarefree(self) -> Any:
-        """Integer.is_squarefree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6143)
-
+        """
         Return ``True`` if this integer is not divisible by the square of any
         prime and ``False`` otherwise.
 
@@ -8853,63 +1973,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             True
             sage: 0.is_squarefree()                                                     # needs sage.libs.pari
             False"""
-    @overload
-    def is_squarefree(self) -> Any:
-        """Integer.is_squarefree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6143)
-
-        Return ``True`` if this integer is not divisible by the square of any
-        prime and ``False`` otherwise.
-
-        EXAMPLES::
-
-            sage: 100.is_squarefree()                                                   # needs sage.libs.pari
-            False
-            sage: 102.is_squarefree()                                                   # needs sage.libs.pari
-            True
-            sage: 0.is_squarefree()                                                     # needs sage.libs.pari
-            False"""
-    @overload
-    def is_squarefree(self) -> Any:
-        """Integer.is_squarefree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6143)
-
-        Return ``True`` if this integer is not divisible by the square of any
-        prime and ``False`` otherwise.
-
-        EXAMPLES::
-
-            sage: 100.is_squarefree()                                                   # needs sage.libs.pari
-            False
-            sage: 102.is_squarefree()                                                   # needs sage.libs.pari
-            True
-            sage: 0.is_squarefree()                                                     # needs sage.libs.pari
-            False"""
-    @overload
-    def is_squarefree(self) -> Any:
-        """Integer.is_squarefree(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6143)
-
-        Return ``True`` if this integer is not divisible by the square of any
-        prime and ``False`` otherwise.
-
-        EXAMPLES::
-
-            sage: 100.is_squarefree()                                                   # needs sage.libs.pari
-            False
-            sage: 102.is_squarefree()                                                   # needs sage.libs.pari
-            True
-            sage: 0.is_squarefree()                                                     # needs sage.libs.pari
-            False"""
-    @overload
     def is_unit(self) -> Any:
-        '''Integer.is_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4827)
-
+        '''
         Return ``True`` if this integer is a unit, i.e., `1` or `-1`.
 
         EXAMPLES::
@@ -8921,71 +1986,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             0 False
             1 True
             2 False'''
-    @overload
-    def is_unit(self) -> Any:
-        '''Integer.is_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4827)
-
-        Return ``True`` if this integer is a unit, i.e., `1` or `-1`.
-
-        EXAMPLES::
-
-            sage: for n in srange(-2,3):
-            ....:     print("{} {}".format(n, n.is_unit()))
-            -2 False
-            -1 True
-            0 False
-            1 True
-            2 False'''
-    @overload
     def isqrt(self) -> Any:
-        """Integer.isqrt(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6395)
-
-        Return the integer floor of the square root of ``self``, or raises an
-        :exc:`ValueError` if ``self`` is negative.
-
-        EXAMPLES::
-
-            sage: a = Integer(5)
-            sage: a.isqrt()
-            2
-
-        ::
-
-            sage: Integer(-102).isqrt()
-            Traceback (most recent call last):
-            ...
-            ValueError: square root of negative integer not defined"""
-    @overload
-    def isqrt(self) -> Any:
-        """Integer.isqrt(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6395)
-
-        Return the integer floor of the square root of ``self``, or raises an
-        :exc:`ValueError` if ``self`` is negative.
-
-        EXAMPLES::
-
-            sage: a = Integer(5)
-            sage: a.isqrt()
-            2
-
-        ::
-
-            sage: Integer(-102).isqrt()
-            Traceback (most recent call last):
-            ...
-            ValueError: square root of negative integer not defined"""
-    @overload
-    def isqrt(self) -> Any:
-        """Integer.isqrt(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6395)
-
+        """
         Return the integer floor of the square root of ``self``, or raises an
         :exc:`ValueError` if ``self`` is negative.
 
@@ -9002,10 +2004,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ...
             ValueError: square root of negative integer not defined"""
     def jacobi(self, b) -> Any:
-        """Integer.jacobi(self, b)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5635)
-
+        """
         Calculate the Jacobi symbol `\\left(\\frac{\\text{self}}{b}\\right)`.
 
         EXAMPLES::
@@ -9029,10 +2028,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a.jacobi(b) == -b.jacobi(a)
             True"""
     def kronecker(self, b) -> Any:
-        """Integer.kronecker(self, b)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5672)
-
+        """
         Calculate the Kronecker symbol `\\left(\\frac{\\text{self}}{b}\\right)`
         with the Kronecker extension `(\\text{self}/2)=(2/\\text{self})` when ``self`` is odd,
         or `(\\text{self}/2)=0` when ``self`` is even.
@@ -9051,12 +2047,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a = 2; b = 5
             sage: a.kronecker(b) == b.kronecker(a)
             True"""
-    @overload
-    def list(self) -> Any:
-        """Integer.list(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 971)
-
+    def list(self) -> list[Integer]:
+        """
         Return a list with this integer in it, to be compatible with the
         method for number fields.
 
@@ -9065,224 +2057,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: m = 5
             sage: m.list()
             [5]"""
-    @overload
-    def list(self) -> Any:
-        """Integer.list(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 971)
-
-        Return a list with this integer in it, to be compatible with the
-        method for number fields.
-
-        EXAMPLES::
-
-            sage: m = 5
-            sage: m.list()
-            [5]"""
-    @overload
-    def log(self, m=..., prec=...) -> Any:
-        """Integer.log(self, m=None, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2775)
-
-        Return symbolic log by default, unless the logarithm is exact (for
-        an integer argument). When ``prec`` is given, the :class:`RealField`
-        approximation to that bit precision is used.
-
-        This function is provided primarily so that Sage integers may be
-        treated in the same manner as real numbers when convenient. Direct
-        use of :meth:`exact_log` is probably best for arithmetic log computation.
-
-        INPUT:
-
-        - ``m`` -- (default: natural) log base e
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(124).log(5)                                                   # needs sage.symbolic
-            log(124)/log(5)
-            sage: Integer(124).log(5, 100)                                              # needs sage.rings.real_mpfr
-            2.9950093311241087454822446806
-            sage: Integer(125).log(5)
-            3
-            sage: Integer(125).log(5, prec=53)                                          # needs sage.rings.real_mpfr
-            3.00000000000000
-            sage: log(Integer(125))                                                     # needs sage.symbolic
-            3*log(5)
-
-        For extremely large numbers, this works::
-
-            sage: x = 3^100000
-            sage: log(x, 3)                                                             # needs sage.rings.real_interval_field
-            100000
-
-        Also ``log(x)``, giving a symbolic output,
-        works in a reasonable amount of time for this ``x``::
-
-            sage: x = 3^100000
-            sage: log(x)                                                                # needs sage.symbolic
-            log(1334971414230...5522000001)
-
-        But approximations are probably more useful in this
-        case, and work to as high a precision as we desire::
-
-            sage: x.log(3, 53)  # default precision for RealField                       # needs sage.rings.real_mpfr
-            100000.000000000
-            sage: (x + 1).log(3, 53)                                                    # needs sage.rings.real_mpfr
-            100000.000000000
-            sage: (x + 1).log(3, 1000)                                                  # needs sage.rings.real_mpfr
-            100000.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-        We can use non-integer bases, with default e::
-
-            sage: x.log(2.5, prec=53)                                                   # needs sage.rings.real_mpfr
-            119897.784671579
-
-        We also get logarithms of negative integers, via the
-        symbolic ring, using the branch from `-\\pi` to `\\pi`::
-
-            sage: log(-1)                                                               # needs sage.symbolic
-            I*pi
-
-        The logarithm of zero is done likewise::
-
-            sage: log(0)                                                                # needs sage.symbolic
-            -Infinity
-
-        Some rational bases yield integer logarithms (:issue:`21517`)::
-
-            sage: ZZ(8).log(1/2)
-            -3
-
-        Check that Python ints are accepted (:issue:`21518`)::
-
-            sage: ZZ(8).log(int(2))
-            3
-
-        Check that negative bases yield complex logarithms (:issue:`39959`)::
-
-            sage: 8.log(-2)
-            3*log(2)/(I*pi + log(2))
-            sage: (-10).log(prec=53)
-            2.30258509299405 + 3.14159265358979*I
-
-        Check that zero base  yield complex logarithms (:issue:`39959`)::
-
-            sage: 8.log(0)
-            0
-
-        TESTS::
-
-            sage: (-2).log(3)                                                           # needs sage.symbolic
-            (I*pi + log(2))/log(3)"""
-    @overload
     def log(self, x) -> Any:
-        """Integer.log(self, m=None, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2775)
-
-        Return symbolic log by default, unless the logarithm is exact (for
-        an integer argument). When ``prec`` is given, the :class:`RealField`
-        approximation to that bit precision is used.
-
-        This function is provided primarily so that Sage integers may be
-        treated in the same manner as real numbers when convenient. Direct
-        use of :meth:`exact_log` is probably best for arithmetic log computation.
-
-        INPUT:
-
-        - ``m`` -- (default: natural) log base e
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, returns
-          symbolic, else to given bits of precision as in :class:`RealField`
-
-        EXAMPLES::
-
-            sage: Integer(124).log(5)                                                   # needs sage.symbolic
-            log(124)/log(5)
-            sage: Integer(124).log(5, 100)                                              # needs sage.rings.real_mpfr
-            2.9950093311241087454822446806
-            sage: Integer(125).log(5)
-            3
-            sage: Integer(125).log(5, prec=53)                                          # needs sage.rings.real_mpfr
-            3.00000000000000
-            sage: log(Integer(125))                                                     # needs sage.symbolic
-            3*log(5)
-
-        For extremely large numbers, this works::
-
-            sage: x = 3^100000
-            sage: log(x, 3)                                                             # needs sage.rings.real_interval_field
-            100000
-
-        Also ``log(x)``, giving a symbolic output,
-        works in a reasonable amount of time for this ``x``::
-
-            sage: x = 3^100000
-            sage: log(x)                                                                # needs sage.symbolic
-            log(1334971414230...5522000001)
-
-        But approximations are probably more useful in this
-        case, and work to as high a precision as we desire::
-
-            sage: x.log(3, 53)  # default precision for RealField                       # needs sage.rings.real_mpfr
-            100000.000000000
-            sage: (x + 1).log(3, 53)                                                    # needs sage.rings.real_mpfr
-            100000.000000000
-            sage: (x + 1).log(3, 1000)                                                  # needs sage.rings.real_mpfr
-            100000.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-        We can use non-integer bases, with default e::
-
-            sage: x.log(2.5, prec=53)                                                   # needs sage.rings.real_mpfr
-            119897.784671579
-
-        We also get logarithms of negative integers, via the
-        symbolic ring, using the branch from `-\\pi` to `\\pi`::
-
-            sage: log(-1)                                                               # needs sage.symbolic
-            I*pi
-
-        The logarithm of zero is done likewise::
-
-            sage: log(0)                                                                # needs sage.symbolic
-            -Infinity
-
-        Some rational bases yield integer logarithms (:issue:`21517`)::
-
-            sage: ZZ(8).log(1/2)
-            -3
-
-        Check that Python ints are accepted (:issue:`21518`)::
-
-            sage: ZZ(8).log(int(2))
-            3
-
-        Check that negative bases yield complex logarithms (:issue:`39959`)::
-
-            sage: 8.log(-2)
-            3*log(2)/(I*pi + log(2))
-            sage: (-10).log(prec=53)
-            2.30258509299405 + 3.14159265358979*I
-
-        Check that zero base  yield complex logarithms (:issue:`39959`)::
-
-            sage: 8.log(0)
-            0
-
-        TESTS::
-
-            sage: (-2).log(3)                                                           # needs sage.symbolic
-            (I*pi + log(2))/log(3)"""
-    @overload
-    def log(self, x) -> Any:
-        """Integer.log(self, m=None, prec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2775)
-
+        """
         Return symbolic log by default, unless the logarithm is exact (for
         an integer argument). When ``prec`` is given, the :class:`RealField`
         approximation to that bit precision is used.
@@ -9377,10 +2153,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: (-2).log(3)                                                           # needs sage.symbolic
             (I*pi + log(2))/log(3)"""
     def multifactorial(self, longk) -> Any:
-        """Integer.multifactorial(self, long k)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4588)
-
+        """
         Compute the `k`-th factorial `n!^{(k)}` of ``self``.
 
         The multifactorial number `n!^{(k)}` is defined for nonnegative
@@ -9421,12 +2194,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             OverflowError: argument too large for multifactorial"""
-    @overload
     def multiplicative_order(self) -> Any:
-        """Integer.multiplicative_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6121)
-
+        """
         Return the multiplicative order of ``self``.
 
         EXAMPLES::
@@ -9439,108 +2208,16 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             +Infinity
             sage: ZZ(2).multiplicative_order()
             +Infinity"""
-    @overload
-    def multiplicative_order(self) -> Any:
-        """Integer.multiplicative_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6121)
-
-        Return the multiplicative order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(1).multiplicative_order()
-            1
-            sage: ZZ(-1).multiplicative_order()
-            2
-            sage: ZZ(0).multiplicative_order()
-            +Infinity
-            sage: ZZ(2).multiplicative_order()
-            +Infinity"""
-    @overload
-    def multiplicative_order(self) -> Any:
-        """Integer.multiplicative_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6121)
-
-        Return the multiplicative order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(1).multiplicative_order()
-            1
-            sage: ZZ(-1).multiplicative_order()
-            2
-            sage: ZZ(0).multiplicative_order()
-            +Infinity
-            sage: ZZ(2).multiplicative_order()
-            +Infinity"""
-    @overload
-    def multiplicative_order(self) -> Any:
-        """Integer.multiplicative_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6121)
-
-        Return the multiplicative order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(1).multiplicative_order()
-            1
-            sage: ZZ(-1).multiplicative_order()
-            2
-            sage: ZZ(0).multiplicative_order()
-            +Infinity
-            sage: ZZ(2).multiplicative_order()
-            +Infinity"""
-    @overload
-    def multiplicative_order(self) -> Any:
-        """Integer.multiplicative_order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6121)
-
-        Return the multiplicative order of ``self``.
-
-        EXAMPLES::
-
-            sage: ZZ(1).multiplicative_order()
-            1
-            sage: ZZ(-1).multiplicative_order()
-            2
-            sage: ZZ(0).multiplicative_order()
-            +Infinity
-            sage: ZZ(2).multiplicative_order()
-            +Infinity"""
-    @overload
-    def nbits(self) -> Any:
-        """Integer.nbits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1335)
-
+    def nbits(self) -> int:
+        """
         Alias for :meth:`bit_length`.
 
         TESTS::
 
             sage: {ZZ(n).nbits() == ZZ(n).bit_length() for n in range(-9999, 9999)}
             {True}"""
-    @overload
-    def nbits(self) -> Any:
-        """Integer.nbits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1335)
-
-        Alias for :meth:`bit_length`.
-
-        TESTS::
-
-            sage: {ZZ(n).nbits() == ZZ(n).bit_length() for n in range(-9999, 9999)}
-            {True}"""
-    @overload
-    def ndigits(self, base=...) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
+    def ndigits(self, base: ConvertibleToInteger = 10) -> Integer:
+        """
         Return the number of digits of ``self`` expressed in the given base.
 
         INPUT:
@@ -9567,208 +2244,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = 10**10000000-10**9999990
             sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
             10000000"""
-    @overload
-    def ndigits(self) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
-        Return the number of digits of ``self`` expressed in the given base.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        EXAMPLES::
-
-            sage: n = 52
-            sage: n.ndigits()
-            2
-            sage: n = -10003
-            sage: n.ndigits()
-            5
-            sage: n = 15
-            sage: n.ndigits(2)
-            4
-            sage: n = 1000**1000000+1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000001
-            sage: n = 1000**1000000-1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000000
-            sage: n = 10**10000000-10**9999990
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            10000000"""
-    @overload
-    def ndigits(self) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
-        Return the number of digits of ``self`` expressed in the given base.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        EXAMPLES::
-
-            sage: n = 52
-            sage: n.ndigits()
-            2
-            sage: n = -10003
-            sage: n.ndigits()
-            5
-            sage: n = 15
-            sage: n.ndigits(2)
-            4
-            sage: n = 1000**1000000+1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000001
-            sage: n = 1000**1000000-1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000000
-            sage: n = 10**10000000-10**9999990
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            10000000"""
-    @overload
-    def ndigits(self) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
-        Return the number of digits of ``self`` expressed in the given base.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        EXAMPLES::
-
-            sage: n = 52
-            sage: n.ndigits()
-            2
-            sage: n = -10003
-            sage: n.ndigits()
-            5
-            sage: n = 15
-            sage: n.ndigits(2)
-            4
-            sage: n = 1000**1000000+1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000001
-            sage: n = 1000**1000000-1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000000
-            sage: n = 10**10000000-10**9999990
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            10000000"""
-    @overload
-    def ndigits(self) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
-        Return the number of digits of ``self`` expressed in the given base.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        EXAMPLES::
-
-            sage: n = 52
-            sage: n.ndigits()
-            2
-            sage: n = -10003
-            sage: n.ndigits()
-            5
-            sage: n = 15
-            sage: n.ndigits(2)
-            4
-            sage: n = 1000**1000000+1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000001
-            sage: n = 1000**1000000-1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000000
-            sage: n = 10**10000000-10**9999990
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            10000000"""
-    @overload
-    def ndigits(self) -> Any:
-        """Integer.ndigits(self, base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1717)
-
-        Return the number of digits of ``self`` expressed in the given base.
-
-        INPUT:
-
-        - ``base`` -- integer (default: 10)
-
-        EXAMPLES::
-
-            sage: n = 52
-            sage: n.ndigits()
-            2
-            sage: n = -10003
-            sage: n.ndigits()
-            5
-            sage: n = 15
-            sage: n.ndigits(2)
-            4
-            sage: n = 1000**1000000+1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000001
-            sage: n = 1000**1000000-1
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            3000000
-            sage: n = 10**10000000-10**9999990
-            sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
-            10000000"""
-    @overload
-    def next_prime(self, proof=...) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
-        Return the next prime after ``self``.
-
-        This method calls the PARI function :pari:`nextprime`.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default: ``None``, see
-          ``proof.arithmetic`` or :mod:`sage.structure.proof`); note that the
-          global Sage default is ``proof=True``
-
-        EXAMPLES::
-
-            sage: 100.next_prime()                                                      # needs sage.libs.pari
-            101
-            sage: (10^50).next_prime()                                                  # needs sage.libs.pari
-            100000000000000000000000000000000000000000000000151
-
-        Use ``proof=False``, which is way faster since it does not need
-        a primality proof::
-
-            sage: b = (2^1024).next_prime(proof=False)                                  # needs sage.libs.pari
-            sage: b - 2^1024                                                            # needs sage.libs.pari
-            643
-
-        ::
-
-            sage: Integer(0).next_prime()                                               # needs sage.libs.pari
-            2
-            sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
-            1009"""
-    @overload
     def next_prime(self) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
+        """
         Return the next prime after ``self``.
 
         This method calls the PARI function :pari:`nextprime`.
@@ -9799,156 +2276,9 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             2
             sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
             1009"""
-    @overload
-    def next_prime(self) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
-        Return the next prime after ``self``.
-
-        This method calls the PARI function :pari:`nextprime`.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default: ``None``, see
-          ``proof.arithmetic`` or :mod:`sage.structure.proof`); note that the
-          global Sage default is ``proof=True``
-
-        EXAMPLES::
-
-            sage: 100.next_prime()                                                      # needs sage.libs.pari
-            101
-            sage: (10^50).next_prime()                                                  # needs sage.libs.pari
-            100000000000000000000000000000000000000000000000151
-
-        Use ``proof=False``, which is way faster since it does not need
-        a primality proof::
-
-            sage: b = (2^1024).next_prime(proof=False)                                  # needs sage.libs.pari
-            sage: b - 2^1024                                                            # needs sage.libs.pari
-            643
-
-        ::
-
-            sage: Integer(0).next_prime()                                               # needs sage.libs.pari
-            2
-            sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
-            1009"""
-    @overload
-    def next_prime(self, proof=...) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
-        Return the next prime after ``self``.
-
-        This method calls the PARI function :pari:`nextprime`.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default: ``None``, see
-          ``proof.arithmetic`` or :mod:`sage.structure.proof`); note that the
-          global Sage default is ``proof=True``
-
-        EXAMPLES::
-
-            sage: 100.next_prime()                                                      # needs sage.libs.pari
-            101
-            sage: (10^50).next_prime()                                                  # needs sage.libs.pari
-            100000000000000000000000000000000000000000000000151
-
-        Use ``proof=False``, which is way faster since it does not need
-        a primality proof::
-
-            sage: b = (2^1024).next_prime(proof=False)                                  # needs sage.libs.pari
-            sage: b - 2^1024                                                            # needs sage.libs.pari
-            643
-
-        ::
-
-            sage: Integer(0).next_prime()                                               # needs sage.libs.pari
-            2
-            sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
-            1009"""
-    @overload
-    def next_prime(self) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
-        Return the next prime after ``self``.
-
-        This method calls the PARI function :pari:`nextprime`.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default: ``None``, see
-          ``proof.arithmetic`` or :mod:`sage.structure.proof`); note that the
-          global Sage default is ``proof=True``
-
-        EXAMPLES::
-
-            sage: 100.next_prime()                                                      # needs sage.libs.pari
-            101
-            sage: (10^50).next_prime()                                                  # needs sage.libs.pari
-            100000000000000000000000000000000000000000000000151
-
-        Use ``proof=False``, which is way faster since it does not need
-        a primality proof::
-
-            sage: b = (2^1024).next_prime(proof=False)                                  # needs sage.libs.pari
-            sage: b - 2^1024                                                            # needs sage.libs.pari
-            643
-
-        ::
-
-            sage: Integer(0).next_prime()                                               # needs sage.libs.pari
-            2
-            sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
-            1009"""
-    @overload
-    def next_prime(self) -> Any:
-        """Integer.next_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5880)
-
-        Return the next prime after ``self``.
-
-        This method calls the PARI function :pari:`nextprime`.
-
-        INPUT:
-
-        - ``proof`` -- boolean or ``None`` (default: ``None``, see
-          ``proof.arithmetic`` or :mod:`sage.structure.proof`); note that the
-          global Sage default is ``proof=True``
-
-        EXAMPLES::
-
-            sage: 100.next_prime()                                                      # needs sage.libs.pari
-            101
-            sage: (10^50).next_prime()                                                  # needs sage.libs.pari
-            100000000000000000000000000000000000000000000000151
-
-        Use ``proof=False``, which is way faster since it does not need
-        a primality proof::
-
-            sage: b = (2^1024).next_prime(proof=False)                                  # needs sage.libs.pari
-            sage: b - 2^1024                                                            # needs sage.libs.pari
-            643
-
-        ::
-
-            sage: Integer(0).next_prime()                                               # needs sage.libs.pari
-            2
-            sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
-            1009"""
-    @overload
+    
     def next_prime_power(self, proof=...) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
+        '''
         Return the next prime power after ``self``.
 
         INPUT:
@@ -9995,480 +2325,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ....:     n = ZZ.random_element(2**256).next_prime_power()
             ....:     m = n.next_prime_power().previous_prime_power()
             ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def next_prime_power(self) -> Any:
-        '''Integer.next_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5967)
-
-        Return the next prime power after ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the next power of 2 and goes through
-        the odd numbers calling :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`previous_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`next_prime`
-            - :meth:`previous_prime`
-
-        EXAMPLES::
-
-            sage: (-1).next_prime_power()
-            2
-            sage: 2.next_prime_power()
-            3
-            sage: 103.next_prime_power()                                                # needs sage.libs.pari
-            107
-            sage: 107.next_prime_power()
-            109
-            sage: 2044.next_prime_power()                                               # needs sage.libs.pari
-            2048
-
-        TESTS::
-
-            sage: [(2**k - 1).next_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).next_prime_power() for k in range(10)]                        # needs sage.libs.pari
-            [2, 3, 5, 9, 17, 37, 67, 131, 257, 521]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(2**256).next_prime_power()
-            ....:     m = n.next_prime_power().previous_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
     def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
+        """
         Return the next probable prime after ``self``, as determined by PARI.
 
         EXAMPLES::
@@ -10486,149 +2344,12 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             127
             sage: 144168.next_probable_prime()
             144169"""
+    type _FitsInCType_int = IntSupportingBitwiseOp
     @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
+    def nth_root(self, n: _FitsInCType_int, truncate_mode: Literal[True]) -> tuple[Integer, bool]: ...
     @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
-    @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
-    @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
-    @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
-    @overload
-    def next_probable_prime(self) -> Any:
-        """Integer.next_probable_prime(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5858)
-
-        Return the next probable prime after ``self``, as determined by PARI.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: (-37).next_probable_prime()
-            2
-            sage: (100).next_probable_prime()
-            101
-            sage: (2^512).next_probable_prime()
-            13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084171
-            sage: 0.next_probable_prime()
-            2
-            sage: 126.next_probable_prime()
-            127
-            sage: 144168.next_probable_prime()
-            144169"""
-    def nth_root(self, intn, booltruncate_mode=...) -> Any:
-        """Integer.nth_root(self, int n, bool truncate_mode=0)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2339)
-
+    def nth_root(self, n: _FitsInCType_int, truncate_mode: Literal[False] = False) -> Integer:
+        """
         Return the (possibly truncated) ``n``-th root of ``self``.
 
         INPUT:
@@ -10722,12 +2443,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: ZZ(2^20).nth_root(21, truncate_mode=1)
             (1, False)"""
-    @overload
     def numerator(self) -> Any:
-        """Integer.numerator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4510)
-
+        """
         Return the numerator of this integer.
 
         EXAMPLES::
@@ -10741,337 +2458,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: x = 0
             sage: x.numerator()
             0"""
-    @overload
-    def numerator(self) -> Any:
-        """Integer.numerator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4510)
-
-        Return the numerator of this integer.
-
-        EXAMPLES::
-
-            sage: x = 5
-            sage: x.numerator()
-            5
-
-        ::
-
-            sage: x = 0
-            sage: x.numerator()
-            0"""
-    @overload
-    def numerator(self) -> Any:
-        """Integer.numerator(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4510)
-
-        Return the numerator of this integer.
-
-        EXAMPLES::
-
-            sage: x = 5
-            sage: x.numerator()
-            5
-
-        ::
-
-            sage: x = 0
-            sage: x.numerator()
-            0"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
-        Return the digits of ``self`` in base 8.
-
-        .. NOTE::
-
-           '0' (or '0o') is *not* prepended to the result like is done by the
-           corresponding Python function on ``int``. This is for
-           efficiency sake--adding and stripping the string wastes
-           time; since this function is used for conversions from
-           integers to other C-library structures, it is important
-           that it be fast.
-
-        EXAMPLES::
-
-            sage: print(Integer(800).oct())
-            1440
-            sage: print(Integer(8).oct())
-            10
-            sage: print(Integer(-50).oct())
-            -62
-            sage: print(Integer(-899).oct())
-            -1603
-            sage: print(Integer(16938402384092843092843098243).oct())
-            15535436162247215217705000570203
-
-        Behavior of Sage integers vs. Python integers::
-
-            sage: Integer(10).oct()
-            '12'
-            sage: oct(int(10))
-            '0o12'
-
-            sage: Integer(-23).oct()
-            '-27'
-            sage: oct(int(-23))
-            '-0o27'"""
-    @overload
-    def oct(self) -> Any:
-        """Integer.oct(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1208)
-
+    def oct(self) -> str:
+        """
         Return the digits of ``self`` in base 8.
 
         .. NOTE::
@@ -11108,10 +2496,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: oct(int(-23))
             '-0o27'"""
     def odd_part(self) -> Any:
-        """Integer.odd_part(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4367)
-
+        """
         The odd part of the integer `n`. This is `n / 2^v`,
         where `v = \\mathrm{valuation}(n,2)`.
 
@@ -11131,10 +2516,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: odd_part(factorial(31))
             122529844256906551386796875"""
     def ord(self, *args, **kwargs):
-        """Integer.valuation(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4275)
-
+        """
         Return the `p`-adic valuation of ``self``.
 
         INPUT:
@@ -11159,202 +2541,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: (2^11).valuation(4)
             5"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
-        Return a string representation of the ordinal associated to ``self``.
-
-        EXAMPLES::
-
-            sage: [ZZ(n).ordinal_str() for n in range(25)]
-            ['0th',
-            '1st',
-            '2nd',
-            '3rd',
-            '4th',
-            ...
-            '10th',
-            '11th',
-            '12th',
-            '13th',
-            '14th',
-            ...
-            '20th',
-            '21st',
-            '22nd',
-            '23rd',
-            '24th']
-
-            sage: ZZ(1001).ordinal_str()
-            '1001st'
-
-            sage: ZZ(113).ordinal_str()
-            '113th'
-            sage: ZZ(112).ordinal_str()
-            '112th'
-            sage: ZZ(111).ordinal_str()
-            '111th'"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
-        Return a string representation of the ordinal associated to ``self``.
-
-        EXAMPLES::
-
-            sage: [ZZ(n).ordinal_str() for n in range(25)]
-            ['0th',
-            '1st',
-            '2nd',
-            '3rd',
-            '4th',
-            ...
-            '10th',
-            '11th',
-            '12th',
-            '13th',
-            '14th',
-            ...
-            '20th',
-            '21st',
-            '22nd',
-            '23rd',
-            '24th']
-
-            sage: ZZ(1001).ordinal_str()
-            '1001st'
-
-            sage: ZZ(113).ordinal_str()
-            '113th'
-            sage: ZZ(112).ordinal_str()
-            '112th'
-            sage: ZZ(111).ordinal_str()
-            '111th'"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
-        Return a string representation of the ordinal associated to ``self``.
-
-        EXAMPLES::
-
-            sage: [ZZ(n).ordinal_str() for n in range(25)]
-            ['0th',
-            '1st',
-            '2nd',
-            '3rd',
-            '4th',
-            ...
-            '10th',
-            '11th',
-            '12th',
-            '13th',
-            '14th',
-            ...
-            '20th',
-            '21st',
-            '22nd',
-            '23rd',
-            '24th']
-
-            sage: ZZ(1001).ordinal_str()
-            '1001st'
-
-            sage: ZZ(113).ordinal_str()
-            '113th'
-            sage: ZZ(112).ordinal_str()
-            '112th'
-            sage: ZZ(111).ordinal_str()
-            '111th'"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
-        Return a string representation of the ordinal associated to ``self``.
-
-        EXAMPLES::
-
-            sage: [ZZ(n).ordinal_str() for n in range(25)]
-            ['0th',
-            '1st',
-            '2nd',
-            '3rd',
-            '4th',
-            ...
-            '10th',
-            '11th',
-            '12th',
-            '13th',
-            '14th',
-            ...
-            '20th',
-            '21st',
-            '22nd',
-            '23rd',
-            '24th']
-
-            sage: ZZ(1001).ordinal_str()
-            '1001st'
-
-            sage: ZZ(113).ordinal_str()
-            '113th'
-            sage: ZZ(112).ordinal_str()
-            '112th'
-            sage: ZZ(111).ordinal_str()
-            '111th'"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
-        Return a string representation of the ordinal associated to ``self``.
-
-        EXAMPLES::
-
-            sage: [ZZ(n).ordinal_str() for n in range(25)]
-            ['0th',
-            '1st',
-            '2nd',
-            '3rd',
-            '4th',
-            ...
-            '10th',
-            '11th',
-            '12th',
-            '13th',
-            '14th',
-            ...
-            '20th',
-            '21st',
-            '22nd',
-            '23rd',
-            '24th']
-
-            sage: ZZ(1001).ordinal_str()
-            '1001st'
-
-            sage: ZZ(113).ordinal_str()
-            '113th'
-            sage: ZZ(112).ordinal_str()
-            '112th'
-            sage: ZZ(111).ordinal_str()
-            '111th'"""
-    @overload
-    def ordinal_str(self) -> Any:
-        """Integer.ordinal_str(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1136)
-
+    def ordinal_str(self) -> str:
+        """
         Return a string representation of the ordinal associated to ``self``.
 
         EXAMPLES::
@@ -11388,10 +2576,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: ZZ(111).ordinal_str()
             '111th'"""
     def p_primary_part(self, p) -> Any:
-        """Integer.p_primary_part(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4307)
-
+        """
         Return the ``p``-primary part of ``self``.
 
         INPUT:
@@ -11413,12 +2598,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ValueError: 6 is not a prime number"""
-    @overload
     def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
+        """
         Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
 
         If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
@@ -11459,558 +2640,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             (2, 2)
             sage: 256.perfect_power()
             (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
-    def perfect_power(self) -> Any:
-        """Integer.perfect_power(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4856)
-
-        Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
-
-        If called on `-1`, `0` or `1`, `b` will be `1`, since there is no
-        maximal value of `b`.
-
-        .. SEEALSO::
-
-            - :meth:`is_perfect_power`: testing whether an integer is a perfect
-              power is usually faster than finding `a` and `b`.
-            - :meth:`is_prime_power`: checks whether the base is prime.
-            - :meth:`is_power_of`: if you know the base already, this method is
-              the fastest option.
-
-        EXAMPLES::
-
-            sage: 144.perfect_power()                                                   # needs sage.libs.pari
-            (12, 2)
-            sage: 1.perfect_power()
-            (1, 1)
-            sage: 0.perfect_power()
-            (0, 1)
-            sage: (-1).perfect_power()
-            (-1, 1)
-            sage: (-8).perfect_power()                                                  # needs sage.libs.pari
-            (-2, 3)
-            sage: (-4).perfect_power()
-            (-4, 1)
-            sage: (101^29).perfect_power()                                              # needs sage.libs.pari
-            (101, 29)
-            sage: (-243).perfect_power()                                                # needs sage.libs.pari
-            (-3, 5)
-            sage: (-64).perfect_power()                                                 # needs sage.libs.pari
-            (-4, 3)
-
-        TESTS::
-
-            sage: 4.perfect_power()
-            (2, 2)
-            sage: 256.perfect_power()
-            (2, 8)"""
-    @overload
     def popcount(self) -> Any:
-        """Integer.popcount(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7060)
-
-        Return the number of 1 bits in the binary representation.
-        If ``self`` < 0, we return Infinity.
-
-        EXAMPLES::
-
-            sage: n = 123
-            sage: n.str(2)
-            '1111011'
-            sage: n.popcount()
-            6
-
-            sage: n = -17
-            sage: n.popcount()
-            +Infinity"""
-    @overload
-    def popcount(self) -> Any:
-        """Integer.popcount(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7060)
-
-        Return the number of 1 bits in the binary representation.
-        If ``self`` < 0, we return Infinity.
-
-        EXAMPLES::
-
-            sage: n = 123
-            sage: n.str(2)
-            '1111011'
-            sage: n.popcount()
-            6
-
-            sage: n = -17
-            sage: n.popcount()
-            +Infinity"""
-    @overload
-    def popcount(self) -> Any:
-        """Integer.popcount(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7060)
-
+        """
         Return the number of 1 bits in the binary representation.
         If ``self`` < 0, we return Infinity.
 
@@ -12026,10 +2657,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n.popcount()
             +Infinity"""
     def powermod(self, exp, mod) -> Any:
-        """Integer.powermod(self, exp, mod)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3516)
-
+        """
         Compute ``self**exp`` modulo ``mod``.
 
         EXAMPLES::
@@ -12048,12 +2676,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ZeroDivisionError: cannot raise to a power modulo 0"""
-    @overload
     def previous_prime(self, proof=...) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
+        """
         Return the previous prime before ``self``.
 
         This method calls the PARI function :pari:`precprime`.
@@ -12090,222 +2714,9 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
             sage: 2^1024 - b                                                            # needs sage.libs.pari
             105"""
-    @overload
-    def previous_prime(self) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
-        Return the previous prime before ``self``.
-
-        This method calls the PARI function :pari:`precprime`.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        .. SEEALSO::
-
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: 10.previous_prime()                                                   # needs sage.libs.pari
-            7
-            sage: 7.previous_prime()                                                    # needs sage.libs.pari
-            5
-            sage: 14376485.previous_prime()                                             # needs sage.libs.pari
-            14376463
-
-            sage: 2.previous_prime()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime less than 2
-
-        An example using ``proof=False``, which is way faster since it does not
-        need a primality proof::
-
-            sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
-            sage: 2^1024 - b                                                            # needs sage.libs.pari
-            105"""
-    @overload
-    def previous_prime(self) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
-        Return the previous prime before ``self``.
-
-        This method calls the PARI function :pari:`precprime`.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        .. SEEALSO::
-
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: 10.previous_prime()                                                   # needs sage.libs.pari
-            7
-            sage: 7.previous_prime()                                                    # needs sage.libs.pari
-            5
-            sage: 14376485.previous_prime()                                             # needs sage.libs.pari
-            14376463
-
-            sage: 2.previous_prime()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime less than 2
-
-        An example using ``proof=False``, which is way faster since it does not
-        need a primality proof::
-
-            sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
-            sage: 2^1024 - b                                                            # needs sage.libs.pari
-            105"""
-    @overload
-    def previous_prime(self) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
-        Return the previous prime before ``self``.
-
-        This method calls the PARI function :pari:`precprime`.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        .. SEEALSO::
-
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: 10.previous_prime()                                                   # needs sage.libs.pari
-            7
-            sage: 7.previous_prime()                                                    # needs sage.libs.pari
-            5
-            sage: 14376485.previous_prime()                                             # needs sage.libs.pari
-            14376463
-
-            sage: 2.previous_prime()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime less than 2
-
-        An example using ``proof=False``, which is way faster since it does not
-        need a primality proof::
-
-            sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
-            sage: 2^1024 - b                                                            # needs sage.libs.pari
-            105"""
-    @overload
-    def previous_prime(self) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
-        Return the previous prime before ``self``.
-
-        This method calls the PARI function :pari:`precprime`.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        .. SEEALSO::
-
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: 10.previous_prime()                                                   # needs sage.libs.pari
-            7
-            sage: 7.previous_prime()                                                    # needs sage.libs.pari
-            5
-            sage: 14376485.previous_prime()                                             # needs sage.libs.pari
-            14376463
-
-            sage: 2.previous_prime()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime less than 2
-
-        An example using ``proof=False``, which is way faster since it does not
-        need a primality proof::
-
-            sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
-            sage: 2^1024 - b                                                            # needs sage.libs.pari
-            105"""
-    @overload
-    def previous_prime(self, proof=...) -> Any:
-        """Integer.previous_prime(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5919)
-
-        Return the previous prime before ``self``.
-
-        This method calls the PARI function :pari:`precprime`.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        .. SEEALSO::
-
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: 10.previous_prime()                                                   # needs sage.libs.pari
-            7
-            sage: 7.previous_prime()                                                    # needs sage.libs.pari
-            5
-            sage: 14376485.previous_prime()                                             # needs sage.libs.pari
-            14376463
-
-            sage: 2.previous_prime()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime less than 2
-
-        An example using ``proof=False``, which is way faster since it does not
-        need a primality proof::
-
-            sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
-            sage: 2^1024 - b                                                            # needs sage.libs.pari
-            105"""
-    @overload
+    
     def previous_prime_power(self, proof=...) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
+        '''
         Return the previous prime power before ``self``.
 
         INPUT:
@@ -12356,796 +2767,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
             ....:     m = n.previous_prime_power().next_prime_power()
             ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def previous_prime_power(self) -> Any:
-        '''Integer.previous_prime_power(self, proof=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6033)
-
-        Return the previous prime power before ``self``.
-
-        INPUT:
-
-        - ``proof`` -- if ``True`` ensure that the returned value is the next
-          prime power and if set to ``False`` uses probabilistic methods
-          (i.e. the result is not guaranteed). By default it uses global
-          configuration variables to determine which alternative to use (see
-          :mod:`proof.arithmetic` or :mod:`sage.structure.proof`).
-
-        ALGORITHM:
-
-        The algorithm is naive. It computes the previous power of 2 and goes
-        through the odd numbers calling the method :meth:`is_prime_power`.
-
-        .. SEEALSO::
-
-            - :meth:`next_prime_power`
-            - :meth:`is_prime_power`
-            - :meth:`previous_prime`
-            - :meth:`next_prime`
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: 3.previous_prime_power()
-            2
-            sage: 103.previous_prime_power()
-            101
-            sage: 107.previous_prime_power()
-            103
-            sage: 2044.previous_prime_power()
-            2039
-
-            sage: 2.previous_prime_power()
-            Traceback (most recent call last):
-            ...
-            ValueError: no prime power less than 2
-
-        TESTS::
-
-            sage: [(2**k + 1).previous_prime_power() for k in range(1,10)]
-            [2, 4, 8, 16, 32, 64, 128, 256, 512]
-            sage: [(2**k).previous_prime_power() for k in range(2, 10)]                 # needs sage.libs.pari
-            [3, 7, 13, 31, 61, 127, 251, 509]
-
-            sage: for _ in range(10):                                                   # needs sage.libs.pari
-            ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
-            ....:     m = n.previous_prime_power().next_prime_power()
-            ....:     assert m == n, "problem with n = {}".format(n)'''
-    @overload
-    def prime_divisors(self, *args, **kwds) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
     def prime_divisors(self, limit=...) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    @overload
-    def prime_divisors(self, limit=...) -> Any:
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
+        """
         Return the prime divisors of this integer, sorted in increasing order.
 
         If this integer is negative, we do *not* include `-1` among
@@ -13181,10 +2804,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a.prime_divisors(limit=10^7)
             [73, 137, 401, 1201, 1601, 1676321]"""
     def prime_factors(self, *args, **kwargs):
-        """Integer.prime_divisors(self, *args, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2985)
-
+        """
         Return the prime divisors of this integer, sorted in increasing order.
 
         If this integer is negative, we do *not* include `-1` among
@@ -13220,10 +2840,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a.prime_divisors(limit=10^7)
             [73, 137, 401, 1201, 1601, 1676321]"""
     def prime_to_m_part(self, m) -> Any:
-        """Integer.prime_to_m_part(self, m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2943)
-
+        """
         Return the prime-to-`m` part of ``self``, i.e., the largest divisor of
         ``self`` that is coprime to `m`.
 
@@ -13246,74 +2863,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ArithmeticError: self must be nonzero"""
-    @overload
-    def quo_rem(self, other) -> Any:
-        """Integer.quo_rem(self, other)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3424)
-
-        Return the quotient and the remainder of ``self`` divided by ``other``.
-        Note that the remainder returned is always either zero or of the
-        same sign as ``other``.
-
-        INPUT:
-
-        - ``other`` -- the divisor
-
-        OUTPUT:
-
-        - ``q`` -- the quotient of ``self/other``
-
-        - ``r`` -- the remainder of ``self/other``
-
-        EXAMPLES::
-
-            sage: z = Integer(231)
-            sage: z.quo_rem(2)
-            (115, 1)
-            sage: z.quo_rem(-2)
-            (-116, -1)
-            sage: z.quo_rem(0)
-            Traceback (most recent call last):
-            ...
-            ZeroDivisionError: Integer division by zero
-
-            sage: a = ZZ.random_element(10**50)
-            sage: b = ZZ.random_element(10**15)
-            sage: q, r = a.quo_rem(b)
-            sage: q*b + r == a
-            True
-
-            sage: 3.quo_rem(ZZ['x'].0)
-            (0, 3)
-
-        TESTS:
-
-        The divisor can be rational as well, although the remainder
-        will always be zero (:issue:`7965`)::
-
-            sage: 5.quo_rem(QQ(2))
-            (5/2, 0)
-            sage: 5.quo_rem(2/3)
-            (15/2, 0)
-
-        Check that :issue:`29009` is fixed:
-
-            sage: divmod(1, sys.maxsize+1r)  # should not raise OverflowError: Python int too large to convert to C long
-            (0, 1)
-
-            sage: # needs mpmath
-            sage: import mpmath
-            sage: mpmath.mp.prec = 1000
-            sage: root = mpmath.findroot(lambda x: x^2 - 3, 2)
-            sage: len(str(root))
-            301"""
-    @overload
     def quo_rem(self, b) -> Any:
-        """Integer.quo_rem(self, other)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3424)
-
+        """
         Return the quotient and the remainder of ``self`` divided by ``other``.
         Note that the remainder returned is always either zero or of the
         same sign as ``other``.
@@ -13371,10 +2922,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: len(str(root))
             301"""
     def rational_reconstruction(self, Integerm) -> Any:
-        """Integer.rational_reconstruction(self, Integer m)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3551)
-
+        """
         Return the rational reconstruction of this integer modulo `m`, i.e.,
         the unique (if it exists) rational number that reduces to ``self``
         modulo m and whose numerator and denominator is bounded by
@@ -13407,36 +2955,16 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ZeroDivisionError: rational reconstruction with zero modulus"""
-    @overload
     def real(self) -> Any:
-        """Integer.real(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4745)
-
+        """
         Return the real part of ``self``, which is ``self``.
 
         EXAMPLES::
 
             sage: Integer(-4).real()
             -4"""
-    @overload
-    def real(self) -> Any:
-        """Integer.real(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4745)
-
-        Return the real part of ``self``, which is ``self``.
-
-        EXAMPLES::
-
-            sage: Integer(-4).real()
-            -4"""
-    @overload
     def round(self, mode=...) -> Any:
-        """Integer.round(self, mode='away')
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4730)
-
+        """
         Return the nearest integer to ``self``, which is ``self`` since
         ``self`` is an integer.
 
@@ -13447,28 +2975,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = 6
             sage: n.round()
             6"""
-    @overload
-    def round(self) -> Any:
-        """Integer.round(self, mode='away')
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4730)
-
-        Return the nearest integer to ``self``, which is ``self`` since
-        ``self`` is an integer.
-
-        EXAMPLES:
-
-        This example addresses :issue:`23502`::
-
-            sage: n = 6
-            sage: n.round()
-            6"""
-    @overload
     def sign(self) -> Any:
-        """Integer.sign(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3319)
-
+        """
         Return the sign of this integer, which is `-1`, `0`, or `1`
         depending on whether this number is negative, zero, or positive
         respectively.
@@ -13483,1224 +2991,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             0
             sage: (-10^43).sign()
             -1"""
-    @overload
-    def sign(self) -> Any:
-        """Integer.sign(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3319)
-
-        Return the sign of this integer, which is `-1`, `0`, or `1`
-        depending on whether this number is negative, zero, or positive
-        respectively.
-
-        OUTPUT: integer
-
-        EXAMPLES::
-
-            sage: 500.sign()
-            1
-            sage: 0.sign()
-            0
-            sage: (-10^43).sign()
-            -1"""
-    @overload
-    def sign(self) -> Any:
-        """Integer.sign(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3319)
-
-        Return the sign of this integer, which is `-1`, `0`, or `1`
-        depending on whether this number is negative, zero, or positive
-        respectively.
-
-        OUTPUT: integer
-
-        EXAMPLES::
-
-            sage: 500.sign()
-            1
-            sage: 0.sign()
-            0
-            sage: (-10^43).sign()
-            -1"""
-    @overload
-    def sign(self) -> Any:
-        """Integer.sign(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3319)
-
-        Return the sign of this integer, which is `-1`, `0`, or `1`
-        depending on whether this number is negative, zero, or positive
-        respectively.
-
-        OUTPUT: integer
-
-        EXAMPLES::
-
-            sage: 500.sign()
-            1
-            sage: 0.sign()
-            0
-            sage: (-10^43).sign()
-            -1"""
-    @overload
-    def sqrt(self, prec=..., extend=..., all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=..., all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, extend=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, extend=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, prec=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
     def sqrt(self, extend=..., all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
-        The square root function.
-
-        INPUT:
-
-        - ``prec`` -- integer (default: ``None``); if ``None``, return an exact
-          square root; otherwise return a numerical square root, to the
-          given bits of precision.
-
-        - ``extend`` -- boolean (default: ``True``); if ``True``, return a
-          square root in an extension ring, if necessary. Otherwise, raise a
-          :exc:`ValueError` if the square is not in the base ring. Ignored if
-          ``prec`` is not ``None``.
-
-        - ``all`` -- boolean (default: ``False``); if ``True``, return all
-          square roots of ``self`` (a list of length 0, 1, or 2)
-
-        EXAMPLES::
-
-            sage: Integer(144).sqrt()
-            12
-            sage: sqrt(Integer(144))
-            12
-            sage: Integer(102).sqrt()                                                   # needs sage.symbolic
-            sqrt(102)
-
-        ::
-
-            sage: n = 2
-            sage: n.sqrt(all=True)                                                      # needs sage.symbolic
-            [sqrt(2), -sqrt(2)]
-            sage: n.sqrt(prec=10)                                                       # needs sage.rings.real_mpfr
-            1.4
-            sage: n.sqrt(prec=100)                                                      # needs sage.rings.real_mpfr
-            1.4142135623730950488016887242
-            sage: n.sqrt(prec=100, all=True)                                            # needs sage.rings.real_mpfr
-            [1.4142135623730950488016887242, -1.4142135623730950488016887242]
-            sage: n.sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of 2 is not an integer
-            sage: (-1).sqrt(extend=False)
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: square root of -1 is not an integer
-            sage: Integer(144).sqrt(all=True)
-            [12, -12]
-            sage: Integer(0).sqrt(all=True)
-            [0]
-
-        TESTS::
-
-            sage: type(5.sqrt())                                                        # needs sage.symbolic
-            <class 'sage.symbolic.expression.Expression'>
-            sage: type(5.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-            sage: type((-5).sqrt(prec=53))                                              # needs sage.rings.real_mpfr
-            <class 'sage.rings.complex_mpfr.ComplexNumber'>
-            sage: type(0.sqrt(prec=53))                                                 # needs sage.rings.real_mpfr
-            <class 'sage.rings.real_mpfr.RealNumber'>
-
-        Check that :issue:`9466` and :issue:`26509` are fixed::
-
-            sage: 3.sqrt(extend=False, all=True)
-            []
-            sage: (-1).sqrt(extend=False, all=True)
-            []"""
-    @overload
-    def sqrt(self, extend=..., all=...) -> Any:
-        """Integer.sqrt(self, prec=None, extend=True, all=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6424)
-
+        """
         The square root function.
 
         INPUT:
@@ -14768,10 +3060,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: (-1).sqrt(extend=False, all=True)
             []"""
     def sqrtrem(self) -> Any:
-        """Integer.sqrtrem(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6366)
-
+        """
         Return `(s, r)` where `s` is the integer square root of ``self`` and
         `r` is the remainder such that `\\text{self} = s^2 + r`.
         Raises :exc:`ValueError` if ``self`` is negative.
@@ -14791,58 +3080,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ValueError: square root of negative integer not defined"""
-    @overload
-    def squarefree_part(self, longbound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
-        Return the square free part of `x` (=``self``), i.e., the unique integer
-        `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
-
-        Use ``self.radical()`` for the product of the primes that divide ``self``.
-
-        If ``self`` is 0, just returns 0.
-
-        EXAMPLES::
-
-            sage: squarefree_part(100)
-            1
-            sage: squarefree_part(12)
-            3
-            sage: squarefree_part(17*37*37)
-            17
-            sage: squarefree_part(-17*32)
-            -34
-            sage: squarefree_part(1)
-            1
-            sage: squarefree_part(-1)
-            -1
-            sage: squarefree_part(-2)
-            -2
-            sage: squarefree_part(-4)
-            -1
-
-        ::
-
-            sage: a = 8 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=2).factor()
-            2 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=5).factor()
-            2 * 101^2
-            sage: a.squarefree_part(bound=1000)
-            2
-            sage: a.squarefree_part(bound=2**14)
-            2
-            sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
-            sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
-            49"""
-    @overload
     def squarefree_part(self, bound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
+        """
         Return the square free part of `x` (=``self``), i.e., the unique integer
         `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
 
@@ -14883,196 +3122,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
             sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
             49"""
-    @overload
-    def squarefree_part(self, bound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
-        Return the square free part of `x` (=``self``), i.e., the unique integer
-        `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
-
-        Use ``self.radical()`` for the product of the primes that divide ``self``.
-
-        If ``self`` is 0, just returns 0.
-
-        EXAMPLES::
-
-            sage: squarefree_part(100)
-            1
-            sage: squarefree_part(12)
-            3
-            sage: squarefree_part(17*37*37)
-            17
-            sage: squarefree_part(-17*32)
-            -34
-            sage: squarefree_part(1)
-            1
-            sage: squarefree_part(-1)
-            -1
-            sage: squarefree_part(-2)
-            -2
-            sage: squarefree_part(-4)
-            -1
-
-        ::
-
-            sage: a = 8 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=2).factor()
-            2 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=5).factor()
-            2 * 101^2
-            sage: a.squarefree_part(bound=1000)
-            2
-            sage: a.squarefree_part(bound=2**14)
-            2
-            sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
-            sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
-            49"""
-    @overload
-    def squarefree_part(self, bound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
-        Return the square free part of `x` (=``self``), i.e., the unique integer
-        `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
-
-        Use ``self.radical()`` for the product of the primes that divide ``self``.
-
-        If ``self`` is 0, just returns 0.
-
-        EXAMPLES::
-
-            sage: squarefree_part(100)
-            1
-            sage: squarefree_part(12)
-            3
-            sage: squarefree_part(17*37*37)
-            17
-            sage: squarefree_part(-17*32)
-            -34
-            sage: squarefree_part(1)
-            1
-            sage: squarefree_part(-1)
-            -1
-            sage: squarefree_part(-2)
-            -2
-            sage: squarefree_part(-4)
-            -1
-
-        ::
-
-            sage: a = 8 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=2).factor()
-            2 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=5).factor()
-            2 * 101^2
-            sage: a.squarefree_part(bound=1000)
-            2
-            sage: a.squarefree_part(bound=2**14)
-            2
-            sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
-            sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
-            49"""
-    @overload
-    def squarefree_part(self, bound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
-        Return the square free part of `x` (=``self``), i.e., the unique integer
-        `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
-
-        Use ``self.radical()`` for the product of the primes that divide ``self``.
-
-        If ``self`` is 0, just returns 0.
-
-        EXAMPLES::
-
-            sage: squarefree_part(100)
-            1
-            sage: squarefree_part(12)
-            3
-            sage: squarefree_part(17*37*37)
-            17
-            sage: squarefree_part(-17*32)
-            -34
-            sage: squarefree_part(1)
-            1
-            sage: squarefree_part(-1)
-            -1
-            sage: squarefree_part(-2)
-            -2
-            sage: squarefree_part(-4)
-            -1
-
-        ::
-
-            sage: a = 8 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=2).factor()
-            2 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=5).factor()
-            2 * 101^2
-            sage: a.squarefree_part(bound=1000)
-            2
-            sage: a.squarefree_part(bound=2**14)
-            2
-            sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
-            sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
-            49"""
-    @overload
-    def squarefree_part(self, bound=...) -> Any:
-        """Integer.squarefree_part(self, long bound=-1)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 5777)
-
-        Return the square free part of `x` (=``self``), i.e., the unique integer
-        `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
-
-        Use ``self.radical()`` for the product of the primes that divide ``self``.
-
-        If ``self`` is 0, just returns 0.
-
-        EXAMPLES::
-
-            sage: squarefree_part(100)
-            1
-            sage: squarefree_part(12)
-            3
-            sage: squarefree_part(17*37*37)
-            17
-            sage: squarefree_part(-17*32)
-            -34
-            sage: squarefree_part(1)
-            1
-            sage: squarefree_part(-1)
-            -1
-            sage: squarefree_part(-2)
-            -2
-            sage: squarefree_part(-4)
-            -1
-
-        ::
-
-            sage: a = 8 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=2).factor()
-            2 * 5^6 * 101^2
-            sage: a.squarefree_part(bound=5).factor()
-            2 * 101^2
-            sage: a.squarefree_part(bound=1000)
-            2
-            sage: a.squarefree_part(bound=2**14)
-            2
-            sage: a = 7^3 * next_prime(2^100)^2 * next_prime(2^200)                     # needs sage.libs.pari
-            sage: a / a.squarefree_part(bound=1000)                                     # needs sage.libs.pari
-            49"""
-    @overload
-    def str(self, intbase=...) -> Any:
-        """Integer.str(self, int base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1075)
-
+    def str(self, base: SupportsInt = 10) -> str:
+        """
         Return the string representation of ``self`` in the
         given base.
 
@@ -15106,123 +3157,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             5000001
             sage: s[:10]              # long time (depends on above defn of s)
             '1000000000'"""
-    @overload
-    def str(self) -> Any:
-        """Integer.str(self, int base=10)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1075)
-
-        Return the string representation of ``self`` in the
-        given base.
-
-        EXAMPLES::
-
-            sage: Integer(2^10).str(2)
-            '10000000000'
-            sage: Integer(2^10).str(17)
-            '394'
-
-        ::
-
-            sage: two = Integer(2)
-            sage: two.str(1)
-            Traceback (most recent call last):
-            ...
-            ValueError: base (=1) must be between 2 and 36
-
-        ::
-
-            sage: two.str(37)
-            Traceback (most recent call last):
-            ...
-            ValueError: base (=37) must be between 2 and 36
-
-        ::
-
-            sage: big = 10^5000000
-            sage: s = big.str()       # long time (2s on sage.math, 2014)
-            sage: len(s)              # long time (depends on above defn of s)
-            5000001
-            sage: s[:10]              # long time (depends on above defn of s)
-            '1000000000'"""
-    @overload
     def support(self) -> Any:
-        """Integer.support(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4079)
-
-        Return a sorted list of the primes dividing this integer.
-
-        OUTPUT: the sorted list of primes appearing in the factorization of
-        this rational with positive exponent
-
-        EXAMPLES::
-
-            sage: factorial(10).support()
-            [2, 3, 5, 7]
-            sage: (-999).support()
-            [3, 37]
-
-        Trying to find the support of 0 raises an :exc:`ArithmeticError`::
-
-            sage: 0.support()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: support of 0 not defined"""
-    @overload
-    def support(self) -> Any:
-        """Integer.support(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4079)
-
-        Return a sorted list of the primes dividing this integer.
-
-        OUTPUT: the sorted list of primes appearing in the factorization of
-        this rational with positive exponent
-
-        EXAMPLES::
-
-            sage: factorial(10).support()
-            [2, 3, 5, 7]
-            sage: (-999).support()
-            [3, 37]
-
-        Trying to find the support of 0 raises an :exc:`ArithmeticError`::
-
-            sage: 0.support()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: support of 0 not defined"""
-    @overload
-    def support(self) -> Any:
-        """Integer.support(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4079)
-
-        Return a sorted list of the primes dividing this integer.
-
-        OUTPUT: the sorted list of primes appearing in the factorization of
-        this rational with positive exponent
-
-        EXAMPLES::
-
-            sage: factorial(10).support()
-            [2, 3, 5, 7]
-            sage: (-999).support()
-            [3, 37]
-
-        Trying to find the support of 0 raises an :exc:`ArithmeticError`::
-
-            sage: 0.support()
-            Traceback (most recent call last):
-            ...
-            ArithmeticError: support of 0 not defined"""
-    @overload
-    def support(self) -> Any:
-        """Integer.support(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4079)
-
+        """
         Return a sorted list of the primes dividing this integer.
 
         OUTPUT: the sorted list of primes appearing in the factorization of
@@ -15242,10 +3178,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             ...
             ArithmeticError: support of 0 not defined"""
     def test_bit(self, longindex) -> Any:
-        """Integer.test_bit(self, long index)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7025)
-
+        """
         Return the bit at ``index``.
 
         If the index is negative, returns 0.
@@ -15273,12 +3206,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             1
             sage: x.test_bit(6)
             1"""
-    @overload
     def to_bytes(self, length=..., byteorder=..., is_signed=...) -> Any:
-        """Integer.to_bytes(self, length=1, byteorder='big', is_signed=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7192)
-
+        """
         Return an array of bytes representing an integer.
 
         Internally relies on the python ``int.to_bytes()`` method.
@@ -15309,48 +3238,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: x = 1000
             sage: x.to_bytes((x.bit_length() + 7) // 8, byteorder='little')
             b'\\xe8\\x03'"""
-    @overload
-    def to_bytes(self) -> Any:
-        """Integer.to_bytes(self, length=1, byteorder='big', is_signed=False)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7192)
-
-        Return an array of bytes representing an integer.
-
-        Internally relies on the python ``int.to_bytes()`` method.
-
-        INPUT:
-
-        - ``length`` -- positive integer (default: 1); integer represented
-          in ``length`` bytes
-        - ``byteorder`` -- string (default: ``'big'``); determines the byte
-          order of the output (can only be ``'big'`` or ``'little'``)
-        - ``is_signed`` -- boolean (default: ``False``); determines whether to use two's
-          compliment to represent the integer
-
-        .. TODO::
-
-            It should be possible to convert straight from the gmp type in cython.
-            This could be significantly faster, but I am unsure of the fastest and cleanest
-            way to do this.
-
-        EXAMPLES::
-
-            sage: (1024).to_bytes(2, byteorder='big')
-            b'\\x04\\x00'
-            sage: (1024).to_bytes(10, byteorder='big')
-            b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x04\\x00'
-            sage: (-1024).to_bytes(10, byteorder='big', is_signed=True)
-            b'\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfc\\x00'
-            sage: x = 1000
-            sage: x.to_bytes((x.bit_length() + 7) // 8, byteorder='little')
-            b'\\xe8\\x03'"""
-    @overload
     def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
+        """
         Return the number of trailing zero bits in ``self``, i.e.
         the exponent of the largest power of 2 dividing ``self``.
 
@@ -15366,1222 +3255,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             5
             sage: 0.trailing_zero_bits()
             0"""
-    @overload
-    def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
-        Return the number of trailing zero bits in ``self``, i.e.
-        the exponent of the largest power of 2 dividing ``self``.
-
-        EXAMPLES::
-
-            sage: 11.trailing_zero_bits()
-            0
-            sage: (-11).trailing_zero_bits()
-            0
-            sage: (11<<5).trailing_zero_bits()
-            5
-            sage: (-11<<5).trailing_zero_bits()
-            5
-            sage: 0.trailing_zero_bits()
-            0"""
-    @overload
-    def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
-        Return the number of trailing zero bits in ``self``, i.e.
-        the exponent of the largest power of 2 dividing ``self``.
-
-        EXAMPLES::
-
-            sage: 11.trailing_zero_bits()
-            0
-            sage: (-11).trailing_zero_bits()
-            0
-            sage: (11<<5).trailing_zero_bits()
-            5
-            sage: (-11<<5).trailing_zero_bits()
-            5
-            sage: 0.trailing_zero_bits()
-            0"""
-    @overload
-    def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
-        Return the number of trailing zero bits in ``self``, i.e.
-        the exponent of the largest power of 2 dividing ``self``.
-
-        EXAMPLES::
-
-            sage: 11.trailing_zero_bits()
-            0
-            sage: (-11).trailing_zero_bits()
-            0
-            sage: (11<<5).trailing_zero_bits()
-            5
-            sage: (-11<<5).trailing_zero_bits()
-            5
-            sage: 0.trailing_zero_bits()
-            0"""
-    @overload
-    def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
-        Return the number of trailing zero bits in ``self``, i.e.
-        the exponent of the largest power of 2 dividing ``self``.
-
-        EXAMPLES::
-
-            sage: 11.trailing_zero_bits()
-            0
-            sage: (-11).trailing_zero_bits()
-            0
-            sage: (11<<5).trailing_zero_bits()
-            5
-            sage: (-11<<5).trailing_zero_bits()
-            5
-            sage: 0.trailing_zero_bits()
-            0"""
-    @overload
-    def trailing_zero_bits(self) -> Any:
-        """Integer.trailing_zero_bits(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1346)
-
-        Return the number of trailing zero bits in ``self``, i.e.
-        the exponent of the largest power of 2 dividing ``self``.
-
-        EXAMPLES::
-
-            sage: 11.trailing_zero_bits()
-            0
-            sage: (-11).trailing_zero_bits()
-            0
-            sage: (11<<5).trailing_zero_bits()
-            5
-            sage: (-11<<5).trailing_zero_bits()
-            5
-            sage: 0.trailing_zero_bits()
-            0"""
-    @overload
-    def trial_division(self, longbound=..., longstart=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self, bound=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self, bound=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self, bound=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self, bound=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self, bound=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
-    def trial_division(self) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
-        Return smallest prime divisor of ``self`` up to bound, beginning
-        checking at ``start``, or ``abs(self)`` if no such divisor is found.
-
-        INPUT:
-
-        - ``bound`` -- positive integer that fits in a C ``signed long``
-        - ``start`` -- positive integer that fits in a C ``signed long``
-
-        OUTPUT: a positive integer
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^6)*next_prime(10^7); n.trial_division()
-            1000003
-            sage: (-n).trial_division()
-            1000003
-            sage: n.trial_division(bound=100)
-            10000049000057
-            sage: n.trial_division(bound=-10)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: n.trial_division(bound=0)
-            Traceback (most recent call last):
-            ...
-            ValueError: bound must be positive
-            sage: ZZ(0).trial_division()
-            Traceback (most recent call last):
-            ...
-            ValueError: self must be nonzero
-
-            sage: # needs sage.libs.pari
-            sage: n = next_prime(10^5) * next_prime(10^40); n.trial_division()
-            100003
-            sage: n.trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division(bound=10^4)
-            1000030000000000000000000000000000000012100363
-            sage: (-n).trial_division()
-            100003
-            sage: n = 2 * next_prime(10^40); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^40); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^40); n.trial_division()
-            5
-            sage: n = 2 * next_prime(10^4); n.trial_division()
-            2
-            sage: n = 3 * next_prime(10^4); n.trial_division()
-            3
-            sage: n = 5 * next_prime(10^4); n.trial_division()
-            5
-
-        You can specify a starting point::
-
-            sage: n = 3*5*101*103
-            sage: n.trial_division(start=50)
-            101"""
-    @overload
     def trial_division(self, start=...) -> Any:
-        """Integer.trial_division(self, long bound=LONG_MAX, long start=2)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3718)
-
+        """
         Return smallest prime divisor of ``self`` up to bound, beginning
         checking at ``start``, or ``abs(self)`` if no such divisor is found.
 
@@ -16641,26 +3316,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = 3*5*101*103
             sage: n.trial_division(start=50)
             101"""
-    @overload
     def trunc(self) -> Any:
-        """Integer.trunc(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4717)
-
-        Round this number to the nearest integer, which is ``self`` since
-        ``self`` is an integer.
-
-        EXAMPLES::
-
-            sage: n = 6
-            sage: n.trunc()
-            6"""
-    @overload
-    def trunc(self) -> Any:
-        """Integer.trunc(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4717)
-
+        """
         Round this number to the nearest integer, which is ``self`` since
         ``self`` is an integer.
 
@@ -16670,10 +3327,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n.trunc()
             6"""
     def val_unit(self, p) -> Any:
-        """Integer.val_unit(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4336)
-
+        """
         Return a pair: the `p`-adic valuation of ``self``, and th`p`-adicic unit
         of ``self``.
 
@@ -16701,10 +3355,7 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: 0.val_unit(2)
             (+Infinity, 1)"""
     def valuation(self, p) -> Any:
-        """Integer.valuation(self, p)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 4275)
-
+        """
         Return the `p`-adic valuation of ``self``.
 
         INPUT:
@@ -16729,11 +3380,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: (2^11).valuation(4)
             5"""
-    def xgcd(self, Integern) -> Any:
-        """Integer.xgcd(self, Integer n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6526)
-
+    def xgcd(self, n: ConvertibleToInteger) -> tuple[Integer, Integer, Integer]:
+        """
         Return the extended gcd of this element and ``n``.
 
         INPUT:
@@ -16761,11 +3409,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: 6.xgcd(4)
             (2, 1, -1)"""
-    def __abs__(self) -> Any:
-        """Integer.__abs__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3286)
-
+    def __abs__(self) -> Integer:
+        """
         Compute ``|self|``.
 
         EXAMPLES::
@@ -16775,58 +3420,10 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             1
             sage: abs(z) == abs(1)
             True"""
-    def __add__(self, left, right) -> Any:
-        """Integer.__add__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1763)
-
-        TESTS::
-
-            sage: 1 + 2
-            3
-            sage: sum(Integer(i) for i in [1..100])
-            5050
-            sage: 1 + 2/3
-            5/3
-            sage: 1 + (-2/3)
-            1/3"""
-    @overload
-    def __and__(self, x, y) -> Any:
-        """Integer.__and__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6839)
-
-        Return the bitwise and two integers.
-
-        EXAMPLES::
-
-            sage: n = Integer(6);  m = Integer(2)
-            sage: n & m
-            2
-            sage: n.__and__(m)
-            2"""
-    @overload
-    def __and__(self, m) -> Any:
-        """Integer.__and__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6839)
-
-        Return the bitwise and two integers.
-
-        EXAMPLES::
-
-            sage: n = Integer(6);  m = Integer(2)
-            sage: n & m
-            2
-            sage: n.__and__(m)
-            2"""
-    def __bool__(self) -> bool:
-        """True if self else False"""
-    def __copy__(self) -> Any:
-        """Integer.__copy__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 947)
-
+    
+    def __bool__(self) -> bool: ...
+    def __copy__(self) -> Self:
+        """
         EXAMPLES::
 
             sage: n = 2
@@ -16834,24 +3431,23 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             2
             sage: copy(n) is n
             True"""
-    def __deepcopy__(self, memo) -> Any:
-        """Integer.__deepcopy__(self, memo)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 960)
-
+    def __deepcopy__(self, memo: _NotUsed) -> Self:
+        """
         EXAMPLES::
 
             sage: n = 2
             sage: deepcopy(n) is n
             True"""
-    def __eq__(self, other: object) -> bool:
-        """Return self==value."""
-    @overload
+    
+    def __eq__(self, other: Num) -> bool: ...
+    def __ne__(self, other: object) -> bool: ...
+    def __ge__(self, other: object) -> bool: ...
+    def __gt__(self, other: object) -> bool: ...
+    def __le__(self, other: object) -> bool: ...
+    def __lt__(self, other: object) -> bool: ...
+
     def __float__(self) -> Any:
-        """Integer.__float__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3620)
-
+        """
         Return double precision floating point representation of this
         integer.
 
@@ -16867,53 +3463,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             -57.0
             sage: type(n.__float__())
             <... 'float'>"""
-    @overload
-    def __float__(self) -> Any:
-        """Integer.__float__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3620)
-
-        Return double precision floating point representation of this
-        integer.
-
-        EXAMPLES::
-
-            sage: n = Integer(17); float(n)
-            17.0
-            sage: n = Integer(902834098234908209348209834092834098); float(n)
-            9.028340982349083e+35
-            sage: n = Integer(-57); float(n)
-            -57.0
-            sage: n.__float__()
-            -57.0
-            sage: type(n.__float__())
-            <... 'float'>"""
-    @overload
-    def __float__(self) -> Any:
-        """Integer.__float__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3620)
-
-        Return double precision floating point representation of this
-        integer.
-
-        EXAMPLES::
-
-            sage: n = Integer(17); float(n)
-            17.0
-            sage: n = Integer(902834098234908209348209834092834098); float(n)
-            9.028340982349083e+35
-            sage: n = Integer(-57); float(n)
-            -57.0
-            sage: n.__float__()
-            -57.0
-            sage: type(n.__float__())
-            <... 'float'>"""
-    def __format__(self, *args, **kwargs) -> Any:
-        '''Integer.__format__(self, *args, **kwargs)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1124)
-
+    def __format__(self, format_spec: str) -> str:
+        '''
         Return a string representation using Python\'s Format protocol.
         Valid format descriptions are exactly those for Python integers.
 
@@ -16921,16 +3472,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: "{0:#x}; {0:#b}; {0:+05d}".format(ZZ(17))
             \'0x11; 0b10001; +0017\''''
-    def __ge__(self, other: object) -> bool:
-        """Return self>=value."""
-    def __gt__(self, other: object) -> bool:
-        """Return self>value."""
-    @overload
     def __hash__(self) -> Any:
-        """Integer.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3655)
-
+        """
         Return the hash of this integer.
 
         This agrees with the Python hash of the corresponding Python int or
@@ -16983,185 +3526,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             8196
             sage: hash(n) == hash(int(n))
             True"""
-    @overload
-    def __hash__(self) -> Any:
-        """Integer.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3655)
-
-        Return the hash of this integer.
-
-        This agrees with the Python hash of the corresponding Python int or
-        long.
-
-        EXAMPLES::
-
-            sage: n = -920384; n.__hash__()
-            -920384
-            sage: hash(int(n))
-            -920384
-            sage: n = -920390823904823094890238490238484
-            sage: n.__hash__()    # random
-            -43547310504077801
-            sage: n.__hash__() == hash(int(n))
-            True
-
-        TESTS::
-
-            sage: hash(-1), hash(0), hash(1)
-            (-2, 0, 1)
-            sage: n = 2^31 + 2^63 + 2^95 + 2^127 + 2^128*(2^32-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-            sage: n = 2^63 + 2^127 + 2^191 + 2^255 + 2^256*(2^64-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-
-        These tests come from :issue:`4957`::
-
-            sage: n = 2^31 + 2^13
-            sage: hash(n)             # random
-            2147491840
-            sage: hash(n) == hash(int(n))
-            True
-            sage: n = 2^63 + 2^13
-            sage: hash(n)             # random
-            8196
-            sage: hash(n) == hash(int(n))
-            True"""
-    @overload
-    def __hash__(self) -> Any:
-        """Integer.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3655)
-
-        Return the hash of this integer.
-
-        This agrees with the Python hash of the corresponding Python int or
-        long.
-
-        EXAMPLES::
-
-            sage: n = -920384; n.__hash__()
-            -920384
-            sage: hash(int(n))
-            -920384
-            sage: n = -920390823904823094890238490238484
-            sage: n.__hash__()    # random
-            -43547310504077801
-            sage: n.__hash__() == hash(int(n))
-            True
-
-        TESTS::
-
-            sage: hash(-1), hash(0), hash(1)
-            (-2, 0, 1)
-            sage: n = 2^31 + 2^63 + 2^95 + 2^127 + 2^128*(2^32-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-            sage: n = 2^63 + 2^127 + 2^191 + 2^255 + 2^256*(2^64-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-
-        These tests come from :issue:`4957`::
-
-            sage: n = 2^31 + 2^13
-            sage: hash(n)             # random
-            2147491840
-            sage: hash(n) == hash(int(n))
-            True
-            sage: n = 2^63 + 2^13
-            sage: hash(n)             # random
-            8196
-            sage: hash(n) == hash(int(n))
-            True"""
-    @overload
-    def __hash__(self) -> Any:
-        """Integer.__hash__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3655)
-
-        Return the hash of this integer.
-
-        This agrees with the Python hash of the corresponding Python int or
-        long.
-
-        EXAMPLES::
-
-            sage: n = -920384; n.__hash__()
-            -920384
-            sage: hash(int(n))
-            -920384
-            sage: n = -920390823904823094890238490238484
-            sage: n.__hash__()    # random
-            -43547310504077801
-            sage: n.__hash__() == hash(int(n))
-            True
-
-        TESTS::
-
-            sage: hash(-1), hash(0), hash(1)
-            (-2, 0, 1)
-            sage: n = 2^31 + 2^63 + 2^95 + 2^127 + 2^128*(2^32-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-            sage: n = 2^63 + 2^127 + 2^191 + 2^255 + 2^256*(2^64-2)
-            sage: hash(n) == hash(int(n))
-            True
-            sage: hash(n-1) == hash(int(n-1))
-            True
-            sage: hash(-n) == hash(int(-n))
-            True
-            sage: hash(1-n) == hash(int(1-n))
-            True
-
-        These tests come from :issue:`4957`::
-
-            sage: n = 2^31 + 2^13
-            sage: hash(n)             # random
-            2147491840
-            sage: hash(n) == hash(int(n))
-            True
-            sage: n = 2^63 + 2^13
-            sage: hash(n)             # random
-            8196
-            sage: hash(n) == hash(int(n))
-            True"""
-    def __index__(self) -> Any:
-        """Integer.__index__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 748)
-
+    def __index__(self) -> int:
+        """
         Needed so integers can be used as list indices.
 
         EXAMPLES::
@@ -17181,12 +3547,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             'ab'
             sage: m.group(Integer(1))
             'a'"""
-    @overload
     def __int__(self) -> Any:
-        """Integer.__int__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3595)
-
+        """
         Return the Python int corresponding to this Sage integer.
 
         EXAMPLES::
@@ -17207,64 +3569,8 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             <class 'int'>
             sage: int(-1), int(0), int(1)
             (-1, 0, 1)"""
-    @overload
-    def __int__(self) -> Any:
-        """Integer.__int__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3595)
-
-        Return the Python int corresponding to this Sage integer.
-
-        EXAMPLES::
-
-            sage: n = 920938
-            sage: int(n)
-            920938
-            sage: int(-n)
-            -920938
-            sage: type(n.__int__())
-            <... 'int'>
-            sage: n = 99028390823409823904823098490238409823490820938
-            sage: int(n)
-            99028390823409823904823098490238409823490820938
-            sage: int(-n)
-            -99028390823409823904823098490238409823490820938
-            sage: type(n.__int__())
-            <class 'int'>
-            sage: int(-1), int(0), int(1)
-            (-1, 0, 1)"""
-    @overload
-    def __int__(self) -> Any:
-        """Integer.__int__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3595)
-
-        Return the Python int corresponding to this Sage integer.
-
-        EXAMPLES::
-
-            sage: n = 920938
-            sage: int(n)
-            920938
-            sage: int(-n)
-            -920938
-            sage: type(n.__int__())
-            <... 'int'>
-            sage: n = 99028390823409823904823098490238409823490820938
-            sage: int(n)
-            99028390823409823904823098490238409823490820938
-            sage: int(-n)
-            -99028390823409823904823098490238409823490820938
-            sage: type(n.__int__())
-            <class 'int'>
-            sage: int(-1), int(0), int(1)
-            (-1, 0, 1)"""
-    @overload
-    def __invert__(self) -> Any:
-        """Integer.__invert__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6874)
-
+    def __invert__(self) -> Rational:
+        """
         Return the multiplicative inverse of ``self``, as a rational number.
 
         EXAMPLES::
@@ -17277,62 +3583,89 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             sage: n = -3
             sage: ~n
             -1/3"""
-    @overload
-    def __invert__(self) -> Any:
-        """Integer.__invert__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6874)
-
-        Return the multiplicative inverse of ``self``, as a rational number.
+    
+    def __mpz__(self) -> mpz:
+        '''
+        Return a gmpy2 integer.
 
         EXAMPLES::
 
-            sage: n = 10
-            sage: 1/n
-            1/10
-            sage: n.__invert__()
-            1/10
-            sage: n = -3
-            sage: ~n
-            -1/3"""
-    def __le__(self, other: object) -> bool:
-        """Return self<=value."""
-    def __lshift__(self, x, y) -> Any:
-        """Integer.__lshift__(x, y)
+            sage: a = 5
+            sage: a.__mpz__()
+            mpz(5)
+            sage: from gmpy2 import mpz
+            sage: mpz(a)
+            mpz(5)
 
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6771)
+        TESTS::
 
-        Shift x to the left by y bits.
-
-        EXAMPLES::
-
-            sage: 32 << 2
-            128
-            sage: 32 << int(2)
-            128
-            sage: int(32) << 2
-            128
-            sage: 1 << 2.5                                                              # needs sage.rings.real_mpfr
+            sage: a.__mpz__(); raise NotImplementedError("gmpy2 is not installed")
             Traceback (most recent call last):
             ...
-            TypeError: unsupported operands for <<: 1, 2.5000...
+            NotImplementedError: gmpy2 is not installed'''
+    
+    def __neg__(self) -> Integer:
+        """
+        TESTS::
 
-            sage: 32 << (4/2)
-            128
+            sage: a = Integer(3)
+            sage: -a
+            -3
+            sage: a = Integer(3^100); a
+            515377520732011331036461129765621272702107522001
+            sage: -a
+            -515377520732011331036461129765621272702107522001"""
+    def __pari__(self) -> Any:
+        """
+        Return the PARI version of this integer.
 
-        A negative shift to the left is treated as a right shift::
+        EXAMPLES::
 
-            sage: 128 << -2
-            32
-            sage: 128 << (-2^100)
-            0"""
-    def __lt__(self, other: object) -> bool:
-        """Return self<value."""
-    def __mod__(self, x, y) -> Any:
-        """Integer.__mod__(x, y)
+            sage: n = 9390823
+            sage: m = n.__pari__(); m                                                   # needs sage.libs.pari
+            9390823
+            sage: type(m)                                                               # needs sage.libs.pari
+            <class 'cypari2.gen.Gen'>
 
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3338)
+        TESTS::
 
+            sage: n = 10^10000000
+            sage: m = n.__pari__()  # crash from trac 875                               # needs sage.libs.pari
+            sage: m % 1234567                                                           # needs sage.libs.pari
+            1041334"""
+    def __pos__(self) -> Any:
+        """
+        EXAMPLES::
+
+            sage: z=43434
+            sage: z.__pos__()
+            43434"""
+    
+    def __reduce__(self) -> tuple[Callable[[str], Integer], tuple[str]]:
+        """
+        This is used when pickling integers.
+
+        EXAMPLES::
+
+            sage: n = 5
+            sage: t = n.__reduce__(); t
+            (<cyfunction make_integer at ...>, ('5',))
+            sage: t[0](*t[1])
+            5
+            sage: loads(dumps(n)) == n
+            True"""
+    def __repr__(self) -> str:
+        """
+        Return string representation of this integer.
+
+        EXAMPLES::
+
+            sage: n = -5; n.__repr__()
+            '-5'
+        """
+    
+    def __mod__(self, y) -> Any:
+        """
         Return x modulo y.
 
         EXAMPLES::
@@ -17376,80 +3709,168 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             Traceback (most recent call last):
             ...
             ArithmeticError: reduction modulo 100 not defined"""
-    @overload
-    def __mpz__(self) -> Any:
-        '''Integer.__mpz__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1053)
-
-        Return a gmpy2 integer.
+    def __rmod__(self, other): ...
+    
+    def __and__(left, right) -> Any:
+        """
+        Return the bitwise and two integers.
 
         EXAMPLES::
 
-            sage: a = 5
-            sage: a.__mpz__()
-            mpz(5)
-            sage: from gmpy2 import mpz
-            sage: mpz(a)
-            mpz(5)
+            sage: n = Integer(6);  m = Integer(2)
+            sage: n & m
+            2
+            sage: n.__and__(m)
+            2"""
+    def __rand__(self, other): ...
+    
 
-        TESTS::
-
-            sage: a.__mpz__(); raise NotImplementedError("gmpy2 is not installed")
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: gmpy2 is not installed'''
-    @overload
-    def __mpz__(self) -> Any:
-        '''Integer.__mpz__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1053)
-
-        Return a gmpy2 integer.
+    def __or__(self, m) -> Any:
+        """
+        Return the bitwise or of the integers x and y.
 
         EXAMPLES::
 
-            sage: a = 5
-            sage: a.__mpz__()
-            mpz(5)
-            sage: from gmpy2 import mpz
-            sage: mpz(a)
-            mpz(5)
-
-        TESTS::
-
-            sage: a.__mpz__(); raise NotImplementedError("gmpy2 is not installed")
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: gmpy2 is not installed'''
-    @overload
-    def __mpz__(self) -> Any:
-        '''Integer.__mpz__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1053)
-
-        Return a gmpy2 integer.
+            sage: n = 8; m = 4
+            sage: n.__or__(m)
+            12"""
+    def __ror__(self, other): ...
+    
+    def __xor__(self, m: Integer | int | NumPyInteger) -> Integer: # TODO: possibly not limited to this
+        """
+        Compute the exclusive or of x and y.
 
         EXAMPLES::
 
-            sage: a = 5
-            sage: a.__mpz__()
-            mpz(5)
-            sage: from gmpy2 import mpz
-            sage: mpz(a)
-            mpz(5)
+            sage: n = ZZ(2); m = ZZ(3)
+            sage: n.__xor__(m)
+            1"""
+    def __rxor__(self, other): ...
 
-        TESTS::
+    def __lshift__(self, y) -> Any:
+        """
+        Shift x to the left by y bits.
 
-            sage: a.__mpz__(); raise NotImplementedError("gmpy2 is not installed")
+        EXAMPLES::
+
+            sage: 32 << 2
+            128
+            sage: 32 << int(2)
+            128
+            sage: int(32) << 2
+            128
+            sage: 1 << 2.5                                                              # needs sage.rings.real_mpfr
             Traceback (most recent call last):
             ...
-            NotImplementedError: gmpy2 is not installed'''
-    def __mul__(self, left, right) -> Any:
-        """Integer.__mul__(left, right)
+            TypeError: unsupported operands for <<: 1, 2.5000...
 
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1958)
+            sage: 32 << (4/2)
+            128
 
+        A negative shift to the left is treated as a right shift::
+
+            sage: 128 << -2
+            32
+            sage: 128 << (-2^100)
+            0"""
+    def __rlshift__(self, other): ...
+    
+    def __rshift__(self, y) -> Any:
+        """
+        Shift x to the right by y bits.
+
+        EXAMPLES::
+
+            sage: 32 >> 2
+            8
+            sage: 32 >> int(2)
+            8
+            sage: int(32) >> 2
+            8
+            sage: 1 >> 2.5                                                              # needs sage.rings.real_mpfr
+            Traceback (most recent call last):
+            ...
+            TypeError: unsupported operands for >>: 1, 2.5000...
+            sage: 10^5 >> 10^100
+            0
+
+        A negative shift to the right is treated as a left shift::
+
+            sage: 8 >> -2
+            32"""
+    def __rrshift__(self, other): ...
+    
+    # the result type of __add__ is mostly through experiment
+    @overload
+    def __add__(left, right: Integer | int | NumPyInteger) -> Integer: ...
+    @overload
+    def __add__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | mpz](left, right: R) -> R: ...
+    @overload
+    def __add__(left, right) -> Any:
+        """
+        TESTS::
+
+            sage: 1 + 2
+            3
+            sage: sum(Integer(i) for i in [1..100])
+            5050
+            sage: 1 + 2/3
+            5/3
+            sage: 1 + (-2/3)
+            1/3"""
+        
+    @overload
+    def __radd__(right, left: NumPySignedInt) -> int64: ...
+    @overload
+    def __radd__(right, left: NumPyUInt) -> float64: ...
+    @overload
+    def __radd__(right, left: NumPyComplex) -> complex128: ...
+    @overload
+    def __radd__(right, left: Integer | int) -> Integer: ...
+    @overload
+    def __radd__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexactSage](right, left: R) -> R: ...
+    @overload
+    def __radd__(self, other): ...
+
+    @overload
+    def __sub__(self, right: Integer | int | NumPyInteger) -> Integer: ...
+    @overload
+    def __sub__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | mpz](self, right: R) -> R: ...
+    @overload
+    def __sub__(self, right) -> Any:
+        """
+        TESTS::
+
+            sage: 1 - 2
+            -1
+            sage: 1 - 2/3
+            1/3
+            sage: 1 - (-2/3)
+            5/3
+            sage: (-1) - (-5/4)
+            1/4"""
+    
+    @overload
+    def __rsub__(right, left: Integer | int) -> Integer: ...
+    @overload
+    def __rsub__(right, left: NumPySignedInt) -> int64: ...
+    @overload
+    def __rsub__(right, left: NumPyUInt) -> uint64: ...
+    @overload
+    def __rsub__(right, left: NumPyComplex) -> complex128: ...
+    @overload
+    def __rsub__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexactSage](right, left: R) -> R: ...
+    @overload
+    def __rsub__(right, left): ...
+    
+    # note that ZZ * mpz -> ZZ, and action on list-like python objects
+    @overload
+    def __mul__(left, right: Integer | int | NumPyInteger | mpz) -> Integer: ...
+    @overload
+    def __mul__[R: Rational | IntegerMod_int | RealInexact | ComplexInexact | tuple | str | bytes | list](left, right: R) -> R: ...
+    @overload
+    def __mul__(self, right) -> Any:
+        """
         TESTS::
 
             sage: 3 * 2
@@ -17460,141 +3881,103 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
             -5/2
             sage: (-2) * (-5/4)
             5/2"""
-    def __ne__(self, other: object) -> bool:
-        """Return self!=value."""
-    def __neg__(self) -> Any:
-        """Integer.__neg__(self)
+    
+    @overload
+    def __rmul__(right, left: Integer | int) -> Integer: ...
+    @overload
+    def __rmul__(right, left: NumPySignedInt) -> int64: ...
+    @overload
+    def __rmul__(right, left: NumPyUInt) -> float64: ...
+    @overload
+    def __rmul__(right, left: NumPyComplex) -> complex128: ...
+    @overload
+    def __rmul__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | tuple | str | bytes | list | mpz](right, left: R) -> R: ...
+    @overload
+    def __rmul__(right, left) -> Any: ...
 
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1898)
-
+    @overload
+    def __truediv__(left, right: int | Rational | NumPyInteger) -> Rational: ...
+    @overload
+    def __truediv__(left, right: mpz) -> mpfr: ...
+    @overload
+    def __truediv__[R: RealInexact | ComplexInexact | IntegerMod_int](left, right: R) -> R: ...
+    @overload
+    def __truediv__(left, right) -> Any:
+        """
         TESTS::
 
-            sage: a = Integer(3)
-            sage: -a
-            -3
-            sage: a = Integer(3^100); a
-            515377520732011331036461129765621272702107522001
-            sage: -a
-            -515377520732011331036461129765621272702107522001"""
+            sage: 3 / 2
+            3/2
+            sage: 5 / QQ((10,3))
+            3/2
+            sage: 3 / (-5/6)
+            -18/5
+            sage: (-2) / (-5/4)
+            8/5
+            sage: 3 / polygen(ZZ)
+            3/x
+
+            sage: 3 / 0
+            Traceback (most recent call last):
+            ...
+            ZeroDivisionError: rational division by zero
+            sage: 3 / QQ.zero()
+            Traceback (most recent call last):
+            ...
+            ZeroDivisionError: rational division by zero
+            sage: 3 / QQbar.zero()                                                      # needs sage.rings.number_field
+            Traceback (most recent call last):
+            ...
+            ZeroDivisionError: division by zero in algebraic field"""
+    
     @overload
-    def __or__(self, x, y) -> Any:
-        """Integer.__or__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6860)
-
-        Return the bitwise or of the integers x and y.
-
-        EXAMPLES::
-
-            sage: n = 8; m = 4
-            sage: n.__or__(m)
-            12"""
+    def __rtruediv__(right, left: int | Rational) -> Rational: ...
     @overload
-    def __or__(self, m) -> Any:
-        """Integer.__or__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6860)
-
-        Return the bitwise or of the integers x and y.
-
-        EXAMPLES::
-
-            sage: n = 8; m = 4
-            sage: n.__or__(m)
-            12"""
+    def __rtruediv__(right, left: mpz) -> mpfr: ...
     @overload
-    def __pari__(self) -> Any:
-        """Integer.__pari__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6227)
-
-        Return the PARI version of this integer.
-
-        EXAMPLES::
-
-            sage: n = 9390823
-            sage: m = n.__pari__(); m                                                   # needs sage.libs.pari
-            9390823
-            sage: type(m)                                                               # needs sage.libs.pari
-            <class 'cypari2.gen.Gen'>
-
-        TESTS::
-
-            sage: n = 10^10000000
-            sage: m = n.__pari__()  # crash from trac 875                               # needs sage.libs.pari
-            sage: m % 1234567                                                           # needs sage.libs.pari
-            1041334"""
+    def __rtruediv__(right, left: NumPyInteger | NumPyFloat) -> float64: ...
     @overload
-    def __pari__(self) -> Any:
-        """Integer.__pari__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6227)
-
-        Return the PARI version of this integer.
-
-        EXAMPLES::
-
-            sage: n = 9390823
-            sage: m = n.__pari__(); m                                                   # needs sage.libs.pari
-            9390823
-            sage: type(m)                                                               # needs sage.libs.pari
-            <class 'cypari2.gen.Gen'>
-
-        TESTS::
-
-            sage: n = 10^10000000
-            sage: m = n.__pari__()  # crash from trac 875                               # needs sage.libs.pari
-            sage: m % 1234567                                                           # needs sage.libs.pari
-            1041334"""
+    def __rtruediv__(right, left: NumPyComplex) -> complex128: ...
     @overload
-    def __pari__(self) -> Any:
-        """Integer.__pari__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6227)
-
-        Return the PARI version of this integer.
-
-        EXAMPLES::
-
-            sage: n = 9390823
-            sage: m = n.__pari__(); m                                                   # needs sage.libs.pari
-            9390823
-            sage: type(m)                                                               # needs sage.libs.pari
-            <class 'cypari2.gen.Gen'>
-
-        TESTS::
-
-            sage: n = 10^10000000
-            sage: m = n.__pari__()  # crash from trac 875                               # needs sage.libs.pari
-            sage: m % 1234567                                                           # needs sage.libs.pari
-            1041334"""
+    def __rtruediv__[L: RealInexactSage | ComplexInexactSage | complex](right, left: L) -> L: ...
     @overload
-    def __pos__(self) -> Any:
-        """Integer.__pos__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3276)
-
-        EXAMPLES::
-
-            sage: z=43434
-            sage: z.__pos__()
-            43434"""
+    def __rtruediv__(right, left): ...
+    
     @overload
-    def __pos__(self) -> Any:
-        """Integer.__pos__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 3276)
-
-        EXAMPLES::
-
-            sage: z=43434
-            sage: z.__pos__()
-            43434"""
-    def __pow__(self, left, right, modulus) -> Any:
-        """Integer.__pow__(left, right, modulus)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2123)
-
+    def __floordiv__(self, right: Integer | int | NumPyInteger) -> Integer: ...
+    @overload
+    def __floordiv__[R: mpz | IntegerMod_int | float | ComplexInexact | Rational | NumPyFloat](self, right: R) -> R: ...
+    @overload
+    def __floordiv__(self, right) -> Any: ...
+    @overload
+    def __rfloordiv__(self, left: Integer | int) -> Rational: ...
+    @overload
+    def __rfloordiv__(self, left: NumPySignedInt) -> int64: ...
+    @overload
+    def __rfloordiv__(self, left: NumPyFloat | NumPyUInt) -> float64: ...
+    @overload
+    def __rfloordiv__[L: mpz | IntegerMod_int | float | ComplexInexact | Rational | NumPyFloat](self, left: L) -> L: ... 
+    @overload
+    def __rfloordiv__(self, left): ...
+    
+    @overload
+    def __pow__(
+        left, 
+        right: Integer | int | IntegerMod_int | mpz| NumPyInteger
+    ) -> Integer: ...
+    @overload
+    def __pow__[
+        R: RealInexact | ComplexInexact | mpfr | Rational
+    ](left, right: R) -> R: ...
+    @overload
+    def __pow__(
+        left, 
+        right: Int | RealInexactSage, 
+        modulus: Int | RealInexactSage | ComplexInexactSage | NumPyFloat | mpfr
+    ) -> Integer: ...# pyright: ignore[reportIncompatibleMethodOverride]
+    @overload
+    def __pow__(left, right, modulus) -> Any: # pyright: ignore[reportIncompatibleMethodOverride]
+        """
         Return ``(left ^ right) % modulus``.
 
         EXAMPLES::
@@ -17674,165 +4057,23 @@ class Integer(sage.structure.element.EuclideanDomainElement, Number):
 
             sage: pow(5,7,13).parent()
             Integer Ring"""
-    def __radd__(self, other):
-        """Return value+self."""
-    def __rand__(self, other):
-        """Return value&self."""
     @overload
-    def __reduce__(self) -> Any:
-        """Integer.__reduce__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 725)
-
-        This is used when pickling integers.
-
-        EXAMPLES::
-
-            sage: n = 5
-            sage: t = n.__reduce__(); t
-            (<cyfunction make_integer at ...>, ('5',))
-            sage: t[0](*t[1])
-            5
-            sage: loads(dumps(n)) == n
-            True"""
+    def __rpow__[
+        L: mpz | mpfr | Rational | RealInexactSage | ComplexInexactSage | complex | Integer | IntegerMod_int | int | float
+    ](right, left: L) -> L: ...
     @overload
-    def __reduce__(self) -> Any:
-        """Integer.__reduce__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 725)
-
-        This is used when pickling integers.
-
-        EXAMPLES::
-
-            sage: n = 5
-            sage: t = n.__reduce__(); t
-            (<cyfunction make_integer at ...>, ('5',))
-            sage: t[0](*t[1])
-            5
-            sage: loads(dumps(n)) == n
-            True"""
-    def __rlshift__(self, other):
-        """Return value<<self."""
-    def __rmod__(self, other):
-        """Return value%self."""
-    def __rmul__(self, other):
-        """Return value*self."""
-    def __ror__(self, other):
-        """Return value|self."""
-    def __rpow__(self, other):
-        """Return pow(value, self, mod)."""
-    def __rrshift__(self, other):
-        """Return value>>self."""
-    def __rshift__(self, x, y) -> Any:
-        """Integer.__rshift__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 6804)
-
-        Shift x to the right by y bits.
-
-        EXAMPLES::
-
-            sage: 32 >> 2
-            8
-            sage: 32 >> int(2)
-            8
-            sage: int(32) >> 2
-            8
-            sage: 1 >> 2.5                                                              # needs sage.rings.real_mpfr
-            Traceback (most recent call last):
-            ...
-            TypeError: unsupported operands for >>: 1, 2.5000...
-            sage: 10^5 >> 10^100
-            0
-
-        A negative shift to the right is treated as a left shift::
-
-            sage: 8 >> -2
-            32"""
-    def __rsub__(self, other):
-        """Return value-self."""
-    def __rtruediv__(self, other):
-        """Return value/self."""
-    def __rxor__(self, other):
-        """Return value^self."""
-    def __sub__(self, left, right) -> Any:
-        """Integer.__sub__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 1846)
-
-        TESTS::
-
-            sage: 1 - 2
-            -1
-            sage: 1 - 2/3
-            1/3
-            sage: 1 - (-2/3)
-            5/3
-            sage: (-1) - (-5/4)
-            1/4"""
-    def __truediv__(self, left, right) -> Any:
-        """Integer.__truediv__(left, right)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 2009)
-
-        TESTS::
-
-            sage: 3 / 2
-            3/2
-            sage: 5 / QQ((10,3))
-            3/2
-            sage: 3 / (-5/6)
-            -18/5
-            sage: (-2) / (-5/4)
-            8/5
-            sage: 3 / polygen(ZZ)
-            3/x
-
-            sage: 3 / 0
-            Traceback (most recent call last):
-            ...
-            ZeroDivisionError: rational division by zero
-            sage: 3 / QQ.zero()
-            Traceback (most recent call last):
-            ...
-            ZeroDivisionError: rational division by zero
-            sage: 3 / QQbar.zero()                                                      # needs sage.rings.number_field
-            Traceback (most recent call last):
-            ...
-            ZeroDivisionError: division by zero in algebraic field"""
+    def __rpow__(right, left: NumPyInteger) -> int64: ...
     @overload
-    def __xor__(self, x, y) -> Any:
-        """Integer.__xor__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 793)
-
-        Compute the exclusive or of x and y.
-
-        EXAMPLES::
-
-            sage: n = ZZ(2); m = ZZ(3)
-            sage: n.__xor__(m)
-            1"""
+    def __rpow__(right, left: NumPyFloat) -> float64: ...
     @overload
-    def __xor__(self, m) -> Any:
-        """Integer.__xor__(x, y)
-
-        File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 793)
-
-        Compute the exclusive or of x and y.
-
-        EXAMPLES::
-
-            sage: n = ZZ(2); m = ZZ(3)
-            sage: n.__xor__(m)
-            1"""
+    def __rpow__(right, left: NumPyComplex) -> complex128: ...
+    @overload
+    def __rpow__(right, left): ...
+    
+    
 
 class IntegerWrapper(Integer):
-    '''IntegerWrapper(parent=None, x=None, unsigned int base=0)
-
-    File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 355)
-
+    '''
     Rationale for the :class:`IntegerWrapper` class:
 
     With :class:`Integer` objects, the allocation/deallocation function slots are
@@ -17851,7 +4092,7 @@ class IntegerWrapper(Integer):
 
     The constructor of :class:`IntegerWrapper` further allows for
     specifying an alternative parent to :class:`IntegerRing`.'''
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
+    
     def __init__(self, parent=..., x=..., unsignedintbase=...) -> Any:
         """File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 377)
 
@@ -17892,5 +4133,4 @@ class int_to_Z(sage.categories.morphism.Morphism):
         sage: f(1rL)
         1"""
     __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7482)"""
+    def __init__(self) -> Any: ...

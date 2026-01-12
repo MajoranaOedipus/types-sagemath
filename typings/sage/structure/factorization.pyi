@@ -1,12 +1,196 @@
+r"""
+Factorizations
+
+The :class:`Factorization` class provides a structure for holding quite
+general lists of objects with integer multiplicities.  These may hold
+the results of an arithmetic or algebraic factorization, where the
+objects may be primes or irreducible polynomials and the
+multiplicities are the (nonzero) exponents in the factorization.  For
+other types of examples, see below.
+
+:class:`Factorization` class objects contain a ``list``, so can be
+printed nicely and be manipulated like a list of prime-exponent pairs,
+or easily turned into a plain list.  For example, we factor the
+integer `-45`::
+
+    sage: F = factor(-45)
+
+This returns an object of type :class:`Factorization`::
+
+    sage: type(F)
+    <class 'sage.structure.factorization_integer.IntegerFactorization'>
+
+It prints in a nice factored form::
+
+    sage: F
+    -1 * 3^2 * 5
+
+There is an underlying list representation, which ignores the unit part::
+
+    sage: list(F)
+    [(3, 2), (5, 1)]
+
+A :class:`Factorization` is not actually a list::
+
+    sage: isinstance(F, list)
+    False
+
+However, we can access the :class:`Factorization` F itself as if it were a list::
+
+    sage: F[0]
+    (3, 2)
+    sage: F[1]
+    (5, 1)
+
+To get at the unit part, use the :meth:`Factorization.unit` function::
+
+    sage: F.unit()
+    -1
+
+All factorizations are immutable, up to ordering with ``sort()`` and
+simplifying with ``simplify()``.  Thus if you write a function that
+returns a cached version of a factorization, you do not have to return
+a copy.
+
+::
+
+    sage: F = factor(-12); F
+    -1 * 2^2 * 3
+    sage: F[0] = (5,4)
+    Traceback (most recent call last):
+    ...
+    TypeError: 'Factorization' object does not support item assignment
+
+EXAMPLES:
+
+This more complicated example involving polynomials also illustrates
+that the unit part is not discarded from factorizations::
+
+    sage: # needs sage.libs.pari
+    sage: x = QQ['x'].0
+    sage: f = -5*(x-2)*(x-3)
+    sage: f
+    -5*x^2 + 25*x - 30
+    sage: F = f.factor(); F
+    (-5) * (x - 3) * (x - 2)
+    sage: F.unit()
+    -5
+    sage: F.value()
+    -5*x^2 + 25*x - 30
+
+The underlying list is the list of pairs `(p_i, e_i)`, where each
+`p_i` is a 'prime' and each `e_i` is an integer. The unit part
+is discarded by the list::
+
+    sage: # needs sage.libs.pari
+    sage: list(F)
+    [(x - 3, 1), (x - 2, 1)]
+    sage: len(F)
+    2
+    sage: F[1]
+    (x - 2, 1)
+
+In the ring `\ZZ[x]`, the integer `-5` is not a unit, so the
+factorization has three factors::
+
+    sage: # needs sage.libs.pari
+    sage: x = ZZ['x'].0
+    sage: f = -5*(x-2)*(x-3)
+    sage: f
+    -5*x^2 + 25*x - 30
+    sage: F = f.factor(); F
+    (-1) * 5 * (x - 3) * (x - 2)
+    sage: F.universe()
+    Univariate Polynomial Ring in x over Integer Ring
+    sage: F.unit()
+    -1
+    sage: list(F)
+    [(5, 1), (x - 3, 1), (x - 2, 1)]
+    sage: F.value()
+    -5*x^2 + 25*x - 30
+    sage: len(F)
+    3
+
+On the other hand, -1 is a unit in `\ZZ`, so it is included in the unit::
+
+    sage: # needs sage.libs.pari
+    sage: x = ZZ['x'].0
+    sage: f = -1 * (x-2) * (x-3)
+    sage: F = f.factor(); F
+    (-1) * (x - 3) * (x - 2)
+    sage: F.unit()
+    -1
+    sage: list(F)
+    [(x - 3, 1), (x - 2, 1)]
+
+Factorizations can involve fairly abstract mathematical objects::
+
+    sage: # needs sage.modular
+    sage: F = ModularSymbols(11,4).factorization(); F
+    (Modular Symbols subspace of dimension 2 of Modular Symbols space
+      of dimension 6 for Gamma_0(11) of weight 4 with sign 0 over Rational Field) *
+    (Modular Symbols subspace of dimension 2 of Modular Symbols space
+      of dimension 6 for Gamma_0(11) of weight 4 with sign 0 over Rational Field) *
+    (Modular Symbols subspace of dimension 2 of Modular Symbols space
+      of dimension 6 for Gamma_0(11) of weight 4 with sign 0 over Rational Field)
+    sage: type(F)
+    <class 'sage.structure.factorization.Factorization'>
+
+
+    sage: # needs sage.rings.number_field
+    sage: x = ZZ['x'].0
+    sage: K.<a> = NumberField(x^2 + 3); K
+    Number Field in a with defining polynomial x^2 + 3
+    sage: f = K.factor(15); f
+    (Fractional ideal (-a))^2 * (Fractional ideal (5))
+    sage: f.universe()
+    Monoid of ideals of Number Field in a with defining polynomial x^2 + 3
+    sage: f.unit()
+    Fractional ideal (1)
+    sage: g = K.factor(9); g
+    (Fractional ideal (-a))^4
+    sage: f.lcm(g)
+    (Fractional ideal (-a))^4 * (Fractional ideal (5))
+    sage: f.gcd(g)
+    (Fractional ideal (-a))^2
+    sage: f.is_integral()
+    True
+
+TESTS::
+
+    sage: F = factor(-20); F
+    -1 * 2^2 * 5
+    sage: G = loads(dumps(F)); G
+    -1 * 2^2 * 5
+    sage: G == F
+    True
+    sage: G is F
+    False
+
+AUTHORS:
+
+- William Stein (2006-01-22): added unit part as suggested by David Kohel.
+
+- William Stein (2008-01-17): wrote much of the documentation and
+  fixed a couple of bugs.
+
+- Nick Alexander (2008-01-19): added support for non-commuting factors.
+
+- John Cremona (2008-08-22): added division, lcm, gcd, is_integral and
+  universe functions
+"""
+
+
 from typing import Iterable, Any
+from typings_sagemath import Int
+from typings_sagemath import RichCmpMixin as _RichCmpMixin
 from sage.misc.cachefunc import cached_method as cached_method
 from sage.structure.element import Element as Element
 from sage.structure.richcmp import richcmp as richcmp, richcmp_method as richcmp_method, richcmp_not_equal as richcmp_not_equal
 from sage.structure.sage_object import SageObject as SageObject
 from sage.structure.sequence import Sequence as Sequence
 
-@richcmp_method
-class Factorization[T](SageObject):
+class Factorization[T](SageObject, _RichCmpMixin):
     """
     A formal factorization of an object.
 
@@ -28,8 +212,14 @@ class Factorization[T](SageObject):
         ...
         TypeError: no conversion of this rational to integer
     """
-    def __init__(self, x: Iterable[tuple[T, int]], # [(p, e)], e is passed to Integer
-                 unit=1, cr: bool = False, sort: bool = True, simplify: bool = True) -> None:
+    def __init__(
+        self, 
+        x: Iterable[tuple[T, Int]],
+        unit: Int = 1, 
+        cr: bool = False, 
+        sort: bool = True, 
+        simplify: bool = True
+    ) -> None:
         """
         Create a :class:`Factorization` object.
 
@@ -418,7 +608,7 @@ class Factorization[T](SageObject):
             sage: F.unit()
             -1
         """
-    @cached_method
+    # removed @cached_method since it really is just an implementation detail
     def __pari__(self):
         """
         Return the PARI factorization matrix corresponding to ``self``.

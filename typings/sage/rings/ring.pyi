@@ -18,26 +18,22 @@ is_Ring: _cython_3_2_1.cython_function_or_method
 
 class Algebra(Ring):
     """Algebra(base_ring, *args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, base_ring, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 709)"""
+    
+    def __init__(self, base_ring, *args, **kwds):
+        """"""
 
 class CommutativeAlgebra(CommutativeRing):
     """CommutativeAlgebra(base_ring, *args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, base_ring, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 717)"""
+    
+    def __init__(self, base_ring, *args, **kwds):
+        """"""
 
 class CommutativeRing(Ring):
-    """CommutativeRing(base_ring, names=None, normalize=True, category=None)
-
-    File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 488)
-
+    """
     Generic commutative ring."""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, base_ring, names=..., normalize=..., category=...) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 494)
-
+    
+    def __init__(self, base_ring, names=..., normalize=..., category=...):
+        """
                 Initialize ``self``.
 
                 EXAMPLES::
@@ -46,10 +42,7 @@ class CommutativeRing(Ring):
                     Multivariate Polynomial Ring in x, y over Ring of integers modulo 389
         """
     def extension(self, poly, name=..., names=..., **kwds) -> Any:
-        """CommutativeRing.extension(self, poly, name=None, names=None, **kwds)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 570)
-
+        """
         Algebraically extend ``self`` by taking the quotient
         ``self[x] / (f(x))``.
 
@@ -83,27 +76,9 @@ class CommutativeRing(Ring):
             sage: R.<b> = F.extension(t^2 - a); R
             Univariate Quotient Polynomial Ring in b over
              Finite Field in a of size 5^2 with modulus b^2 + 4*a"""
-    @overload
+
     def fraction_field(self) -> Any:
-        """CommutativeRing.fraction_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 513)
-
-        Return the fraction field of ``self``.
-
-        EXAMPLES::
-
-            sage: R = Integers(389)['x,y']
-            sage: Frac(R)
-            Fraction Field of Multivariate Polynomial Ring in x, y over Ring of integers modulo 389
-            sage: R.fraction_field()
-            Fraction Field of Multivariate Polynomial Ring in x, y over Ring of integers modulo 389"""
-    @overload
-    def fraction_field(self) -> Any:
-        """CommutativeRing.fraction_field(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 513)
-
+        """
         Return the fraction field of ``self``.
 
         EXAMPLES::
@@ -116,13 +91,12 @@ class CommutativeRing(Ring):
 
 class DedekindDomain(CommutativeRing):
     """DedekindDomain(*args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 647)"""
+    
+    def __init__(self, *args, **kwds):
+        """"""
 
 class Field(CommutativeRing):
-    """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 696)
-
+    """
         Generic field
 
         TESTS::
@@ -130,34 +104,31 @@ class Field(CommutativeRing):
             sage: QQ.is_noetherian()
             True
     """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
+    
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
 
 class IntegralDomain(CommutativeRing):
     """IntegralDomain(*args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 631)"""
+    
+    def __init__(self, *args, **kwds):
+        """"""
 
 class NoetherianRing(CommutativeRing):
     """NoetherianRing(*args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 639)"""
+    
+    def __init__(self, *args, **kwds):
+        """"""
 
 class PrincipalIdealDomain(CommutativeRing):
     """PrincipalIdealDomain(*args, **kwds)"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, *args, **kwds) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 655)"""
+    
+    def __init__(self, *args, **kwds):
+        """"""
 
 class Ring(sage.structure.parent_gens.ParentWithGens):
-    """Ring(base, names=None, normalize=True, category=None)
-
-    File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 129)
-
+    """
     Generic ring class.
 
     TESTS:
@@ -265,10 +236,9 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
         sage: QQ.cardinality()
         +Infinity
  """
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self, base, names=..., normalize=..., category=...) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 238)
-
+    
+    def __init__(self, base, names=..., normalize=..., category=...):
+        """
                 Initialize ``self``.
 
                 EXAMPLES::
@@ -280,10 +250,7 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
                     Multivariate Polynomial Ring in x, y over Rational Field
         """
     def base_extend(self, R) -> Any:
-        """Ring.base_extend(self, R)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 308)
-
+        """
         EXAMPLES::
 
             sage: QQ.base_extend(GF(7))
@@ -292,12 +259,9 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
             TypeError: no base extension defined
             sage: ZZ.base_extend(GF(7))
             Finite Field of size 7"""
-    @overload
+
     def category(self) -> Any:
-        """Ring.category(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 323)
-
+        """
         Return the category to which this ring belongs.
 
         .. NOTE::
@@ -327,152 +291,9 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
                 and Category of subquotients of monoids
                 and Category of quotients of semigroups
                 and Category of finite enumerated sets"""
-    @overload
-    def category(self) -> Any:
-        """Ring.category(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 323)
-
-        Return the category to which this ring belongs.
-
-        .. NOTE::
-
-            This method exists because sometimes a ring is its own base ring.
-            During initialisation of a ring `R`, it may be checked whether the
-            base ring (hence, the ring itself) is a ring. Hence, it is
-            necessary that ``R.category()`` tells that ``R`` is a ring, even
-            *before* its category is properly initialised.
-
-        EXAMPLES::
-
-            sage: FreeAlgebra(QQ, 3, 'x').category()  # todo: use a ring which is not an algebra!   # needs sage.combinat sage.modules
-            Category of algebras with basis over Rational Field
-
-        Since a quotient of the integers is its own base ring, and during
-        initialisation of a ring it is tested whether the base ring belongs
-        to the category of rings, the following is an indirect test that the
-        ``category()`` method of rings returns the category of rings
-        even before the initialisation was successful::
-
-            sage: I = Integers(15)
-            sage: I.base_ring() is I
-            True
-            sage: I.category()
-            Join of Category of finite commutative rings
-                and Category of subquotients of monoids
-                and Category of quotients of semigroups
-                and Category of finite enumerated sets"""
-    @overload
-    def category(self) -> Any:
-        """Ring.category(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 323)
-
-        Return the category to which this ring belongs.
-
-        .. NOTE::
-
-            This method exists because sometimes a ring is its own base ring.
-            During initialisation of a ring `R`, it may be checked whether the
-            base ring (hence, the ring itself) is a ring. Hence, it is
-            necessary that ``R.category()`` tells that ``R`` is a ring, even
-            *before* its category is properly initialised.
-
-        EXAMPLES::
-
-            sage: FreeAlgebra(QQ, 3, 'x').category()  # todo: use a ring which is not an algebra!   # needs sage.combinat sage.modules
-            Category of algebras with basis over Rational Field
-
-        Since a quotient of the integers is its own base ring, and during
-        initialisation of a ring it is tested whether the base ring belongs
-        to the category of rings, the following is an indirect test that the
-        ``category()`` method of rings returns the category of rings
-        even before the initialisation was successful::
-
-            sage: I = Integers(15)
-            sage: I.base_ring() is I
-            True
-            sage: I.category()
-            Join of Category of finite commutative rings
-                and Category of subquotients of monoids
-                and Category of quotients of semigroups
-                and Category of finite enumerated sets"""
-    @overload
-    def category(self) -> Any:
-        """Ring.category(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 323)
-
-        Return the category to which this ring belongs.
-
-        .. NOTE::
-
-            This method exists because sometimes a ring is its own base ring.
-            During initialisation of a ring `R`, it may be checked whether the
-            base ring (hence, the ring itself) is a ring. Hence, it is
-            necessary that ``R.category()`` tells that ``R`` is a ring, even
-            *before* its category is properly initialised.
-
-        EXAMPLES::
-
-            sage: FreeAlgebra(QQ, 3, 'x').category()  # todo: use a ring which is not an algebra!   # needs sage.combinat sage.modules
-            Category of algebras with basis over Rational Field
-
-        Since a quotient of the integers is its own base ring, and during
-        initialisation of a ring it is tested whether the base ring belongs
-        to the category of rings, the following is an indirect test that the
-        ``category()`` method of rings returns the category of rings
-        even before the initialisation was successful::
-
-            sage: I = Integers(15)
-            sage: I.base_ring() is I
-            True
-            sage: I.category()
-            Join of Category of finite commutative rings
-                and Category of subquotients of monoids
-                and Category of quotients of semigroups
-                and Category of finite enumerated sets"""
-    @overload
-    def category(self) -> Any:
-        """Ring.category(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 323)
-
-        Return the category to which this ring belongs.
-
-        .. NOTE::
-
-            This method exists because sometimes a ring is its own base ring.
-            During initialisation of a ring `R`, it may be checked whether the
-            base ring (hence, the ring itself) is a ring. Hence, it is
-            necessary that ``R.category()`` tells that ``R`` is a ring, even
-            *before* its category is properly initialised.
-
-        EXAMPLES::
-
-            sage: FreeAlgebra(QQ, 3, 'x').category()  # todo: use a ring which is not an algebra!   # needs sage.combinat sage.modules
-            Category of algebras with basis over Rational Field
-
-        Since a quotient of the integers is its own base ring, and during
-        initialisation of a ring it is tested whether the base ring belongs
-        to the category of rings, the following is an indirect test that the
-        ``category()`` method of rings returns the category of rings
-        even before the initialisation was successful::
-
-            sage: I = Integers(15)
-            sage: I.base_ring() is I
-            True
-            sage: I.category()
-            Join of Category of finite commutative rings
-                and Category of subquotients of monoids
-                and Category of quotients of semigroups
-                and Category of finite enumerated sets"""
-    @overload
     def one(self) -> Any:
-        """Ring.one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 448)
-
+        """
         Return the one element of this ring (cached), if it exists.
 
         EXAMPLES::
@@ -488,96 +309,9 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
 
             sage: ZZ.one() is ZZ.one()
             True"""
-    @overload
-    def one(self) -> Any:
-        """Ring.one(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 448)
-
-        Return the one element of this ring (cached), if it exists.
-
-        EXAMPLES::
-
-            sage: ZZ.one()
-            1
-            sage: QQ.one()
-            1
-            sage: QQ['x'].one()
-            1
-
-        The result is cached::
-
-            sage: ZZ.one() is ZZ.one()
-            True"""
-    @overload
-    def one(self) -> Any:
-        """Ring.one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 448)
-
-        Return the one element of this ring (cached), if it exists.
-
-        EXAMPLES::
-
-            sage: ZZ.one()
-            1
-            sage: QQ.one()
-            1
-            sage: QQ['x'].one()
-            1
-
-        The result is cached::
-
-            sage: ZZ.one() is ZZ.one()
-            True"""
-    @overload
-    def one(self) -> Any:
-        """Ring.one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 448)
-
-        Return the one element of this ring (cached), if it exists.
-
-        EXAMPLES::
-
-            sage: ZZ.one()
-            1
-            sage: QQ.one()
-            1
-            sage: QQ['x'].one()
-            1
-
-        The result is cached::
-
-            sage: ZZ.one() is ZZ.one()
-            True"""
-    @overload
-    def one(self) -> Any:
-        """Ring.one(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 448)
-
-        Return the one element of this ring (cached), if it exists.
-
-        EXAMPLES::
-
-            sage: ZZ.one()
-            1
-            sage: QQ.one()
-            1
-            sage: QQ['x'].one()
-            1
-
-        The result is cached::
-
-            sage: ZZ.one() is ZZ.one()
-            True"""
-    @overload
     def order(self) -> Any:
-        """Ring.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 472)
-
+        """
         The number of elements of ``self``.
 
         EXAMPLES::
@@ -586,124 +320,9 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
             19
             sage: QQ.order()
             +Infinity"""
-    @overload
-    def order(self) -> Any:
-        """Ring.order(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 472)
-
-        The number of elements of ``self``.
-
-        EXAMPLES::
-
-            sage: GF(19).order()
-            19
-            sage: QQ.order()
-            +Infinity"""
-    @overload
-    def order(self) -> Any:
-        """Ring.order(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 472)
-
-        The number of elements of ``self``.
-
-        EXAMPLES::
-
-            sage: GF(19).order()
-            19
-            sage: QQ.order()
-            +Infinity"""
-    @overload
     def zero(self) -> Any:
-        """Ring.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 424)
-
-        Return the zero element of this ring (cached).
-
-        EXAMPLES::
-
-            sage: ZZ.zero()
-            0
-            sage: QQ.zero()
-            0
-            sage: QQ['x'].zero()
-            0
-
-        The result is cached::
-
-            sage: ZZ.zero() is ZZ.zero()
-            True"""
-    @overload
-    def zero(self) -> Any:
-        """Ring.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 424)
-
-        Return the zero element of this ring (cached).
-
-        EXAMPLES::
-
-            sage: ZZ.zero()
-            0
-            sage: QQ.zero()
-            0
-            sage: QQ['x'].zero()
-            0
-
-        The result is cached::
-
-            sage: ZZ.zero() is ZZ.zero()
-            True"""
-    @overload
-    def zero(self) -> Any:
-        """Ring.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 424)
-
-        Return the zero element of this ring (cached).
-
-        EXAMPLES::
-
-            sage: ZZ.zero()
-            0
-            sage: QQ.zero()
-            0
-            sage: QQ['x'].zero()
-            0
-
-        The result is cached::
-
-            sage: ZZ.zero() is ZZ.zero()
-            True"""
-    @overload
-    def zero(self) -> Any:
-        """Ring.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 424)
-
-        Return the zero element of this ring (cached).
-
-        EXAMPLES::
-
-            sage: ZZ.zero()
-            0
-            sage: QQ.zero()
-            0
-            sage: QQ['x'].zero()
-            0
-
-        The result is cached::
-
-            sage: ZZ.zero() is ZZ.zero()
-            True"""
-    @overload
-    def zero(self) -> Any:
-        """Ring.zero(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 424)
-
+        """
         Return the zero element of this ring (cached).
 
         EXAMPLES::
@@ -731,10 +350,7 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
             ...
             NotImplementedError: object does not support iteration"""
     def __len__(self) -> Any:
-        """Ring.__len__(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 276)
-
+        """
         Return the cardinality of this ring if it is finite, else raise
         a :exc:`NotImplementedError`.
 
@@ -747,10 +363,7 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
             ...
             NotImplementedError: len() of an infinite set"""
     def __mul__(self, x) -> Any:
-        """Ring.__mul__(self, x)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 361)
-
+        """
         Return the ideal ``x*R`` generated by ``x``, where ``x`` is either an
         element or tuple or list of elements.
 
@@ -779,10 +392,7 @@ class Ring(sage.structure.parent_gens.ParentWithGens):
     def __rxor__(self, other):
         """Return value^self."""
     def __xor__(self, n) -> Any:
-        """Ring.__xor__(self, n)
-
-        File: /build/sagemath/src/sage/src/sage/rings/ring.pyx (starting at line 294)
-
+        """
         Trap the operation ``^``.
 
         EXAMPLES::

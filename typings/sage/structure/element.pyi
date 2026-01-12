@@ -591,8 +591,7 @@ class Element[P: Parent | SageObject](SageObject):
             True
             sage: 'extend_to_fraction_field' in dir(f)
             True"""
-    def __eq__(self, other: object) -> bool:
-        """Return self==value."""
+    def __eq__(self, other): ...
     def __floordiv__(self, right) -> Any:
         """
         Top-level floor division operator for :class:`Element` invoking
@@ -650,8 +649,7 @@ class Element[P: Parent | SageObject](SageObject):
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand type(s) for //: 'sage.structure.element.Element' and 'NoneType'"""
-    def __ge__(self, other: object) -> bool:
-        """Return self>=value."""
+    def __ge__(self, other): ...
     def __getmetaclass__(self) -> type[InheritComparisonMetaclass]:
         ...
     def __getstate__(self) -> tuple[P, dict[str, Any]]:
@@ -672,12 +670,9 @@ class Element[P: Parent | SageObject](SageObject):
               '_Ideal_generic__ring': Multivariate Polynomial Ring in x, y over Rational Field,
               '_gb_by_ordering': {}})
         """
-    def __gt__(self, other: object) -> bool:
-        """Return self>value."""
-    def __le__(self, other: object) -> bool:
-        """Return self<=value."""
-    def __lt__(self, other: object) -> bool:
-        """Return self<value."""
+    def __gt__(self, other): ...
+    def __le__(self, other): ...
+    def __lt__(self, other): ...
     def __matmul__(self, right) -> Any:
         """
         Top-level matrix multiplication operator for :class:`Element`
@@ -847,8 +842,7 @@ class Element[P: Parent | SageObject](SageObject):
             + 2*B[word: abab] + 6*B[word: b] + 6*B[word: ba]
             + 2*B[word: bab] + 2*B[word: baba] + 3*B[word: babb]
             + B[word: babbab] + 9*B[word: bb] + 3*B[word: bbab]"""
-    def __ne__(self, other: object) -> bool:
-        """Return self!=value."""
+    def __ne__(self, other): ...
     def __neg__(self) -> Self | Any:
         """
         Top-level negation operator for :class:`Element`.
@@ -872,7 +866,7 @@ class Element[P: Parent | SageObject](SageObject):
             TypeError: unsupported operand parent for unary -: '<sage.structure.parent.Parent object at ...>'"""
     def __pos__(self) -> Self:
         ...
-    def __pow__(self, right, modulus: None = None) -> Any:
+    def __pow__(self, right, modulus = None) -> Any:
         """
         Top-level power operator for :class:`Element` invoking
         the coercion model.
@@ -949,26 +943,6 @@ class Element[P: Parent | SageObject](SageObject):
             TypeError: unsupported operand type(s) for ** or pow(): 'sage.structure.element.Element' and 'NoneType'"""
     def __radd__(self, other): ...
     def __rfloordiv__(self, other): ...
-    def __richcmp__(self, other, op: int) -> bool:
-        """
-        Compare ``self`` and ``other`` using the coercion framework,
-        comparing according to the comparison operator ``op``.
-
-        Normally, a class will not redefine ``__richcmp__`` but rely on
-        this ``Element.__richcmp__`` method which uses coercion if
-        needed to compare elements. After coercion (or if no coercion
-        is needed), ``_richcmp_`` is called.
-
-        If a class wants to implement rich comparison without coercion,
-        then ``__richcmp__`` should be defined.
-        See :class:`sage.numerical.linear_functions.LinearConstraint`
-        for such an example.
-
-        For efficiency reasons, a class can do certain "manual"
-        coercions directly in ``__richcmp__``, using
-        ``coercion_model.richcmp()`` for the remaining cases.
-        This is done for example in :class:`Integer`.
-        """
     def __rmatmul__(self, other): ...
     def __rmod__(self, other): ...
     def __rmul__(self, other): ...
