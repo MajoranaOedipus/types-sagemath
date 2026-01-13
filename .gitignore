@@ -166,3 +166,4 @@ sage-src
 #.idea/
 
 .continue
+.vscode
