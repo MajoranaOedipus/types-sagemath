@@ -96,7 +96,7 @@ def test_bin_ops(
 
     for s, t, bin_op in product(objects, objects, bin_ops):
         
-        if filter is not None and isinstance(s, filter) and isinstance(t, filter):
+        if filter is not None and not isinstance(s, filter) and not isinstance(t, filter):
             continue
 
         try:
