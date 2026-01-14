@@ -126,10 +126,23 @@ AUTHORS:
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, ClassVar, Literal, Self, overload, SupportsInt
+from typing import Annotated, Any, ClassVar, Literal, Self, SupportsIndex, TypeGuard, overload, SupportsInt
 from typings_sagemath import ComplexInexact, ComplexInexactSage, Int, ConvertibleToInteger, Num, RealInexact, RealInexactSage, IntSupportingBitwiseOp
+from sage.symbolic.expression import Expression
 from sage.rings.rational import Rational
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.complex_mpfr import ComplexNumber
 from sage.rings.finite_rings.integer_mod import IntegerMod_int
+from sage.rings.infinity import PlusInfinity, MinusInfinity, UnsignedInfinity
+from sage.rings.integer_ring import IntegerRing_class
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.number_field.number_field_base import NumberField
+from sage.rings.ideal import Ideal_pid
+from sage.structure.parent import Parent
+from sage.structure.element import Element, EuclideanDomainElement
+from sage.structure.factorization import Factorization
+from sage.structure.factorization_integer import IntegerFactorization
+from sage.categories.morphism import Morphism
 from numpy import (
     float64, int64, uint64, complex128,
     integer as NumPyInteger, 
@@ -139,26 +152,39 @@ from numpy import (
     complexfloating as NumPyComplex
 )
 from gmpy2 import mpfr, mpz
+from cypari2.gen import Gen
 
 type _NotUsed = object
 
-import _cython_3_2_1
 import sage as sage
-import sage.categories.morphism
 import sage.rings.integer_ring as integer_ring
-import sage.structure.element
-from _typeshed import Incomplete
 from sage.cpython.string import bytes_to_str as bytes_to_str, str_to_bytes as str_to_bytes
 from sage.structure.element import coerce_binop as coerce_binop, have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 
-
-GCD_list: _cython_3_2_1.cython_function_or_method
-__pyx_capi__: dict
-free_integer_pool: _cython_3_2_1.cython_function_or_method
 initialized: bool
-is_Integer: _cython_3_2_1.cython_function_or_method
-make_integer: _cython_3_2_1.cython_function_or_method
+
+def is_Integer(x) -> TypeGuard[Integer]:
+    """
+    Return ``True`` if ``x`` is of the Sage :class:`Integer` type.
+
+    EXAMPLES::
+
+        sage: from sage.rings.integer import is_Integer
+        sage: is_Integer(2)
+        doctest:warning...
+        DeprecationWarning: The function is_Integer is deprecated;
+        use 'isinstance(..., Integer)' instead.
+        See https://github.com/sagemath/sage/issues/38128 for details.
+        True
+        sage: is_Integer(2/1)
+        False
+        sage: is_Integer(int(2))
+        False
+        sage: is_Integer('5')
+        False
+    """
+
 n_factor_to_list: None
 new_gen_from_integer: None
 objtogen: None
@@ -167,7 +193,8 @@ pari_is_prime: None
 pari_is_prime_power: None
 set_integer_from_gen: None
 
-class Integer(sage.structure.element.EuclideanDomainElement):
+# TODO: arithmatics operator with OrderElements, Ideals, ...
+class Integer(EuclideanDomainElement):
     '''
     The :class:`Integer` class represents arbitrary precision
     integers. It derives from the :class:`Element` class, so
@@ -210,7 +237,30 @@ class Integer(sage.structure.element.EuclideanDomainElement):
         3
 
     .. automethod:: __pow__'''
-    __array_interface__: Incomplete
+    @property
+    def __array_interface__(self) -> dict[str, str]: 
+        """
+        Used for NumPy conversion.
+
+        EXAMPLES::
+
+            sage: # needs numpy
+            sage: import numpy
+            sage: numpy.array([1, 2, 3])
+            array([1, 2, 3])
+            sage: numpy.array([1, 2, 3]).dtype
+            dtype('int32')                         # 32-bit
+            dtype('int64')                         # 64-bit
+
+            sage: # needs numpy (this has to be repeated until #36099 is fixed)
+            sage: import numpy
+            sage: numpy.array(2**40).dtype
+            dtype('int64')
+            sage: numpy.array(2**400).dtype
+            dtype('O')
+            sage: numpy.array([1,2,3,0.1]).dtype
+            dtype('float64')
+        """
     @overload
     def __init__(self, x: ConvertibleToInteger = None): ...
     @overload
@@ -377,7 +427,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: Integer(b\'1_3\')
             13
         '''
-    def additive_order(self) -> Any:
+    type _One = Annotated[Integer, Integer(1)]
+    def additive_order(self) -> PlusInfinity | _One:
         """
         Return the additive order of ``self``.
 
@@ -387,7 +438,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             1
             sage: ZZ(1).additive_order()
             +Infinity"""
-    def as_integer_ratio(self) -> Any:
+    def as_integer_ratio(self) -> tuple[Self, Integer]:
         """
         Return the pair ``(self.numerator(), self.denominator())``,
         which is ``(self, 1)``.
@@ -483,7 +534,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             10000
             sage: print(Integer(16938402384092843092843098243).binary())
             1101101011101100011110001110010010100111010001101010001111111000101000000000101111000010000011"""
-    def binomial(self, m, algorithm=...) -> Any:
+    def binomial(self, m: ConvertibleToInteger, algorithm: Literal["gmp", "mpir", "pari"]="gmp") -> Integer:
         '''
         Return the binomial coefficient "``self`` choose ``m``".
 
@@ -607,7 +658,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             [1, 1, 0, 1]
             sage: (-99).bits()
             [-1, -1, 0, 0, 0, -1, -1]'''
-    def canonical_associate(self) -> Any:
+    type _NegativeOne = Annotated[Integer, Integer(-1)]
+    def canonical_associate(self) -> tuple[Self, _One] | tuple[Integer, _NegativeOne]:
         """
         Return a canonical associate.
 
@@ -621,7 +673,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: b, u = a.canonical_associate()
             sage: b*u == a
             True"""
-    def ceil(self) -> Any:
+    def ceil(self) -> Self:
         """
         Return the ceiling of ``self``, which is ``self`` since ``self`` is an
         integer.
@@ -631,7 +683,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 6
             sage: n.ceil()
             6"""
-    def class_number(self, proof=...) -> Any:
+    def class_number(self, proof: bool = True) -> Integer:
         """
         Return the class number of the quadratic order with this discriminant.
 
@@ -697,7 +749,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
            Traceback (most recent call last):
            ...
            ValueError: class_number only defined for integers congruent to 0 or 1 modulo 4"""
-    def conjugate(self) -> Any:
+    def conjugate(self) -> Self:
         """
         Return the complex conjugate of this integer, which is the
         integer itself.
@@ -707,7 +759,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 205
             sage: n.conjugate()
             205"""
-    def coprime_integers(self, m) -> Any:
+    def coprime_integers(self, m: ConvertibleToInteger) -> list[Integer]:
         """
         Return the nonnegative integers `< m` that are coprime to
         this integer.
@@ -751,7 +803,10 @@ class Integer(sage.structure.element.EuclideanDomainElement):
         Create an integer with `m` bits and set bits at every multiple
         of a prime `p` that divides this integer and is less than `m`.
         Then return a list of integers corresponding to the unset bits."""
-    def crt(self, y, m, n) -> Any:
+    def crt(
+        self, 
+        y: ConvertibleToInteger, m: ConvertibleToInteger, n: ConvertibleToInteger
+    ) -> Integer:
         """
         Return the unique integer between `0` and `\\lcm(m,n)` that is congruent
         to the integer modulo `m` and to `y` modulo `n`.
@@ -775,7 +830,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             ...
             ValueError: no solution to crt problem since gcd(10,10) does not
             divide 6 - 0"""
-    def denominator(self) -> Any:
+    def denominator(self) -> Integer:
         """
         Return the denominator of this integer, which of course is
         always 1.
@@ -934,7 +989,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
         AUTHORS:
 
         - Joel B. Mohler (2008-03-02):  significantly rewrote this entire function'''
-    def divide_knowing_divisible_by(self, right) -> Any:
+    def divide_knowing_divisible_by(self, right: ConvertibleToInteger) -> Integer:
         """
         Return the integer ``self`` / ``right`` when ``self`` is divisible by ``right``.
 
@@ -961,7 +1016,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             107326510974310118493
             sage: a.divide_knowing_divisible_by(11) # way off and possibly random
             43215361478743422388970455040"""
-    def divides(self, n) -> Any:
+    def divides(self, n: ConvertibleToInteger) -> bool: # pyright: ignore[reportIncompatibleMethodOverride]
         """
         Return ``True`` if ``self`` divides ``n``.
 
@@ -974,7 +1029,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             False
             sage: Z(10).divides(Z(5))
             False"""
-    def divisors(self, method=...) -> Any:
+    def divisors(self, method: Literal["pari", "sage"] | None = None) -> list[Integer]:
         """
         Return the list of all positive integer divisors of this integer,
         sorted in increasing order.
@@ -1063,7 +1118,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
            preserves relative order. One can leverage this fact to
            keep the list in order as one computes it using a process
            similar to that of the merge sort algorithm."""
-    def euclidean_degree(self) -> Any:
+    def euclidean_degree(self: Element[IntegerRing_class]) -> Integer:
         """
         Return the degree of this element as an element of a Euclidean domain.
 
@@ -1151,7 +1206,10 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             TypeError: Attempt to coerce non-integral RealNumber to Integer"""
-    def exp(self, prec=...) -> Any:
+    @overload
+    def exp(self) -> Expression: ...
+    @overload
+    def exp(self, prec:Int) -> RealNumber:
         """
         Return the exponential function of ``self`` as a real number.
 
@@ -1181,7 +1239,45 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             e^25024207011349079210459585279553675697932183658421565260323592409432707306554163224876110094014450895759296242775250476115682350821522931225499163750010280453185147546962559031653355159703678703793369785727108337766011928747055351280379806937944746847277089168867282654496776717056860661614337004721164703369140625
             sage: y.exp(prec=53)  # default RealField precision                         # needs sage.symbolic
             +infinity"""
-    def factor(self, algorithm=..., proof=..., limit=..., int_=..., verbose=...) -> Any:
+    type _long = SupportsInt
+    @overload
+    def factor(
+        self, 
+        algorithm: None = None,
+        limit: _long = ...,
+        proof: bool = True, 
+        int_=None, 
+        verbose: int = 0
+    ) -> IntegerFactorization: ...
+    @overload
+    def factor(self, algorithm: Literal["sieve"] | None = None) -> IntegerFactorization: ...
+    @overload
+    def factor(
+        self, algorithm: Literal["ecm"], proof: bool = True
+    ) -> IntegerFactorization: ...
+    @overload
+    def factor(
+        self, 
+        algorithm: Literal["pari"], 
+        proof: bool = True, 
+        limit: None = None,
+        int_ = None, 
+        verbose: int = 0
+    ) -> IntegerFactorization: ...
+    @overload
+    def factor(
+        self, 
+        algorithm: Literal["flint"], 
+        *,
+        flint_bits: SupportsInt
+    ) -> IntegerFactorization: ...
+    @overload
+    def factor(
+        self, 
+        algorithm: Literal["kash", "magma"],
+        *, 
+        int_=None, 
+    ) -> Factorization[Integer]:
         """
         Return the prime factorization of this integer as a
         formal Factorization object.
@@ -1290,7 +1386,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ValueError: Algorithm is not known"""
-    def factorial(self) -> Any:
+    def factorial(self) -> Integer:
         '''
         Return the factorial `n! = 1 \\cdot 2 \\cdot 3 \\cdots n`.
 
@@ -1322,7 +1418,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ValueError: factorial only defined for nonnegative integers'''
-    def floor(self) -> Any:
+    def floor(self) -> Self:
         """
         Return the floor of ``self``, which is just ``self`` since ``self`` is an
         integer.
@@ -1332,7 +1428,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 6
             sage: n.floor()
             6"""
-    def gamma(self) -> Any:
+    def gamma(self) -> Integer | UnsignedInfinity:
         """
         The gamma function on integers is the factorial function (shifted by
         one) on positive integers, and `\\pm \\infty` on nonpositive integers.
@@ -1348,7 +1444,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Infinity
             sage: gamma(-2^150)
             Infinity"""
-    def global_height(self, prec=...) -> Any:
+    def global_height(self, prec: SupportsInt | None = None) -> RealNumber:
         """
         Return the absolute logarithmic height of this rational integer.
 
@@ -1395,7 +1491,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             10
             sage: print(Integer(16938402384092843092843098243).hex())
             36bb1e3929d1a8fe2802f083"""
-    def imag(self) -> Any:
+    type Zero = Annotated[Integer, Integer(0)]
+    def imag(self) -> Zero:
         """
         Return the imaginary part of ``self``, which is zero.
 
@@ -1403,7 +1500,9 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: Integer(9).imag()
             0"""
-    def inverse_mod(self, n) -> Any:
+    def inverse_mod( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, n: Ideal_pid[IntegerRing_class] | ConvertibleToInteger
+    ) -> Integer: 
         """
         Return the inverse of ``self`` modulo `n`, if this inverse exists.
 
@@ -1450,7 +1549,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: Rational(3) % Rational(-1)
             0"""
-    def inverse_of_unit(self) -> Any:
+    type _Unit = _One | Annotated[Integer, Integer(-1)]
+    def inverse_of_unit(self: _Unit) -> _Unit:
         """
         Return inverse of ``self`` if ``self`` is a unit in the integers, i.e.,
         ``self`` is `-1` or `1`. Otherwise, raise a :exc:`ZeroDivisionError`.
@@ -1469,7 +1569,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ArithmeticError: inverse does not exist"""
-    def is_discriminant(self) -> Any:
+    def is_discriminant(self) -> bool:
         """
         Return ``True`` if this integer is a discriminant.
 
@@ -1496,7 +1596,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             True
             sage: len([D for D in srange(-100,100) if D.is_discriminant()])
             100"""
-    def is_fundamental_discriminant(self) -> Any:
+    def is_fundamental_discriminant(self) -> bool:
         """
         Return ``True`` if this integer is a fundamental discriminant.
 
@@ -1523,7 +1623,16 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: len([D for D in srange(-100,100)                                      # needs sage.libs.pari
             ....:      if D.is_fundamental_discriminant()])
             61"""
-    def is_integral(self) -> Any:
+    def is_integer(self) -> Literal[True]:
+        """
+        Return ``True`` as they are integers.
+
+        EXAMPLES::
+
+            sage: sqrt(4).is_integer()
+            True
+        """
+    def is_integral(self) -> Literal[True]:
         """
         Return ``True`` since integers are integral, i.e.,
         satisfy a monic polynomial with integer coefficients.
@@ -1532,26 +1641,14 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: Integer(3).is_integral()
             True"""
-    def is_irreducible(self) -> Any:
-        """
-        Return ``True`` if ``self`` is irreducible, i.e. +/-
-        prime
-
-        EXAMPLES::
-
-            sage: z = 2^31 - 1
-            sage: z.is_irreducible()                                                    # needs sage.libs.pari
-            True
-            sage: z = 2^31
-            sage: z.is_irreducible()
-            False
-            sage: z = 7
-            sage: z.is_irreducible()
-            True
-            sage: z = -7
-            sage: z.is_irreducible()
-            True"""
-    def is_norm(self, K, element=..., proof=...) -> Any:
+    @overload
+    def is_norm[F: NumberField](
+        self, K: F, element: Literal[True], proof: bool = True
+    ) -> tuple[Literal[False], None] | tuple[Literal[True], Element[F]]: ...
+    @overload
+    def is_norm(
+        self, K: NumberField, element: Literal[False] = False, proof: bool = True
+    ) -> bool:
         """
         See ``QQ(self).is_norm()``.
 
@@ -1578,7 +1675,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 5
             sage: n.is_norm(K, element=True)
             (False, None)"""
-    def is_one(self) -> Any:
+    def is_one(self) -> bool:
         """
         Return ``True`` if the integer is `1`, otherwise ``False``.
 
@@ -1588,7 +1685,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             True
             sage: Integer(0).is_one()
             False"""
-    def is_perfect_power(self) -> Any:
+    def is_perfect_power(self) -> bool:
         """
         Return ``True`` if ``self`` is a perfect power, ie if there exist integers
         `a` and `b`, `b > 1` with ``self`` `= a^b`.
@@ -1629,7 +1726,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: [ -a for a in srange(100) if not (-a^3).is_perfect_power() ]
             []"""
-    def is_power_of(self, n) ->Any:
+    def is_power_of(self, n: ConvertibleToInteger) -> bool:
         """
         Return ``True`` if there is an integer `b` with
         `\\mathtt{self} = n^b`.
@@ -1719,7 +1816,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: for a in range(2, 10000): k = b.is_power_of(a)
             sage: cputime(t)      # random
             0.02800199999999986"""
-    def is_prime(self, proof=...) -> Any:
+    def is_prime(self, proof: bool | None = None) -> bool:
         '''
         Test whether ``self`` is prime.
 
@@ -1791,7 +1888,10 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             ....:             tab[j] = 0
             sage: all(ZZ(i).is_prime() == b for i,b in enumerate(tab))                  # needs sage.libs.pari
             True'''
-    def is_prime_power(self, proof=..., boolget_data=...) -> Any:
+    @overload
+    def is_prime_power(self, *, get_data: Literal[True], proof: bool | None = None) -> tuple[Integer, Integer]: ...
+    @overload
+    def is_prime_power(self, *, proof: bool | None = None, get_data: Literal[False] = False) -> bool:
         """
         Return ``True`` if this integer is a prime power, and ``False`` otherwise.
 
@@ -1884,7 +1984,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             (2, 2)
             sage: 512.is_prime_power(get_data=True)
             (2, 9)"""
-    def is_pseudoprime(self) -> Any:
+    def is_pseudoprime(self) -> bool:
         """
         Test whether ``self`` is a pseudoprime.
 
@@ -1903,8 +2003,10 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: z = 2^31
             sage: z.is_pseudoprime()                                                    # needs sage.libs.pari
             False"""
-    
-    def is_pseudoprime_power(self, get_data=...) -> Any:
+    @overload
+    def is_pseudoprime_power(self, get_data: Literal[True]) -> tuple[Integer, Integer]: ...
+    @overload
+    def is_pseudoprime_power(self, get_data: Literal[False]=False) -> bool:
         """
         Test if this number is a power of a pseudoprime number.
 
@@ -1942,7 +2044,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             False
             sage: 1.is_pseudoprime_power()                                              # needs sage.libs.pari
             False"""
-    def is_rational(self) -> Any:
+    def is_rational(self) -> Literal[True]:
         """
         Return ``True`` as an integer is a rational number.
 
@@ -1950,7 +2052,27 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: 5.is_rational()
             True"""
-    def is_square(self) -> Any:
+    def is_irreducible(self) -> bool:
+        r"""
+        Return ``True`` if ``self`` is irreducible, i.e. +/-
+        prime
+
+        EXAMPLES::
+
+            sage: z = 2^31 - 1
+            sage: z.is_irreducible()                                                    # needs sage.libs.pari
+            True
+            sage: z = 2^31
+            sage: z.is_irreducible()
+            False
+            sage: z = 7
+            sage: z.is_irreducible()
+            True
+            sage: z = -7
+            sage: z.is_irreducible()
+            True
+        """
+    def is_square(self) -> bool:
         """
         Return ``True`` if ``self`` is a perfect square.
 
@@ -1960,7 +2082,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             True
             sage: Integer(41).is_square()
             False"""
-    def is_squarefree(self) -> Any:
+    def is_squarefree(self) -> bool:
         """
         Return ``True`` if this integer is not divisible by the square of any
         prime and ``False`` otherwise.
@@ -1973,7 +2095,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             True
             sage: 0.is_squarefree()                                                     # needs sage.libs.pari
             False"""
-    def is_unit(self) -> Any:
+    def is_unit(self) -> bool:
         '''
         Return ``True`` if this integer is a unit, i.e., `1` or `-1`.
 
@@ -1986,7 +2108,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             0 False
             1 True
             2 False'''
-    def isqrt(self) -> Any:
+    def isqrt(self) -> Integer:
         """
         Return the integer floor of the square root of ``self``, or raises an
         :exc:`ValueError` if ``self`` is negative.
@@ -2003,7 +2125,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ValueError: square root of negative integer not defined"""
-    def jacobi(self, b) -> Any:
+    def jacobi(self, b: ConvertibleToInteger) -> int:
         """
         Calculate the Jacobi symbol `\\left(\\frac{\\text{self}}{b}\\right)`.
 
@@ -2027,7 +2149,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: a = 3; b = 7
             sage: a.jacobi(b) == -b.jacobi(a)
             True"""
-    def kronecker(self, b) -> Any:
+    def kronecker(self, b: ConvertibleToInteger) -> int:
         """
         Calculate the Kronecker symbol `\\left(\\frac{\\text{self}}{b}\\right)`
         with the Kronecker extension `(\\text{self}/2)=(2/\\text{self})` when ``self`` is odd,
@@ -2057,7 +2179,13 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: m = 5
             sage: m.list()
             [5]"""
-    def log(self, x) -> Any:
+    type _Negative = Annotated[Num, "< 0"]
+    @overload
+    def log(self, m: Int | Rational) -> Integer | MinusInfinity | Expression: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def log(self: _Negative, m: _Negative | None = None) -> Expression: ...
+    @overload
+    def log(self, m: Num | Literal["e"] | None, prec: Int) -> RealNumber | ComplexNumber:
         """
         Return symbolic log by default, unless the logarithm is exact (for
         an integer argument). When ``prec`` is given, the :class:`RealField`
@@ -2152,7 +2280,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: (-2).log(3)                                                           # needs sage.symbolic
             (I*pi + log(2))/log(3)"""
-    def multifactorial(self, longk) -> Any:
+    def multifactorial(self, k: SupportsInt) -> Integer | Rational:
         """
         Compute the `k`-th factorial `n!^{(k)}` of ``self``.
 
@@ -2194,7 +2322,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             OverflowError: argument too large for multifactorial"""
-    def multiplicative_order(self) -> Any:
+    type _Two = Annotated[Integer, Integer(2)]
+    def multiplicative_order(self) -> _One | _Two | PlusInfinity:
         """
         Return the multiplicative order of ``self``.
 
@@ -2244,7 +2373,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 10**10000000-10**9999990
             sage: n.ndigits()                                                           # needs sage.rings.real_interval_field
             10000000"""
-    def next_prime(self) -> Any:
+    def next_prime(self) -> Integer:
         """
         Return the next prime after ``self``.
 
@@ -2276,8 +2405,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             2
             sage: Integer(1001).next_prime()                                            # needs sage.libs.pari
             1009"""
-    
-    def next_prime_power(self, proof=...) -> Any:
+    def next_prime_power(self, proof: bool | None = None) -> Integer:
         '''
         Return the next prime power after ``self``.
 
@@ -2325,7 +2453,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             ....:     n = ZZ.random_element(2**256).next_prime_power()
             ....:     m = n.next_prime_power().previous_prime_power()
             ....:     assert m == n, "problem with n = {}".format(n)'''
-    def next_probable_prime(self) -> Any:
+    def next_probable_prime(self) -> Integer:
         """
         Return the next probable prime after ``self``, as determined by PARI.
 
@@ -2443,7 +2571,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: ZZ(2^20).nth_root(21, truncate_mode=1)
             (1, False)"""
-    def numerator(self) -> Any:
+    def numerator(self) -> Self:
         """
         Return the numerator of this integer.
 
@@ -2495,7 +2623,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             '-27'
             sage: oct(int(-23))
             '-0o27'"""
-    def odd_part(self) -> Any:
+    def odd_part(self) -> Integer:
         """
         The odd part of the integer `n`. This is `n / 2^v`,
         where `v = \\mathrm{valuation}(n,2)`.
@@ -2575,7 +2703,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             '112th'
             sage: ZZ(111).ordinal_str()
             '111th'"""
-    def p_primary_part(self, p) -> Any:
+    def p_primary_part(self, p: ConvertibleToInteger) -> Integer:
         """
         Return the ``p``-primary part of ``self``.
 
@@ -2598,7 +2726,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ValueError: 6 is not a prime number"""
-    def perfect_power(self) -> Any:
+    def perfect_power(self) -> tuple[Integer, Integer]:
         """
         Return ``(a, b)``, where this integer is `a^b` and `b` is maximal.
 
@@ -2640,7 +2768,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             (2, 2)
             sage: 256.perfect_power()
             (2, 8)"""
-    def popcount(self) -> Any:
+    def popcount(self) -> Integer:
         """
         Return the number of 1 bits in the binary representation.
         If ``self`` < 0, we return Infinity.
@@ -2656,7 +2784,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = -17
             sage: n.popcount()
             +Infinity"""
-    def powermod(self, exp, mod) -> Any:
+    def powermod(self, exp: ConvertibleToInteger, mod: ConvertibleToInteger) -> Integer:
         """
         Compute ``self**exp`` modulo ``mod``.
 
@@ -2676,7 +2804,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ZeroDivisionError: cannot raise to a power modulo 0"""
-    def previous_prime(self, proof=...) -> Any:
+    def previous_prime(self, proof: bool | None = None) -> Integer:
         """
         Return the previous prime before ``self``.
 
@@ -2714,8 +2842,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: b = (2^1024).previous_prime(proof=False)                              # needs sage.libs.pari
             sage: 2^1024 - b                                                            # needs sage.libs.pari
             105"""
-    
-    def previous_prime_power(self, proof=...) -> Any:
+    def previous_prime_power(self, proof: bool | None = None) -> Integer:
         '''
         Return the previous prime power before ``self``.
 
@@ -2767,7 +2894,46 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             ....:     n = ZZ.random_element(3,2**256).previous_prime_power()
             ....:     m = n.previous_prime_power().next_prime_power()
             ....:     assert m == n, "problem with n = {}".format(n)'''
-    def prime_divisors(self, limit=...) -> Any:
+    @overload
+    def prime_divisors(
+        self, 
+        limit: _long = ...,
+        algorithm: None = None,
+        proof: bool = True, 
+        int_=None, 
+        verbose: int = 0
+    ) -> list[Integer]: ...
+    @overload
+    def prime_divisors(
+        self, *, algorithm: Literal["sieve"] | None = None
+    ) -> list[Integer]: ...
+    @overload
+    def prime_divisors(
+        self, *, algorithm: Literal["ecm"], proof: bool = True
+    ) -> list[Integer]: ...
+    @overload
+    def prime_divisors(
+        self, 
+        limit: None = None,
+        algorithm: Literal["pari"] = ..., 
+        proof: bool = True,
+        int_ = None, 
+        verbose: int = 0
+    ) -> list[Integer]: ...
+    @overload
+    def prime_divisors(
+        self, 
+        *,
+        algorithm: Literal["flint"], 
+        flint_bits: SupportsInt
+    ) -> list[Integer]: ...
+    @overload
+    def prime_divisors(
+        self, 
+        *, 
+        algorithm: Literal["kash", "magma"],
+        int_=None, 
+    ) -> list[Integer]: 
         """
         Return the prime divisors of this integer, sorted in increasing order.
 
@@ -2803,43 +2969,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             [73, 137, 401]
             sage: a.prime_divisors(limit=10^7)
             [73, 137, 401, 1201, 1601, 1676321]"""
-    def prime_factors(self, *args, **kwargs):
-        """
-        Return the prime divisors of this integer, sorted in increasing order.
-
-        If this integer is negative, we do *not* include `-1` among
-        its prime divisors, since `-1` is not a prime number.
-
-        INPUT:
-
-        - ``limit`` -- (integer, optional keyword argument)
-          Return only prime divisors up to this bound, and the factorization
-          is done by checking primes up to ``limit`` using trial division.
-
-        Any additional arguments are passed on to the :meth:`factor` method.
-
-        EXAMPLES::
-
-            sage: a = 1; a.prime_divisors()
-            []
-            sage: a = 100; a.prime_divisors()
-            [2, 5]
-            sage: a = -100; a.prime_divisors()
-            [2, 5]
-            sage: a = 2004; a.prime_divisors()
-            [2, 3, 167]
-
-        Setting the optional ``limit`` argument works as expected::
-
-            sage: a = 10^100 + 1
-            sage: a.prime_divisors()                                                    # needs sage.libs.pari
-            [73, 137, 401, 1201, 1601, 1676321, 5964848081,
-             129694419029057750551385771184564274499075700947656757821537291527196801]
-            sage: a.prime_divisors(limit=10^3)
-            [73, 137, 401]
-            sage: a.prime_divisors(limit=10^7)
-            [73, 137, 401, 1201, 1601, 1676321]"""
-    def prime_to_m_part(self, m) -> Any:
+    prime_factors = prime_divisors
+    def prime_to_m_part(self, m: ConvertibleToInteger) -> Integer:
         """
         Return the prime-to-`m` part of ``self``, i.e., the largest divisor of
         ``self`` that is coprime to `m`.
@@ -2863,7 +2994,18 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ArithmeticError: self must be nonzero"""
-    def quo_rem(self, b) -> Any:
+    @overload
+    def quo_rem[
+        R: IntegerMod_int | RealInexactSage | CommutativePolynomial
+    ](self, other: R) -> tuple[R, R]: ...
+    @overload
+    def quo_rem[
+        R: Rational | ComplexInexactSage
+    ](self, other: R) -> tuple[R, int]: ...
+    @overload
+    def quo_rem(
+        self, other: int | Integer | NumPyInteger
+    ) -> tuple[Integer, Integer]:
         """
         Return the quotient and the remainder of ``self`` divided by ``other``.
         Note that the remainder returned is always either zero or of the
@@ -2921,7 +3063,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: root = mpmath.findroot(lambda x: x^2 - 3, 2)
             sage: len(str(root))
             301"""
-    def rational_reconstruction(self, Integerm) -> Any:
+    def rational_reconstruction(self, m: ConvertibleToInteger) -> Rational:
         """
         Return the rational reconstruction of this integer modulo `m`, i.e.,
         the unique (if it exists) rational number that reduces to ``self``
@@ -2955,7 +3097,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ZeroDivisionError: rational reconstruction with zero modulus"""
-    def real(self) -> Any:
+    def real(self) -> Self:
         """
         Return the real part of ``self``, which is ``self``.
 
@@ -2963,7 +3105,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: Integer(-4).real()
             -4"""
-    def round(self, mode=...) -> Any:
+    def round(self, mode: _NotUsed = "away") -> Integer:
         """
         Return the nearest integer to ``self``, which is ``self`` since
         ``self`` is an integer.
@@ -2975,7 +3117,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 6
             sage: n.round()
             6"""
-    def sign(self) -> Any:
+    def sign(self) -> Integer:
         """
         Return the sign of this integer, which is `-1`, `0`, or `1`
         depending on whether this number is negative, zero, or positive
@@ -2991,7 +3133,16 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             0
             sage: (-10^43).sign()
             -1"""
-    def sqrt(self, extend=..., all=...) -> Any:
+    @overload
+    def sqrt(self, prec: SupportsInt) -> RealNumber | ComplexNumber: ...
+    @overload
+    def sqrt(self, prec: None = None, extend: Literal[False] = ..., all: Literal[True] = ...) -> list[Integer]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def sqrt(self, prec: None = None, extend: Literal[True] = True, all: Literal[True] = ...) -> list[Integer] | list[Expression]: ...
+    @overload
+    def sqrt(self, prec: None = None, extend: Literal[False] = ..., all: Literal[False] = False) -> Integer: ...
+    @overload
+    def sqrt(self, prec: None = None, extend: Literal[True] = True, all: Literal[False] = False) -> Integer | Expression:
         """
         The square root function.
 
@@ -3059,7 +3210,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             []
             sage: (-1).sqrt(extend=False, all=True)
             []"""
-    def sqrtrem(self) -> Any:
+    def sqrtrem(self) -> tuple[Integer, Integer]:
         """
         Return `(s, r)` where `s` is the integer square root of ``self`` and
         `r` is the remainder such that `\\text{self} = s^2 + r`.
@@ -3080,7 +3231,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ValueError: square root of negative integer not defined"""
-    def squarefree_part(self, bound=...) -> Any:
+    def squarefree_part(self, bound: SupportsInt = -1) -> Integer:
         """
         Return the square free part of `x` (=``self``), i.e., the unique integer
         `z` that `x = z y^2`, with `y^2` a perfect square and `z` square-free.
@@ -3157,7 +3308,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             5000001
             sage: s[:10]              # long time (depends on above defn of s)
             '1000000000'"""
-    def support(self) -> Any:
+    def support(self) -> list[Integer]:
         """
         Return a sorted list of the primes dividing this integer.
 
@@ -3177,7 +3328,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ArithmeticError: support of 0 not defined"""
-    def test_bit(self, longindex) -> Any:
+    def test_bit(self, index: SupportsInt) -> int:
         """
         Return the bit at ``index``.
 
@@ -3206,7 +3357,12 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             1
             sage: x.test_bit(6)
             1"""
-    def to_bytes(self, length=..., byteorder=..., is_signed=...) -> Any:
+    def to_bytes(
+        self, 
+        length: SupportsIndex =1, 
+        byteorder: Literal["big", "little"] = "big", 
+        is_signed: bool = False
+    ) -> bytes:
         """
         Return an array of bytes representing an integer.
 
@@ -3255,7 +3411,8 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             5
             sage: 0.trailing_zero_bits()
             0"""
-    def trial_division(self, start=...) -> Any:
+    LONG_MAX: int = ...
+    def trial_division(self, bound: int = LONG_MAX, start: SupportsInt = 2) -> Integer:
         """
         Return smallest prime divisor of ``self`` up to bound, beginning
         checking at ``start``, or ``abs(self)`` if no such divisor is found.
@@ -3316,7 +3473,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 3*5*101*103
             sage: n.trial_division(start=50)
             101"""
-    def trunc(self) -> Any:
+    def trunc(self) -> Self:
         """
         Round this number to the nearest integer, which is ``self`` since
         ``self`` is an integer.
@@ -3326,7 +3483,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 6
             sage: n.trunc()
             6"""
-    def val_unit(self, p) -> Any:
+    def val_unit(self, p: ConvertibleToInteger) -> tuple:
         """
         Return a pair: the `p`-adic valuation of ``self``, and th`p`-adicic unit
         of ``self``.
@@ -3354,7 +3511,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             (5, 2)
             sage: 0.val_unit(2)
             (+Infinity, 1)"""
-    def valuation(self, p) -> Any:
+    def valuation(self, p: ConvertibleToInteger) -> Integer:
         """
         Return the `p`-adic valuation of ``self``.
 
@@ -3380,6 +3537,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: (2^11).valuation(4)
             5"""
+    ord = valuation
     def xgcd(self, n: ConvertibleToInteger) -> tuple[Integer, Integer, Integer]:
         """
         Return the extended gcd of this element and ``n``.
@@ -3446,7 +3604,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
     def __le__(self, other: object) -> bool: ...
     def __lt__(self, other: object) -> bool: ...
 
-    def __float__(self) -> Any:
+    def __float__(self) -> float:
         """
         Return double precision floating point representation of this
         integer.
@@ -3472,7 +3630,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: "{0:#x}; {0:#b}; {0:+05d}".format(ZZ(17))
             \'0x11; 0b10001; +0017\''''
-    def __hash__(self) -> Any:
+    def __hash__(self) -> int:
         """
         Return the hash of this integer.
 
@@ -3547,7 +3705,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             'ab'
             sage: m.group(Integer(1))
             'a'"""
-    def __int__(self) -> Any:
+    def __int__(self) -> int:
         """
         Return the Python int corresponding to this Sage integer.
 
@@ -3615,7 +3773,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             515377520732011331036461129765621272702107522001
             sage: -a
             -515377520732011331036461129765621272702107522001"""
-    def __pari__(self) -> Any:
+    def __pari__(self) -> Gen:
         """
         Return the PARI version of this integer.
 
@@ -3633,7 +3791,7 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: m = n.__pari__()  # crash from trac 875                               # needs sage.libs.pari
             sage: m % 1234567                                                           # needs sage.libs.pari
             1041334"""
-    def __pos__(self) -> Any:
+    def __pos__(self) -> Self:
         """
         EXAMPLES::
 
@@ -3663,8 +3821,16 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = -5; n.__repr__()
             '-5'
         """
-    
-    def __mod__(self, y) -> Any:
+    @overload
+    def __mod__[
+        Y: mpfr | IntegerMod_int | CommutativePolynomial | RealInexactSage
+    ](x, y: Y) -> Y: ...
+    @overload
+    def __mod__(x, y: NumPyFloat) -> float64: ...
+    @overload
+    def __mod__(x, y: int | mpz | NumPyInteger) -> Integer: ...
+    @overload
+    def __mod__(x, y): 
         """
         Return x modulo y.
 
@@ -3709,9 +3875,20 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             Traceback (most recent call last):
             ...
             ArithmeticError: reduction modulo 100 not defined"""
+    @overload
+    def __rmod__(self, other: int | Rational) -> Integer: ...
+    @overload
+    def __rmod__(self, other: NumPyInteger) -> int64: ...
+    @overload
+    def __rmod__(self, other: NumPyFloat) -> float64: ...
+    @overload
+    def __rmod__[
+        X: float | mpz | mpfr | IntegerMod_int | CommutativePolynomial | RealNumber
+    ](self, other: X) -> X: ...
+    @overload
     def __rmod__(self, other): ...
     
-    def __and__(left, right) -> Any:
+    def __and__(left, right: int | Integer | NumPyInteger) -> Integer:
         """
         Return the bitwise and two integers.
 
@@ -3722,10 +3899,15 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             2
             sage: n.__and__(m)
             2"""
-    def __rand__(self, other): ...
+    @overload
+    def __rand__(self, other: int) -> Integer: ...
+    @overload
+    def __rand__(self, other: mpz) -> mpz: ...
+    @overload
+    def __rand__(self, other: NumPyInteger) -> int64: ...
     
 
-    def __or__(self, m) -> Any:
+    def __or__(self, right: int | Integer | NumPyInteger) -> Integer:
         """
         Return the bitwise or of the integers x and y.
 
@@ -3734,9 +3916,17 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = 8; m = 4
             sage: n.__or__(m)
             12"""
-    def __ror__(self, other): ...
+    @overload
+    def __ror__(self, other: int) -> Integer: ...
+    @overload
+    def __ror__(self, other: mpz) -> mpz: ...
+    @overload
+    def __ror__(self, other: NumPyInteger) -> int64: ...
     
-    def __xor__(self, m: Integer | int | NumPyInteger) -> Integer: # TODO: possibly not limited to this
+    @overload
+    def __xor__(self, m: mpz) -> mpz: ...
+    @overload
+    def __xor__(self, m: Integer | int | NumPyInteger) -> Integer:
         """
         Compute the exclusive or of x and y.
 
@@ -3745,9 +3935,14 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             sage: n = ZZ(2); m = ZZ(3)
             sage: n.__xor__(m)
             1"""
-    def __rxor__(self, other): ...
+    @overload
+    def __rxor__(self, other: int) -> Integer: ...
+    @overload
+    def __rxor__(self, other: mpz) -> mpz: ...
+    @overload
+    def __rxor__(self, other: NumPyInteger) -> int64: ...
 
-    def __lshift__(self, y) -> Any:
+    def __lshift__(self, y: ConvertibleToInteger) -> Integer:
         """
         Shift x to the left by y bits.
 
@@ -3773,9 +3968,14 @@ class Integer(sage.structure.element.EuclideanDomainElement):
             32
             sage: 128 << (-2^100)
             0"""
-    def __rlshift__(self, other): ...
-    
-    def __rshift__(self, y) -> Any:
+    @overload
+    def __rlshift__(self, other: int) -> int: ...
+    @overload
+    def __rlshift__(self, other: NumPyInteger) -> int64: ...
+    @overload
+    def __rlshift__[L: IntegerMod_int | Rational | CommutativePolynomial](self, other: L) -> L: ...
+
+    def __rshift__(self, y: ConvertibleToInteger) -> Integer:
         """
         Shift x to the right by y bits.
 
@@ -3798,7 +3998,12 @@ class Integer(sage.structure.element.EuclideanDomainElement):
 
             sage: 8 >> -2
             32"""
-    def __rrshift__(self, other): ...
+    @overload
+    def __rrshift__(self, other: int) -> int: ...
+    @overload
+    def __rrshift__(self, other: NumPyInteger) -> int64: ...
+    @overload
+    def __rrshift__[L: IntegerMod_int | Rational | CommutativePolynomial](self, other: L) -> L: ...
     
     # the result type of __add__ is mostly through experiment
     @overload
@@ -4070,8 +4275,6 @@ class Integer(sage.structure.element.EuclideanDomainElement):
     @overload
     def __rpow__(right, left): ...
     
-    
-
 class IntegerWrapper(Integer):
     '''
     Rationale for the :class:`IntegerWrapper` class:
@@ -4092,10 +4295,14 @@ class IntegerWrapper(Integer):
 
     The constructor of :class:`IntegerWrapper` further allows for
     specifying an alternative parent to :class:`IntegerRing`.'''
-    
-    def __init__(self, parent=..., x=..., unsignedintbase=...) -> Any:
-        """File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 377)
-
+    type _uint = int
+    def __init__(
+        self, 
+        parent: Parent | None = None, 
+        x: ConvertibleToInteger = None, 
+        base: _uint = 0
+    ):
+        """
                 We illustrate how to create integers with parents different
                 from :class:`IntegerRing`::
 
@@ -4118,11 +4325,65 @@ class IntegerWrapper(Integer):
                     sage: TestSuite(n).run()
         """
 
-class int_to_Z(sage.categories.morphism.Morphism):
-    """int_to_Z()
+def GCD_list(v: Sequence[ConvertibleToInteger]) -> Integer:
+    r"""
+    Return the greatest common divisor of a list of integers.
 
-    File: /build/sagemath/src/sage/src/sage/rings/integer.pyx (starting at line 7470)
+    INPUT:
 
+    - ``v`` -- list or tuple
+
+    Elements of `v` are converted to Sage integers.  An empty list has
+    GCD zero.
+
+    This function is used, for example, by ``rings/arith.py``.
+
+    EXAMPLES::
+
+        sage: from sage.rings.integer import GCD_list
+        sage: w = GCD_list([3,9,30]); w
+        3
+        sage: type(w)
+        <class 'sage.rings.integer.Integer'>
+
+    Check that the bug reported in :issue:`3118` has been fixed::
+
+        sage: sage.rings.integer.GCD_list([2,2,3])
+        1
+
+    The inputs are converted to Sage integers.
+
+    ::
+
+        sage: w = GCD_list([int(3), int(9), '30']); w
+        3
+        sage: type(w)
+        <class 'sage.rings.integer.Integer'>
+
+    Check that the GCD of the empty list is zero (:issue:`17257`)::
+
+        sage: GCD_list([])
+        0
+    """
+
+def make_integer(s: str) -> Integer:
+    """
+    Create a Sage integer from the base-32 Python *string* ``s``. This is
+    used in unpickling integers.
+
+    EXAMPLES::
+
+        sage: from sage.rings.integer import make_integer
+        sage: make_integer('-29')
+        -73
+        sage: make_integer(29)
+        Traceback (most recent call last):
+        ...
+        TypeError: expected str...Integer found
+    """
+
+class int_to_Z(Morphism):
+    """
     EXAMPLES::
 
         sage: f = ZZ.coerce_map_from(int)
@@ -4132,5 +4393,13 @@ class int_to_Z(sage.categories.morphism.Morphism):
           To:   Integer Ring
         sage: f(1rL)
         1"""
-    __pyx_vtable__: ClassVar[PyCapsule] = ...
-    def __init__(self) -> Any: ...
+    def __init__(self): # TODO: figure out what this mean
+        import sage.categories.homset
+        from sage.sets.pythonclass import Set_PythonType
+        Morphism.__init__(self, sage.categories.homset.Hom(Set_PythonType(int), integer_ring.ZZ))
+
+def free_integer_pool() -> None: ...
+
+import numbers
+numbers.Integral.register(Integer)
+

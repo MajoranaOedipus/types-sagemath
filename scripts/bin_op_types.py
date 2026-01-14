@@ -12,7 +12,9 @@ Modify `operators` and `objects` if you want to test other objects.
 
 from typing import Any
 from collections import defaultdict, OrderedDict
-from collections.abc import Iterable, Callable, Mapping
+from collections.abc import Sequence, Callable, Mapping
+
+from sage.all import ZZ, QQ, RR, CC, SR, Zmod, sqrt, colormaps
 
 operator_names = {
     "eq": "==",
@@ -28,7 +30,12 @@ operator_names = {
     "floordiv": "//", 
     "mod": "mod",
     "pow": "**",
-    "contains": "in"
+    "contains": "in",
+    "and_": "&",
+    "or_": "|",
+    "xor": "^",
+    "lshift": "<<",
+    "rshift": ">>"
 }
 
 import operator
@@ -36,7 +43,6 @@ operators: list[Callable[[Any, Any], Any]] = list(
     getattr(operator, op) for op in operator_names
 )
 
-from sage.all import *
 from builtins import sum
 from gmpy2 import mpz, mpc, mpfr
 from numpy import float32, float128, complex64, int32, uint16
@@ -46,17 +52,17 @@ from fractions import Fraction
 
 objects = [
     1, 1.2, 1+3j, Fraction(1, 2), # python objects
-    mpz(10), mpfr(3.), mpc(1+3j),
+    mpz(10), mpfr(3.2), mpc(1+3j),
     float32(1.2), float128(1.3e2), complex64(1+2.j), int32(100), uint16(8),
     ZZ(1), Zmod(7)(3), QQ((1, 2)),
     3 * SR.var("x") + 1, ZZ["y"](3 + SR.var("y")), ZZ[sqrt(2)](2),
-    RR(10), CC(4-5j)
+    RR(10.5), CC(4-5j)
 ]
 
 
 def test_bin_op(
     l, r, op: Callable[[Any, Any], Any]
-) -> dict[tuple[type, type, str], type | Exception]:
+) -> dict[tuple[type, type, str], set[type | Exception]]:
     """
     Test
 
@@ -69,15 +75,15 @@ def test_bin_op(
     except Exception as e:
         result = e
     return {
-        (type(l), type(r), op.__name__): result
+        (type(l), type(r), op.__name__): {result}
     }
 
 def test_bin_ops(
-    objects: Iterable[Any], 
-    bin_ops: Iterable[Callable[[Any, Any], Any]],
+    objects: Sequence[Any],
+    bin_ops: Sequence[Callable[[Any, Any], Any]],
     filter: type | tuple[type] | None = None,
     show: bool = True
-) -> Mapping[tuple[type, type, str], list[type]]:
+) -> Mapping[tuple[type, type, str], set[type]]:
     """
     Test the types of the `op(l, r)`
     where `l, r` are in `objects` and `op` in `bin_ops`.
@@ -88,11 +94,11 @@ def test_bin_ops(
 
     If `show`, print the result to stdout.
 
-    The output is a `defaultdict[tuple[type, type, str], list[type]]`,
+    The output is a `defaultdict[tuple[type, type, str], set[type]]`,
     with output[type(l), type(r), op.__name__] == type(op(l, r)) if no exceptions,
     else the value would the type of the value.
     """
-    results: defaultdict[tuple[type, type, str], list[type]] = defaultdict(list)
+    results: defaultdict[tuple[type, type, str], set[type]] = defaultdict(set)
 
     for s, t, bin_op in product(objects, objects, bin_ops):
         
@@ -105,14 +111,14 @@ def test_bin_ops(
             result = type(e)
         L, R, op_name = type(s), type(t), bin_op.__name__
         
-        results[L, R, op_name].append(result)
+        results[L, R, op_name].add(result)
     
     if show:
         print(show_result(results))
     
     return results
 
-def show_result(result: dict[tuple[type, type, str], list[type]]):
+def show_result(result: dict[tuple[type, type, str], set[type]]):
     """
     print the result returned from test_bin_op(s).
     """

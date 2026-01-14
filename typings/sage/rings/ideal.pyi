@@ -1,3 +1,4 @@
+from sage.rings.ring import Ring
 from sage.categories.fields import Fields as Fields
 from sage.categories.rings import Rings as Rings
 from sage.structure.element import MonoidElement as MonoidElement
@@ -936,7 +937,7 @@ class Ideal_principal(Ideal_generic):
             False
         """
 
-class Ideal_pid(Ideal_principal):
+class Ideal_pid[R: Ring](Ideal_principal):
     """
     An ideal of a principal ideal domain.
 
