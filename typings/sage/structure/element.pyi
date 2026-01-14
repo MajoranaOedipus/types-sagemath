@@ -296,7 +296,7 @@ from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool,
 
 # __getattr__ will look into its parent's _abstract_element_class
 # so concrete elements should include that as base?
-class Element[P: Parent | SageObject](SageObject):
+class Element[P: Parent](SageObject):  # should P be invariant or covariant?
     """
     Generic element of a structure. All other types of elements
     (:class:`RingElement`, :class:`ModuleElement`, etc)
@@ -1080,19 +1080,19 @@ type _Numeric = int | float | complex | NumPyNumber
 type _Sage = SageObject | SupportsSage
 
 @overload
-def canonical_coercion[P: Parent | SageObject](
+def canonical_coercion[P: Parent](
     x: Element[P], y: Element[P]
 ) -> tuple[Element[P], Element[P]]: ...
 @overload
 def canonical_coercion(x: _Numeric, y: _Numeric) -> tuple[_Numeric, _Numeric]: ...
 @overload
-def canonical_coercion[P: Parent | SageObject](
+def canonical_coercion[P: Parent](
     x: _Sage, y: _Numeric) -> tuple[Element[P], Element[P]]: ...
 @overload
-def canonical_coercion[P: Parent | SageObject](
+def canonical_coercion[P: Parent](
     x: _Numeric, y: _Sage) -> tuple[Element[P], Element[P]]: ...
 @overload
-def canonical_coercion[P: Parent | SageObject](
+def canonical_coercion[P: Parent](
     x: _Sage, y: _Sage) -> tuple[Element[P], Element[P]]:
     """``canonical_coercion(x,y)`` is what is called before doing an
 arithmetic operation between ``x`` and ``y``.  It returns a pair ``(z,w)``
@@ -1357,7 +1357,7 @@ def make_element(_class, _dict, parent):
     """
 
 @overload
-def parent[P: Parent | SageObject](x: Element[P]) -> P:  # pyright: ignore[reportOverlappingOverload]
+def parent[P: Parent](x: Element[P]) -> P:  # pyright: ignore[reportOverlappingOverload]
     ...
 @overload
 def parent[T](x: T) -> type[T]:
@@ -1414,7 +1414,7 @@ def parent[T](x: T) -> type[T]:
         <... 'list'>
     """
 
-class AdditiveGroupElement[P: Parent | SageObject](ModuleElement[P]):
+class AdditiveGroupElement[P: Parent](ModuleElement[P]):
     """
         Generic element of an additive group.
     """
@@ -1422,11 +1422,11 @@ class AdditiveGroupElement[P: Parent | SageObject](ModuleElement[P]):
         """
         Return additive order of element"""
 
-class AlgebraElement[P: Parent | SageObject](RingElement[P]): ...
+class AlgebraElement[P: Parent](RingElement[P]): ...
 
-class CommutativeAlgebraElement[P: Parent | SageObject](CommutativeRingElement[P]): ...
+class CommutativeAlgebraElement[P: Parent](CommutativeRingElement[P]): ...
 
-class CommutativeRingElement[P: Parent | SageObject](RingElement[P]):
+class CommutativeRingElement[P: Parent](RingElement[P]):
     """
         Base class for elements of commutative rings.
     """
@@ -1582,9 +1582,9 @@ class CommutativeRingElement[P: Parent | SageObject](RingElement[P]):
             sage: (x^2 + y^2 + z^2).mod( (x^3, y - z) )                                 # needs sage.libs.singular
             x^2 + 2*z^2"""
     
-class DedekindDomainElement[P: Parent | SageObject](IntegralDomainElement[P]): ...
+class DedekindDomainElement[P: Parent](IntegralDomainElement[P]): ...
 
-class ElementWithCachedMethod[P: Parent | SageObject](Element[P]):
+class ElementWithCachedMethod[P: Parent](Element[P]):
     '''
         An element class that fully supports cached methods.
 
@@ -1737,12 +1737,12 @@ class ElementWithCachedMethod[P: Parent | SageObject](Element[P]):
     '''
     ...
 
-class EuclideanDomainElement[P: Parent | SageObject](PrincipalIdealDomainElement[P]):
+class EuclideanDomainElement[P: Parent](PrincipalIdealDomainElement[P]):
     def degree(self): ...
     def leading_coefficient(self) : ...
     def quo_rem(self, other): ...
 
-class Expression[P: Parent | SageObject](CommutativeRingElement[P]):
+class Expression[P: Parent](CommutativeRingElement[P]):
     """
         Abstract base class for :class:`~sage.symbolic.expression.Expression`.
 
@@ -1760,7 +1760,7 @@ class Expression[P: Parent | SageObject](CommutativeRingElement[P]):
             True
     """
 
-class FieldElement[P: Parent | SageObject](CommutativeRingElement[P]):
+class FieldElement[P: Parent](CommutativeRingElement[P]):
     def canonical_associate(self) -> tuple[Any, Self]:
         """
         Return a canonical associate.
@@ -1834,13 +1834,13 @@ class FieldElement[P: Parent | SageObject](CommutativeRingElement[P]):
             sage: u.quo_rem(u)
             (1, 0)"""
 
-class InfinityElement[P: Parent | SageObject](RingElement[P]):
+class InfinityElement[P: Parent](RingElement[P]):
     def __invert__(self) -> Integer: ...
 
-class IntegralDomainElement[P: Parent | SageObject](CommutativeRingElement[P]):
+class IntegralDomainElement[P: Parent](CommutativeRingElement[P]):
     def is_nilpotent(self) -> bool: ...
 
-class Matrix[P: Parent | SageObject](ModuleElement[P]):
+class Matrix[P: Parent](ModuleElement[P]):
     def __mul__(self, right) -> Any:
         """
         Multiplication of matrix by matrix, vector, or scalar.
@@ -2184,7 +2184,7 @@ class Matrix[P: Parent | SageObject](ModuleElement[P]):
             sage: (b / a) * a == b
             True"""
 
-class ModuleElement[P: Parent | SageObject](Element[P]):
+class ModuleElement[P: Parent](Element[P]):
     """
         Generic element of a module.
     """
@@ -2196,7 +2196,7 @@ class ModuleElement[P: Parent | SageObject](Element[P]):
         """
         Return the additive order of ``self``."""
 
-class ModuleElementWithMutability[P: Parent | SageObject](ModuleElement[P]):
+class ModuleElementWithMutability[P: Parent](ModuleElement[P]):
     """
     Generic element of a module with mutability."""
     
@@ -2249,7 +2249,7 @@ class ModuleElementWithMutability[P: Parent | SageObject](ModuleElement[P]):
             ValueError: vector is immutable; please change a copy instead (use copy())"""
 
 class _N(SupportsIndex, ComparableWithZero): ...
-class MonoidElement[P: Parent | SageObject](Element[P]):
+class MonoidElement[P: Parent](Element[P]):
     """
         Generic element of a monoid.
     """
@@ -2277,7 +2277,7 @@ class MonoidElement[P: Parent | SageObject](Element[P]):
             [(), (1,2,3,4), (1,3)(2,4), (1,4,3,2)]"""
     def __bool__(self) -> Literal[True]: ...
 
-class MultiplicativeGroupElement[P: Parent | SageObject](MonoidElement[P]):
+class MultiplicativeGroupElement[P: Parent](MonoidElement[P]):
     """
         Generic element of a multiplicative group.
     """
@@ -2291,7 +2291,7 @@ class MultiplicativeGroupElement[P: Parent | SageObject](MonoidElement[P]):
         This may cause infinite recursion because of the default definition
         of division using inversion in ``_div_``."""
 
-class PrincipalIdealDomainElement[P: Parent | SageObject](DedekindDomainElement[P]):
+class PrincipalIdealDomainElement[P: Parent](DedekindDomainElement[P]):
     def gcd(self, right) -> Any:
         """
         Return the greatest common divisor of ``self`` and ``other``.
@@ -2344,7 +2344,7 @@ class PrincipalIdealDomainElement[P: Parent | SageObject](DedekindDomainElement[
             sage: type(2.lcm(gmpy2.mpz(3)))
             <class 'sage.rings.integer.Integer'>"""
 
-class RingElement[P: Parent | SageObject](ModuleElement[P]):
+class RingElement[P: Parent](ModuleElement[P]):
     def abs(self) -> Any:
         """
         Return the absolute value of ``self``.  (This just calls the ``__abs__``
@@ -2539,7 +2539,7 @@ class RingElement[P: Parent | SageObject](ModuleElement[P]):
     def __invert__(self) -> Self | Any: ...
     def __rdivmod__(self, other): ...
 
-class Vector[P: Parent | SageObject](ModuleElementWithMutability[P]):
+class Vector[P: Parent](ModuleElementWithMutability[P]):
     def __mul__(self, right) -> Any:
         """
         Multiplication of vector by vector, matrix, or scalar.
