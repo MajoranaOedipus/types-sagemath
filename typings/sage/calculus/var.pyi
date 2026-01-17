@@ -1,22 +1,33 @@
 """
 Symbolic variables
 """
-from typing import overload
+from typing import Literal, SupportsIndex, overload
 from collections.abc import Sequence
 from sage.symbolic.function import SymbolicFunction
 from sage.symbolic.expression import Expression
 
 from sage.symbolic.function_factory import function as new_function
-from sage.symbolic.ring import SR as SR
-# TODO: kwds should follow SR.var and new_function
+from sage.symbolic.ring import SR as SR, SymbolicRing
+
 @overload
-def var(name: str, **kwds) -> tuple[Expression, ...] | Expression:
-    ...
+def var(
+    *names: object, 
+    domain: Literal["real", "complex", "positive", "integer", "noninteger"] | None = None
+) -> tuple[Expression[SymbolicRing], ...]: ...
 @overload
-def var(names: Sequence[str], **kwds) -> tuple[Expression, ...]:
-    ...
+def var(
+    name: object, 
+    *,
+    n: SupportsIndex,
+    domain: Literal["real", "complex", "positive", "integer", "noninteger"] | None = None
+) -> tuple[Expression[SymbolicRing], ...]: ...
 @overload
-def var(*names: tuple[str], **kwds) -> tuple[Expression, ...]:
+def var(
+    name: object, 
+    *,
+    latex_name: str | None = None, 
+    domain: Literal["real", "complex", "positive", "integer", "noninteger"] | None = None
+) -> tuple[Expression[SymbolicRing], ...] | Expression[SymbolicRing]: 
     r"""
     Create a symbolic variable with the name *s*.
 
