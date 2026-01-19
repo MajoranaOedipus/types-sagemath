@@ -3,7 +3,6 @@ The symbolic ring
 """
 
 from typing import Annotated, Any, Literal, Self, SupportsIndex, SupportsInt, overload
-from typings_sagemath import ConvertibleToExpression
 from collections.abc import Callable
 from sage.rings.ring import Ring
 from sage.rings.integer import Integer
@@ -17,6 +16,7 @@ from numpy import (
 )
 
 type _NotUsed = object
+type _Domain = Literal["real", "complex", "positive", "integer", "noninteger"]
 
 import sage as sage
 from sage.symbolic.expression import Expression as Expression
@@ -342,14 +342,14 @@ class SymbolicRing[R: Ring](SymbolicRingABC):
         self, 
         name: object, 
         n: SupportsIndex, 
-        domain: Literal["real", "complex", "positive", "integer", "noninteger"]  | None = None
+        domain: _Domain  | None = None
     ) -> tuple[Expression[Self]]: ...
     @overload
     def var(
         self, 
         name: object, 
         latex_name: str | None = None, 
-        domain: Literal["real", "complex", "positive", "integer", "noninteger"] | None = None
+        domain: _Domain | None = None
     ) -> Expression[Self] | tuple[Expression[Self]]:
         """
         Return a symbolic variable as an element of the symbolic ring.

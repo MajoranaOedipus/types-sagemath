@@ -357,7 +357,10 @@ class Element[P: Parent](SageObject):  # should P be invariant or covariant?
 
             sage: (2/3).n()                                                             # needs sage.rings.real_mpfr
             0.666666666666667"""
-    def numerical_approx(self, prec: Int | None = None, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
+    @overload
+    def numerical_approx(self, prec: Int | None = None, *, algorithm=None) -> RealNumber | ComplexNumber: ...
+    @overload
+    def numerical_approx(self, *, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
         """
         Return a numerical approximation of ``self`` with ``prec`` bits
         (or decimal ``digits``) of precision.
@@ -652,7 +655,7 @@ class Element[P: Parent](SageObject):  # should P be invariant or covariant?
     def __ge__(self, other): ...
     def __getmetaclass__(self) -> type[InheritComparisonMetaclass]:
         ...
-    def __getstate__(self) -> tuple[P, dict[str, Any]]:
+    def __getstate__(self) -> tuple[P, dict[str, Any]] | Any:   # subclass may modify
         """
         Return a tuple describing the state of your object.
 
