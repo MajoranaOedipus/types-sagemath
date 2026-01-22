@@ -1,3 +1,5 @@
+from numbers import Real
+from typings_sagemath import Num
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
 from gmpy2 import mpz
@@ -20,6 +22,10 @@ from sympy.core.basic import Basic as SymPyBasic
 # possible others, if it has a `_integer_` method 
 # note that `list`, `tuple` objects are only convertible when `base` > 1
 type ConvertibleToInteger = Int | str | Gen | bytes | None
+
+# TODO
+type ConvertibleToRealNumber = Real
+type ConvertibleToComplexNumber = Num
 
 # possible others, if it has a `_symbolic_` method, or it is a finite set (in Sets() and is_finite)
 # c.f. symbolic.expression.new_Expression

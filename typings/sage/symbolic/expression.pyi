@@ -297,10 +297,18 @@ More sanity tests::
     sage: bool(pi < SR.zero())
     False
 """
-import _cython_3_2_1
-from typing import Any, Literal, Protocol, Self, SupportsInt, overload
+
+from typing import Annotated, Any, Literal, Protocol, Self, SupportsInt, overload
 from collections.abc import Callable, Iterable, Sequence
-from typings_sagemath import ConvertibleToExpression, ConvertibleToInteger, CoercibleToExpression
+from typings_sagemath import (
+    ConvertibleToExpression, 
+    ConvertibleToInteger,
+    ConvertibleToRealNumber,
+    ConvertibleToComplexNumber, 
+    CoercibleToExpression, 
+    SupportsExp,
+    SupportsGamma,
+)
 from sage.structure.sage_object import SageObject
 from sage.structure.parent import Parent
 from sage.rings.abc import SymbolicRing as SymbolicRingABC
@@ -316,6 +324,8 @@ from sage.rings.polynomial.laurent_polynomial import LaurentPolynomial
 from sage.rings.ring import Ring
 from sage.rings.fraction_field_element import FractionFieldElement
 from sage.rings.power_series_ring_element import PowerSeries
+
+from sage.rings.power_series_poly import PowerSeries_poly
 
 type _uint = SupportsInt
 type _NotUsed = object
@@ -349,148 +359,328 @@ from sage.structure.element import Matrix, Vector, have_same_parent as have_same
 from sage.symbolic.complexity_measures import string_length as string_length
 from sage.symbolic.symbols import register_symbol as register_symbol
 
+def unpack_operands(ex: Expression) -> tuple[Expression[SymbolicRing], ...]:
+    """
+    EXAMPLES::
 
-call_registered_function: _cython_3_2_1.cython_function_or_method
-doublefactorial: _cython_3_2_1.cython_function_or_method
-find_registered_function: _cython_3_2_1.cython_function_or_method
-get_fn_serial: _cython_3_2_1.cython_function_or_method
-get_ginac_serial: _cython_3_2_1.cython_function_or_method
-get_sfunction_from_hash: _cython_3_2_1.cython_function_or_method
-get_sfunction_from_serial: _cython_3_2_1.cython_function_or_method
+        sage: from sage.symbolic.expression import unpack_operands
+        sage: t = SR._force_pyobject((1, 2, x, x+1, x+2))
+        sage: unpack_operands(t)
+        (1, 2, x, x + 1, x + 2)
+        sage: type(unpack_operands(t))
+        <... 'tuple'>
+        sage: list(map(type, unpack_operands(t)))
+        [<class 'sage.rings.integer.Integer'>, <class 'sage.rings.integer.Integer'>, <class 'sage.symbolic.expression.Expression'>, <class 'sage.symbolic.expression.Expression'>, <class 'sage.symbolic.expression.Expression'>]
+        sage: u = SR._force_pyobject((t, x^2))
+        sage: unpack_operands(u)
+        ((1, 2, x, x + 1, x + 2), x^2)
+        sage: type(unpack_operands(u)[0])
+        <... 'tuple'>
+    """
+# TODO: this causes SIGSEGV if improper expression passed
+def paramset_from_Expression(e: Expression) -> list:
+    """
+    EXAMPLES::
 
-init_function_table: _cython_3_2_1.cython_function_or_method
-def init_pynac_I() -> Expression: 
-    """Initialize the numeric ``I`` object in pynac. We use the generator of ``QQ(i)``.
+        sage: from sage.symbolic.expression import paramset_from_Expression
+        sage: f = function('f')
+        sage: paramset_from_Expression(f(x).diff(x))
+        [0]
+    """
+def get_ginac_serial() -> int:
+    """
+    Number of C++ level functions defined by GiNaC. (Defined mainly for testing.)
 
-EXAMPLES::
+    EXAMPLES::
 
-    sage: from sage.symbolic.constants import I as symbolic_I
-    sage: symbolic_I
-    I
-    sage: symbolic_I^2
-    -1
+        sage: sage.symbolic.expression.get_ginac_serial() >= 35
+        True
+    """
+def get_fn_serial() -> int:
+    """
+    Return the overall size of the Pynac function registry which
+    corresponds to the last serial value plus one.
 
-Note that conversions to real fields will give :exc:`TypeError`::
+    EXAMPLES::
 
-    sage: float(symbolic_I)
-    Traceback (most recent call last):
-    ...
-    TypeError: unable to simplify to float approximation
-    sage: gp(symbolic_I)
-    I
-    sage: RR(symbolic_I)
-    Traceback (most recent call last):
-    ...
-    TypeError: unable to convert '1.00000000000000*I' to a real number
+        sage: from sage.symbolic.expression import get_fn_serial, get_sfunction_from_serial
+        sage: get_fn_serial() > 125
+        True
+        sage: print(get_sfunction_from_serial(get_fn_serial()))
+        None
+        sage: get_sfunction_from_serial(get_fn_serial() - 1) is not None
+        True
+    """
+def py_print_function_pystring(
+    id: SupportsInt, args: Iterable[object], fname_paren: bool = False) -> str:
+    """
+    Return a string with the representation of the symbolic function specified
+    by the given id applied to args.
 
-We can convert to complex fields::
+    INPUT:
 
-    sage: C = ComplexField(200); C
-    Complex Field with 200 bits of precision
-    sage: C(symbolic_I)
-    1.0000000000000000000000000000000000000000000000000000000000*I
-    sage: symbolic_I._complex_mpfr_field_(ComplexField(53))
-    1.00000000000000*I
+    - ``id`` -- serial number of the corresponding symbolic function
+    - ``params`` -- set of parameter numbers with respect to which to take the
+      derivative
+    - ``args`` -- arguments of the function
 
-    sage: symbolic_I._complex_double_(CDF)
-    1.0*I
-    sage: CDF(symbolic_I)
-    1.0*I
+    EXAMPLES::
 
-    sage: z = symbolic_I + symbolic_I; z
-    2*I
-    sage: C(z)
-    2.0000000000000000000000000000000000000000000000000000000000*I
-    sage: 1e8*symbolic_I
-    1.00000000000000e8*I
+        sage: from sage.symbolic.expression import py_print_function_pystring, get_ginac_serial, get_fn_serial, get_sfunction_from_serial
+        sage: var('x,y,z')
+        (x, y, z)
+        sage: foo = function('foo', nargs=2)
+        sage: for i in range(get_ginac_serial(), get_fn_serial()):
+        ....:   if get_sfunction_from_serial(i) == foo: break
 
-    sage: complex(symbolic_I)
-    1j
+        sage: get_sfunction_from_serial(i) == foo
+        True
+        sage: py_print_function_pystring(i, (x,y))
+        'foo(x, y)'
+        sage: py_print_function_pystring(i, (x,y), True)
+        '(foo)(x, y)'
+        sage: def my_print(self, *args): return "my args are: " + ', '.join(map(repr, args))
+        sage: foo = function('foo', nargs=2, print_func=my_print)
+        sage: for i in range(get_ginac_serial(), get_fn_serial()):
+        ....:   if get_sfunction_from_serial(i) == foo: break
 
-    sage: QQbar(symbolic_I)
-    I
+        sage: get_sfunction_from_serial(i) == foo
+        True
+        sage: py_print_function_pystring(i, (x,y))
+        'my args are: x, y'
+    """
+def py_latex_function_pystring(
+    id: SupportsInt, args: Iterable[object], fname_paren: bool = False) -> str:
+    r"""
+    Return a string with the latex representation of the symbolic function
+    specified by the given id applied to args.
 
-    sage: abs(symbolic_I)
-    1
+    See documentation of py_print_function_pystring for more information.
 
-    sage: symbolic_I.minpoly()
-    x^2 + 1
-    sage: maxima(2*symbolic_I)
-    2*%i
+    EXAMPLES::
 
-TESTS::
+        sage: from sage.symbolic.expression import py_latex_function_pystring, get_ginac_serial, get_fn_serial, get_sfunction_from_serial
+        sage: var('x,y,z')
+        (x, y, z)
+        sage: foo = function('foo', nargs=2)
+        sage: for i in range(get_ginac_serial(), get_fn_serial()):
+        ....:   if get_sfunction_from_serial(i) == foo: break
 
-    sage: repr(symbolic_I)
-    'I'
-    sage: latex(symbolic_I)
-    i
+        sage: get_sfunction_from_serial(i) == foo
+        True
+        sage: py_latex_function_pystring(i, (x,y^z))
+        '{\\rm foo}\\left(x, y^{z}\\right)'
+        sage: py_latex_function_pystring(i, (x,y^z), True)
+        '\\left({\\rm foo}\\right)\\left(x, y^{z}\\right)'
+        sage: py_latex_function_pystring(i, (int(0),x))
+        '{\\rm foo}\\left(0, x\\right)'
 
-    sage: I = sage.symbolic.expression.init_pynac_I()
-    sage: type(I)
-    <class 'sage.symbolic.expression.Expression'>
-    sage: type(I.pyobject())
-    <class 'sage.rings.number_field.number_field_element_quadratic.NumberFieldElement_gaussian'>
+    Test latex_name::
 
-Check that :issue:`10064` is fixed::
+        sage: foo = function('foo', nargs=2, latex_name=r'\mathrm{bar}')
+        sage: for i in range(get_ginac_serial(), get_fn_serial()):
+        ....:   if get_sfunction_from_serial(i) == foo: break
 
-    sage: y = symbolic_I*symbolic_I*x / x  # so y is the expression -1
-    sage: y.is_positive()
-    False
-    sage: z = -x / x
-    sage: z.is_positive()
-    False
-    sage: bool(z == y)
-    True
+        sage: get_sfunction_from_serial(i) == foo
+        True
+        sage: py_latex_function_pystring(i, (x,y^z))
+        '\\mathrm{bar}\\left(x, y^{z}\\right)'
 
-Check that :issue:`31869` is fixed::
+    Test custom func::
 
-    sage: x * ((3*I + 4)*x - 5)
-    ((3*I + 4)*x - 5)*x
-"""
-symbol_table: dict
-is_SymbolicEquation: _cython_3_2_1.cython_function_or_method
-make_map: _cython_3_2_1.cython_function_or_method
-math_sorted: _cython_3_2_1.cython_function_or_method
-mixed_order: _cython_3_2_1.cython_function_or_method
-mixed_sorted: _cython_3_2_1.cython_function_or_method
-normalize_index_for_doctests: _cython_3_2_1.cython_function_or_method
-paramset_from_Expression: _cython_3_2_1.cython_function_or_method
-print_order: _cython_3_2_1.cython_function_or_method
-print_sorted: _cython_3_2_1.cython_function_or_method
-py_atan2_for_doctests: _cython_3_2_1.cython_function_or_method
-py_denom_for_doctests: _cython_3_2_1.cython_function_or_method
-py_eval_infinity_for_doctests: _cython_3_2_1.cython_function_or_method
-py_eval_neg_infinity_for_doctests: _cython_3_2_1.cython_function_or_method
-py_eval_unsigned_infinity_for_doctests: _cython_3_2_1.cython_function_or_method
-py_exp_for_doctests: _cython_3_2_1.cython_function_or_method
-py_factorial_py: _cython_3_2_1.cython_function_or_method
-py_float_for_doctests: _cython_3_2_1.cython_function_or_method
-py_imag_for_doctests: _cython_3_2_1.cython_function_or_method
-py_is_cinteger_for_doctest: _cython_3_2_1.cython_function_or_method
-py_is_crational_for_doctest: _cython_3_2_1.cython_function_or_method
-py_is_integer_for_doctests: _cython_3_2_1.cython_function_or_method
-py_latex_fderivative_for_doctests: _cython_3_2_1.cython_function_or_method
-py_latex_function_pystring: _cython_3_2_1.cython_function_or_method
-py_latex_variable_for_doctests: _cython_3_2_1.cython_function_or_method
-py_lgamma_for_doctests: _cython_3_2_1.cython_function_or_method
-py_li2_for_doctests: _cython_3_2_1.cython_function_or_method
-py_li_for_doctests: _cython_3_2_1.cython_function_or_method
-py_log_for_doctests: _cython_3_2_1.cython_function_or_method
-py_mod_for_doctests: _cython_3_2_1.cython_function_or_method
-py_numer_for_doctests: _cython_3_2_1.cython_function_or_method
-py_print_fderivative_for_doctests: _cython_3_2_1.cython_function_or_method
-py_print_function_pystring: _cython_3_2_1.cython_function_or_method
-py_psi2_for_doctests: _cython_3_2_1.cython_function_or_method
-py_psi_for_doctests: _cython_3_2_1.cython_function_or_method
-py_real_for_doctests: _cython_3_2_1.cython_function_or_method
-py_stieltjes_for_doctests: _cython_3_2_1.cython_function_or_method
-py_tgamma_for_doctests: _cython_3_2_1.cython_function_or_method
-py_zeta_for_doctests: _cython_3_2_1.cython_function_or_method
-register_or_update_function: _cython_3_2_1.cython_function_or_method
-restore_op_wrapper: _cython_3_2_1.cython_function_or_method
-test_binomial: _cython_3_2_1.cython_function_or_method
-tolerant_is_symbol: _cython_3_2_1.cython_function_or_method
-unpack_operands: _cython_3_2_1.cython_function_or_method
+        sage: def my_print(self, *args): return "my args are: " + ', '.join(map(repr, args))
+        sage: foo = function('foo', nargs=2, print_latex_func=my_print)
+        sage: for i in range(get_ginac_serial(), get_fn_serial()):
+        ....:   if get_sfunction_from_serial(i) == foo: break
+
+        sage: get_sfunction_from_serial(i) == foo
+        True
+        sage: py_latex_function_pystring(i, (x,y^z))
+        'my args are: x, y^z'
+    """
+def tolerant_is_symbol(a: object) -> bool:
+    """
+    Utility function to test if something is a symbol.
+
+    Returns False for arguments that do not have an is_symbol attribute.
+    Returns the result of calling the is_symbol method otherwise.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import tolerant_is_symbol
+        sage: tolerant_is_symbol(var("x"))
+        True
+        sage: tolerant_is_symbol(None)
+        False
+        sage: None.is_symbol()
+        Traceback (most recent call last):
+        ...
+        AttributeError: 'NoneType' object has no attribute 'is_symbol'...
+    """
+def test_binomial(n: SupportsInt, k: SupportsInt) -> Integer:
+    """
+    The Binomial coefficients.  It computes the binomial coefficients.  For
+    integer n and k and positive n this is the number of ways of choosing k
+    objects from n distinct objects.  If n is negative, the formula
+    binomial(n,k) == (-1)^k*binomial(k-n-1,k) is used to compute the result.
+
+    INPUT:
+
+    - ``n``, ``k`` -- integers, with ``k >= 0``
+
+    OUTPUT: integer
+
+    EXAMPLES::
+
+        sage: import sage.symbolic.expression
+        sage: sage.symbolic.expression.test_binomial(5,2)
+        10
+        sage: sage.symbolic.expression.test_binomial(-5,3)
+        -35
+        sage: -sage.symbolic.expression.test_binomial(3-(-5)-1, 3)
+        -35
+    """
+@overload
+def py_factorial_py(x: ConvertibleToInteger) -> Integer | float: ...
+@overload
+def py_factorial_py(x: float) -> float: ... # pyright: ignore[reportOverlappingOverload]
+@overload
+def py_factorial_py[T: ConvertibleToRealNumber](x: SupportsGamma[T]) -> RealNumber: ...
+@overload
+def py_factorial_py[T: ConvertibleToComplexNumber](
+    x: SupportsGamma[T] | T
+) -> ComplexNumber | PlusInfinity:
+    """
+    This function is a python wrapper around py_factorial(). This wrapper
+    is needed when we override the eval() method for GiNaC's factorial
+    function in sage.functions.other.Function_factorial.
+
+    TESTS::
+
+        sage: from sage.symbolic.expression import py_factorial_py
+        sage: py_factorial_py(3)
+        6
+    """
+def doublefactorial(n: ConvertibleToInteger) -> Integer:
+    """
+    The double factorial combinatorial function:
+
+        n!! == n * (n-2) * (n-4) * ... * ({1|2}) with 0!! == (-1)!! == 1.
+
+    INPUT:
+
+    - ``n`` -- integer ``>= 1``
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import doublefactorial
+        sage: doublefactorial(-1)
+        1
+        sage: doublefactorial(0)
+        1
+        sage: doublefactorial(1)
+        1
+        sage: doublefactorial(5)
+        15
+        sage: doublefactorial(20)
+        3715891200
+        sage: prod( [20,18,..,2] )
+        3715891200
+    """
+def init_pynac_I() -> Expression[SymbolicRing]:
+    """
+    Initialize the numeric ``I`` object in pynac. We use the generator of ``QQ(i)``.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.constants import I as symbolic_I
+        sage: symbolic_I
+        I
+        sage: symbolic_I^2
+        -1
+
+    Note that conversions to real fields will give :exc:`TypeError`::
+
+        sage: float(symbolic_I)
+        Traceback (most recent call last):
+        ...
+        TypeError: unable to simplify to float approximation
+        sage: gp(symbolic_I)
+        I
+        sage: RR(symbolic_I)
+        Traceback (most recent call last):
+        ...
+        TypeError: unable to convert '1.00000000000000*I' to a real number
+
+    We can convert to complex fields::
+
+        sage: C = ComplexField(200); C
+        Complex Field with 200 bits of precision
+        sage: C(symbolic_I)
+        1.0000000000000000000000000000000000000000000000000000000000*I
+        sage: symbolic_I._complex_mpfr_field_(ComplexField(53))
+        1.00000000000000*I
+
+        sage: symbolic_I._complex_double_(CDF)
+        1.0*I
+        sage: CDF(symbolic_I)
+        1.0*I
+
+        sage: z = symbolic_I + symbolic_I; z
+        2*I
+        sage: C(z)
+        2.0000000000000000000000000000000000000000000000000000000000*I
+        sage: 1e8*symbolic_I
+        1.00000000000000e8*I
+
+        sage: complex(symbolic_I)
+        1j
+
+        sage: QQbar(symbolic_I)
+        I
+
+        sage: abs(symbolic_I)
+        1
+
+        sage: symbolic_I.minpoly()
+        x^2 + 1
+        sage: maxima(2*symbolic_I)
+        2*%i
+
+    TESTS::
+
+        sage: repr(symbolic_I)
+        'I'
+        sage: latex(symbolic_I)
+        i
+
+        sage: I = sage.symbolic.expression.init_pynac_I()
+        sage: type(I)
+        <class 'sage.symbolic.expression.Expression'>
+        sage: type(I.pyobject())
+        <class 'sage.rings.number_field.number_field_element_quadratic.NumberFieldElement_gaussian'>
+
+    Check that :issue:`10064` is fixed::
+
+        sage: y = symbolic_I*symbolic_I*x / x  # so y is the expression -1
+        sage: y.is_positive()
+        False
+        sage: z = -x / x
+        sage: z.is_positive()
+        False
+        sage: bool(z == y)
+        True
+
+    Check that :issue:`31869` is fixed::
+
+        sage: x * ((3*I + 4)*x - 5)
+        ((3*I + 4)*x - 5)*x
+    """
+def init_function_table() -> None:
+    """
+    Initialize the function pointer table in Pynac.  This must be
+    called before Pynac is used; otherwise, there will be segfaults.
+    """
 
 class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
     def __init__(self, SR: P, x: Any = 0):
@@ -1362,11 +1552,11 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
     @overload
     def coefficients( # pyright: ignore[reportOverlappingOverload]
         self, x: CoercibleToExpression | None = None, sparse: Literal[False] = ...
-    ) -> list[tuple[Expression[P], Expression[P]]]: ...
+    ) -> list[Expression[P]]: ...
     @overload
     def coefficients(
         self, x: CoercibleToExpression | None = None, sparse: Literal[True] = True
-    ) -> list[Expression[P]]:
+    ) -> list[tuple[Expression[P], Expression[P]]]:
         r"""
         Return the coefficients of this symbolic expression as a polynomial in x.
 
@@ -9077,7 +9267,6 @@ def solve_diophantine(
            1/6*sqrt(3)*(sqrt(3) + 2)^t - 1/6*sqrt(3)*(-sqrt(3) + 2)^t + 1/2*(sqrt(3) + 2)^t + 1/2*(-sqrt(3) + 2)^t)]
     """
 
-
 class ExpressionIterator[P: SymbolicRingABC]:
     def __iter__(self) -> Self:
         """
@@ -9302,19 +9491,147 @@ class hold_class:
 
 hold: hold_class
 
-# TODO: type functions in ...
-# include "comparison_impl.pxi"
-# include "constants_c_impl.pxi"
-# include "getitem_impl.pxi"
-# include "pynac_constant_impl.pxi"
-# include "pynac_function_impl.pxi"
-# include "series_impl.pxi"
-# include "substitution_map_impl.pxi"
+def print_order(lhs: ConvertibleToExpression, rhs: ConvertibleToExpression) -> Literal[-1, 0, 1]:
+    """
+    Comparison in the print order
+
+    INPUT:
+
+    - ``lhs``, ``rhs`` -- two symbolic expressions or something that
+      can be converted to one
+
+    OUTPUT:
+
+    Either `-1`, `0`, or `+1` indicating the comparison. An exception
+    is raised if the arguments cannot be converted into the symbolic
+    ring.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import print_order
+        sage: print_order(1, oo)
+        1
+        sage: print_order(e, oo)
+        -1
+        sage: print_order(pi, oo)
+        1
+        sage: print_order(1, sqrt(2))
+        1
+
+    Check that :issue:`12967` is fixed::
+
+        sage: print_order(SR(oo), sqrt(2))
+        1
+    """
+def print_sorted[T: ConvertibleToExpression](expressions: Iterable[T]) -> list[T]:
+    """
+    Sort a list in print order.
+
+    INPUT:
+
+    - ``expressions`` -- list/tuple/iterable of symbolic
+      expressions, or something that can be converted to one
+
+    OUTPUT: the list sorted by :meth:`print_order`
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import print_sorted
+        sage: print_sorted([SR(1), SR(e), SR(pi), sqrt(2)])
+        [e, sqrt(2), pi, 1]
+    """
+def math_sorted[T: ConvertibleToExpression](expressions: Iterable[T]) -> list[T]:
+    """
+    Sort a list of symbolic numbers in the "Mathematics" order.
+
+    INPUT:
+
+    - ``expressions`` -- list/tuple/iterable of symbolic
+      expressions, or something that can be converted to one
+
+    OUTPUT:
+
+    The list sorted by ascending (real) value. If an entry does not
+    define a real value (or plus/minus infinity), or if the comparison
+    is not known, a :exc:`ValueError` is raised.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import math_sorted
+        sage: math_sorted([SR(1), SR(e), SR(pi), sqrt(2)])
+        [1, sqrt(2), e, pi]
+    """
+def mixed_order(lhs: ConvertibleToExpression, rhs: ConvertibleToExpression) -> Literal[-1, 0, 1]:
+    """
+    Comparison in the mixed order
+
+    INPUT:
+
+    - ``lhs``, ``rhs`` -- two symbolic expressions or something that
+      can be converted to one
+
+    OUTPUT:
+
+    Either `-1`, `0`, or `+1` indicating the comparison. An exception
+    is raised if the arguments cannot be converted into the symbolic
+    ring.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import mixed_order
+        sage: mixed_order(1, oo)
+        -1
+        sage: mixed_order(e, oo)
+        -1
+        sage: mixed_order(pi, oo)
+        -1
+        sage: mixed_order(1, sqrt(2))
+        -1
+        sage: mixed_order(x + x^2, x*(x+1))
+        -1
+
+    Check that :issue:`12967` is fixed::
+
+        sage: mixed_order(SR(oo), sqrt(2))
+        1
+
+    Ensure that :issue:`32185` is fixed::
+
+        sage: mixed_order(pi, 0)
+        1
+        sage: mixed_order(golden_ratio, 0)
+        1
+        sage: mixed_order(log2, 0)
+        1
+    """
+def mixed_sorted[T: ConvertibleToExpression](expressions: Iterable[T]) -> list[T]:
+    """
+    Sort a list of symbolic numbers in the "Mixed" order.
+
+    INPUT:
+
+    - ``expressions`` -- list/tuple/iterable of symbolic
+      expressions, or something that can be converted to one
+
+    OUTPUT:
+
+    In the list the numeric values are sorted by ascending (real) value,
+    and the expressions with variables according to print order.
+    If an entry does not
+    define a real value (or plus/minus infinity), or if the comparison
+    is not known, a :exc:`ValueError` is raised.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import mixed_sorted
+        sage: mixed_sorted([SR(1), SR(e), SR(pi), sqrt(2), x, sqrt(x), sin(1/x)])
+        [1, sqrt(2), e, pi, sin(1/x), sqrt(x), x]
+    """
 
 class E(Expression):
     """E()"""
     
-    def __init__(self) -> Any:
+    def __init__(self):
         """
                 Dummy class to represent base of the natural logarithm.
 
@@ -9405,7 +9722,10 @@ class E(Expression):
                     [e 0]
                     [0 e]
         """
-    def __pow__(self, left, right, dummy) -> Any:
+    @overload
+    def __pow__(left, right: ConvertibleToExpression, dummy: _NotUsed) -> Expression[SymbolicRing]: ...
+    @overload
+    def __pow__[T](left, right: SupportsExp[T], dummy: _NotUsed) -> T: # pyright: ignore[reportIncompatibleMethodOverride]
         """
         Call the `exp` function when taking powers of `e`.
 
@@ -9439,10 +9759,20 @@ class E(Expression):
             sage: e^A  # rel tol 5e-14
             [51.968956198705044  74.73656456700327]
             [112.10484685050491 164.07380304920997]"""
-    def __rpow__(self, other):
-        """Return pow(value, self, mod)."""
+    def __rpow__(self, other) -> Expression[SymbolicRing]: ...
 
-class OperandsWrapper(sage.structure.sage_object.SageObject):
+def normalize_index_for_doctests(arg: SupportsInt, nops: SupportsInt) -> int:
+    """
+    Wrapper function to test ``normalize_index``.
+
+    TESTS::
+
+        sage: from sage.symbolic.expression import normalize_index_for_doctests
+        sage: normalize_index_for_doctests(-1, 4)
+        3
+    """
+
+class OperandsWrapper(SageObject):
     """
         Operands wrapper for symbolic expressions.
 
@@ -9486,18 +9816,17 @@ class OperandsWrapper(sage.structure.sage_object.SageObject):
             ...
             ValueError: step value must be an integer
     """
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def __getitem__(self, arg) -> Any:
+    
+    def __getitem__(
+        self, arg: slice | list[SupportsInt] | tuple[SupportsInt, ...] | SupportsInt
+    ) -> Expression:
         """
         TESTS::
 
            sage: t = 1+x+x^2
            sage: t.op[1:]
            [x, 1]"""
-
-    def __reduce__(self) -> Any:
+    def __reduce__(self) -> tuple[Callable[[Expression], Callable], Expression]:
         """
         TESTS::
 
@@ -9506,12 +9835,17 @@ class OperandsWrapper(sage.structure.sage_object.SageObject):
             sage: loads(dumps((x^2).op))
             Operands of x^2"""
 
-class PynacConstant:
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
+def restore_op_wrapper(expr: Expression) -> Callable:
+    """
+    TESTS::
 
-    def expression(self) -> Any:
+        sage: from sage.symbolic.expression import restore_op_wrapper
+        sage: restore_op_wrapper(x^2)
+        Operands of x^2
+    """
+
+class PynacConstant:
+    def expression(self) -> Expression[SymbolicRing]:
         """
         Return this constant as an Expression.
 
@@ -9528,8 +9862,7 @@ class PynacConstant:
             foo
             sage: foo + 2
             foo + 2"""
-
-    def name(self) -> Any:
+    def name(self) -> str:
         """
         Return the name of this constant.
 
@@ -9539,8 +9872,7 @@ class PynacConstant:
             sage: f = PynacConstant('foo', 'foo', 'real')
             sage: f.name()
             'foo'"""
-
-    def serial(self) -> Any:
+    def serial(self) -> int:
         """
         Return the underlying Pynac serial for this constant.
 
@@ -9551,26 +9883,110 @@ class PynacConstant:
             sage: f.serial()  #random
             15"""
 
-class SubstitutionMap(sage.structure.sage_object.SageObject):
-    
-    @classmethod
-    def __init__(cls, *args, **kwargs) -> None:
-        """Create and return a new object.  See help(type) for accurate signature."""
-    def apply_to(self, Expressionexpr, unsignedintoptions) -> Expression:
-        """
-        Apply the substitution to a symbolic expression.
+def call_registered_function[P: SymbolicRingABC](
+    serial: SupportsInt,
+    nargs: SupportsInt,
+    args: list,
+    hold: bool,
+    allow_numeric_result: bool,
+    result_parent: P
+) -> Expression[P]:
+    r"""
+    Call a function registered with Pynac (GiNaC).
 
-        EXAMPLES::
+    INPUT:
 
-            sage: from sage.symbolic.expression import make_map
-            sage: subs = make_map({x:x+1})
-            sage: subs.apply_to(x^2, 0)
-            (x + 1)^2"""
+    - ``serial`` -- serial number of the function
+
+    - ``nargs`` -- declared number of args (0 is variadic)
+
+    - ``args`` -- list of arguments to pass to the function;
+      each must be an :class:`Expression`
+
+    - ``hold`` -- whether to leave the call unevaluated
+
+    - ``allow_numeric_result`` -- if ``True``, keep numeric results numeric;
+      if ``False``, make all results symbolic expressions
+
+    - ``result_parent`` -- an instance of :class:`SymbolicRing`
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import find_registered_function, call_registered_function
+        sage: s_arctan = find_registered_function('arctan', 1)
+        sage: call_registered_function(s_arctan, 1, [SR(1)], False, True, SR)
+        1/4*pi
+        sage: call_registered_function(s_arctan, 1, [SR(1)], True, True, SR)
+        arctan(1)
+        sage: call_registered_function(s_arctan, 1, [SR(0)], False, True, SR)
+        0
+        sage: call_registered_function(s_arctan, 1, [SR(0)], False, True, SR).parent()
+        Integer Ring
+        sage: call_registered_function(s_arctan, 1, [SR(0)], False, False, SR).parent()
+        Symbolic Ring
+    """
+def find_registered_function(name, nargs: SupportsInt) -> int:
+    r"""
+    Look up a function registered with Pynac (GiNaC).
+
+    Raise a :exc:`ValueError` if the function is not registered.
+
+    OUTPUT: serial number of the function, for use in :func:`call_registered_function`
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import find_registered_function
+        sage: find_registered_function('arctan', 1)  # random
+        19
+        sage: find_registered_function('archenemy', 1)
+        Traceback (most recent call last):
+        ...
+        ValueError: cannot find GiNaC function with name archenemy and 1 arguments
+    """
+def register_or_update_function(
+    self: Callable, name: str, latex_name: str, nargs: SupportsInt,
+    evalf_params_first, update: bool) -> int:
+    r"""
+    Register the function ``self`` with Pynac (GiNaC).
+
+    OUTPUT: serial number of the function, for use in :func:`call_registered_function`
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.function import BuiltinFunction
+        sage: class Archosaurian(BuiltinFunction):
+        ....:     def __init__(self):
+        ....:         BuiltinFunction.__init__(self, 'archsaur', nargs=1)
+        ....:     def _eval_(self, x):
+        ....:         return x * exp(x)
+        sage: archsaur = Archosaurian()  # indirect doctest
+        sage: archsaur(2)
+        2*e^2
+    """
+def get_sfunction_from_serial(serial: SupportsInt) -> SymbolicFunction | None:
+    """
+    Return an already created :class:`SymbolicFunction` given the serial.
+
+    These are stored in the dictionary ``sfunction_serial_dict``.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import get_sfunction_from_serial
+        sage: get_sfunction_from_serial(65) #random
+        f
+    """
+def get_sfunction_from_hash(myhash: SupportsInt) -> SymbolicFunction | None:
+    """
+    Return an already created :class:`SymbolicFunction` given the hash.
+
+    EXAMPLES::
+
+        sage: from sage.symbolic.expression import get_sfunction_from_hash
+        sage: get_sfunction_from_hash(1)  # random
+    """
 
 class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
-    """SymbolicSeries(SR)"""
-    
-    def __init__(self, SR) -> Any:
+    def __init__(self, SR: P):
         """
                 Trivial constructor.
 
@@ -9579,41 +9995,15 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
                     sage: loads(dumps((x+x^3).series(x,2)))
                     1*x + Order(x^2)
         """
+    type _ZZZero = Annotated[Integer, Integer(0)]
     @overload
-    def coefficients(self, x=..., sparse=...) -> Any:
-        """
-        Return the coefficients of this symbolic series as a list of pairs.
-
-        INPUT:
-
-        - ``x`` -- (optional) variable
-
-        - ``sparse`` -- boolean (default: ``True``); if ``False`` return a list
-          with as much entries as the order of the series
-
-        OUTPUT: depending on the value of ``sparse``,
-
-        - A list of pairs ``(expr, n)``, where ``expr`` is a symbolic
-          expression and ``n`` is a power (``sparse=True``, default)
-
-        - A list of expressions where the ``n``-th element is the coefficient of
-          ``x^n`` when ``self`` is seen as polynomial in ``x`` (``sparse=False``).
-
-        EXAMPLES::
-
-            sage: s = (1/(1-x)).series(x,6); s
-            1 + 1*x + 1*x^2 + 1*x^3 + 1*x^4 + 1*x^5 + Order(x^6)
-            sage: s.coefficients()
-            [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5]]
-            sage: s.coefficients(x, sparse=False)
-            [1, 1, 1, 1, 1, 1]
-            sage: x,y = var("x,y")
-            sage: s = (1/(1-y*x-x)).series(x,3); s
-            1 + (y + 1)*x + ((y + 1)^2)*x^2 + Order(x^3)
-            sage: s.coefficients(x, sparse=False)
-            [1, y + 1, (y + 1)^2]"""
+    def coefficients( # pyright: ignore[reportOverlappingOverload]
+        self, x: CoercibleToExpression | None = None, sparse: Literal[False] = ...
+    ) -> list[Expression[P] | _ZZZero]: ...
     @overload
-    def coefficients(self) -> Any:
+    def coefficients( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, x: CoercibleToExpression | None = None, sparse: Literal[True] = True
+    ) -> list[tuple[Expression[P], Expression[P]]]:
         """
         Return the coefficients of this symbolic series as a list of pairs.
 
@@ -9645,41 +10035,7 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
             1 + (y + 1)*x + ((y + 1)^2)*x^2 + Order(x^3)
             sage: s.coefficients(x, sparse=False)
             [1, y + 1, (y + 1)^2]"""
-
-    def coefficients(self, x, sparse=...) -> Any:
-        """
-        Return the coefficients of this symbolic series as a list of pairs.
-
-        INPUT:
-
-        - ``x`` -- (optional) variable
-
-        - ``sparse`` -- boolean (default: ``True``); if ``False`` return a list
-          with as much entries as the order of the series
-
-        OUTPUT: depending on the value of ``sparse``,
-
-        - A list of pairs ``(expr, n)``, where ``expr`` is a symbolic
-          expression and ``n`` is a power (``sparse=True``, default)
-
-        - A list of expressions where the ``n``-th element is the coefficient of
-          ``x^n`` when ``self`` is seen as polynomial in ``x`` (``sparse=False``).
-
-        EXAMPLES::
-
-            sage: s = (1/(1-x)).series(x,6); s
-            1 + 1*x + 1*x^2 + 1*x^3 + 1*x^4 + 1*x^5 + Order(x^6)
-            sage: s.coefficients()
-            [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5]]
-            sage: s.coefficients(x, sparse=False)
-            [1, 1, 1, 1, 1, 1]
-            sage: x,y = var("x,y")
-            sage: s = (1/(1-y*x-x)).series(x,3); s
-            1 + (y + 1)*x + ((y + 1)^2)*x^2 + Order(x^3)
-            sage: s.coefficients(x, sparse=False)
-            [1, y + 1, (y + 1)^2]"""
-
-    def default_variable(self) -> Any:
+    def default_variable(self) -> Expression[P]:
         """
         Return the expansion variable of this symbolic series.
 
@@ -9689,8 +10045,7 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
             1 + 1*x + 1*x^2 + Order(x^3)
             sage: s.default_variable()
             x"""
-
-    def is_terminating_series(self) -> Any:
+    def is_terminating_series(self) -> bool:
         """
         Return ``True`` if the series is without order term.
 
@@ -9711,8 +10066,7 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
             False
             sage: exp(x).series(x,10).is_terminating_series()
             False"""
-    @overload
-    def power_series(self, base_ring) -> Any:
+    def power_series(self, base_ring: Ring) -> PowerSeries_poly:
         """
         Return the algebraic power series associated to this symbolic series.
 
@@ -9726,23 +10080,7 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
             1 + euler_gamma*x + (1/2*euler_gamma^2 + 1/12*pi^2)*x^2 + O(x^3)
             sage: g.parent()
             Power Series Ring in x over Symbolic Ring"""
-    @overload
-    def power_series(self, SR) -> Any:
-        """
-        Return the algebraic power series associated to this symbolic series.
-
-        The coefficients must be coercible to the base ring.
-
-        EXAMPLES::
-
-            sage: ex = (gamma(1-x)).series(x,3); ex
-            1 + euler_gamma*x + (1/2*euler_gamma^2 + 1/12*pi^2)*x^2 + Order(x^3)
-            sage: g = ex.power_series(SR); g
-            1 + euler_gamma*x + (1/2*euler_gamma^2 + 1/12*pi^2)*x^2 + O(x^3)
-            sage: g.parent()
-            Power Series Ring in x over Symbolic Ring"""
-
-    def truncate(self) -> Any:
+    def truncate(self) -> Expression[P]:
         """
         Given a power series or expression, return the corresponding
         expression without the big oh.
@@ -9761,121 +10099,29 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
             sage: f.series(x==1,3).truncate().expand()
             -2*x^2*cos(1) + 5/2*x^2*sin(1) + 5*x*cos(1) - 7*x*sin(1) - 3*cos(1) + 11/2*sin(1)"""
 
-class _math_key:
-    def __init__(self, ex) -> Any:
+class SubstitutionMap(SageObject):
+    type _unsigned = SupportsInt
+    def apply_to[P: SymbolicRingABC](
+        self, expr: Expression[P], options: _unsigned) -> Expression[P]:
         """
-        Sort key to sort in "Mathematics" order.
-
-        INPUT:
-
-        - ``ex`` -- symbolic expression or something that can be
-          converted into one
+        Apply the substitution to a symbolic expression.
 
         EXAMPLES::
 
-            sage: from sage.symbolic.expression import _math_key
-            sage: _math_key(1)
-            <sage.symbolic.expression._math_key object at 0x...>"""
-    def __lt__(self, other) -> Any:
-        """
-        Implement "less than" to make the key comparable.
+            sage: from sage.symbolic.expression import make_map
+            sage: subs = make_map({x:x+1})
+            sage: subs.apply_to(x^2, 0)
+            (x + 1)^2"""
 
-        INPUT:
+def make_map(subs_dict: dict) -> SubstitutionMap:
+    """
+    Construct a new substitution map.
 
-        - ``other`` -- another :class:`_print_key` instance
+    OUTPUT: a new :class:`SubstitutionMap` for doctesting
 
-        OUTPUT: boolean; a :exc:`ValueError` is raised if we do not know how to
-        perform the comparison
+    EXAMPLES::
 
-        EXAMPLES::
-
-            sage: from sage.symbolic.expression import _math_key
-            sage: _math_key(1) < _math_key(2)
-            True
-            sage: _math_key(1) < _math_key(sqrt(2))
-            True
-
-        Check that :issue:`12967` is fixed::
-
-            sage: _math_key(1) < _math_key(oo)
-            True"""
-
-class _mixed_key:
-    def __init__(self, ex) -> Any:
-        """
-        Sort key to sort in mixed order.
-
-        Mixed order is print order if variables are present,
-        mathematical/numeric if not. This should enable quick
-        and correct results.
-
-        INPUT:
-
-        - ``ex`` -- symbolic expression or something that can be
-          converted into one
-
-        EXAMPLES::
-
-            sage: from sage.symbolic.expression import _mixed_key
-            sage: _mixed_key(1)
-            <sage.symbolic.expression._mixed_key object at 0x...>"""
-    def __lt__(self, other) -> Any:
-        """
-        Implement "less than" to make the key comparable.
-
-        INPUT:
-
-        - ``other`` -- another :class:`_mixed_key` instance
-
-        OUTPUT: boolean; a :exc:`ValueError` is raised if we do not know how to
-        perform the comparison
-
-        EXAMPLES::
-
-            sage: from sage.symbolic.expression import _mixed_key
-            sage: _mixed_key(1) < _mixed_key(2)
-            True
-            sage: _mixed_key(1) < _mixed_key(sqrt(2))
-            True
-
-        Check that :issue:`12967` is fixed::
-
-            sage: _mixed_key(1) < _mixed_key(oo)
-            True"""
-
-class _print_key:
-    def __init__(self, ex) -> Any:
-        """
-        Sort key to sort in print order.
-
-        INPUT:
-
-        - ``ex`` -- symbolic expression or something that can be
-          converted into one
-
-        EXAMPLES::
-
-            sage: from sage.symbolic.expression import _print_key
-            sage: _print_key(1)
-            <sage.symbolic.expression._print_key object at 0x...>"""
-    def __lt__(self, other) -> Any:
-        """
-        Implement "less than" to make the key comparable.
-
-        INPUT:
-
-        - ``other`` -- another :class:`_print_key` instance
-
-        OUTPUT: boolean
-
-        EXAMPLES::
-
-            sage: from sage.symbolic.expression import print_order, _print_key
-            sage: print_order(1, 2)
-            -1
-            sage: _print_key(1) < _print_key(2)
-            True
-            sage: print_order(1, sqrt(2))
-            1
-            sage: _print_key(1) < _print_key(sqrt(2))
-            False"""
+        sage: from sage.symbolic.expression import make_map
+        sage: make_map({x:x+1})
+        SubsMap
+    """

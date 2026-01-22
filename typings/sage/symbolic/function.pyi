@@ -534,3 +534,9 @@ class SymbolicFunction(Function):
             sage: foo = function("foo", nargs=2, eval_func=ev)                          # needs sage.symbolic
             sage: hash(foo)      # random output                                        # needs sage.symbolic
             -6859868030555295348'''
+
+from sage.symbolic.expression import (
+    call_registered_function, find_registered_function,
+    register_or_update_function, get_sfunction_from_hash, 
+    get_sfunction_from_serial
+)
