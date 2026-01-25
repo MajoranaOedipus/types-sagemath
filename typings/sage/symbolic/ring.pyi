@@ -27,16 +27,13 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 KEYWORDS: set[str]
 
 # It has the category of `CommutativeRings`, but not included in `__mro__`?
-class SymbolicRing[R: Ring](SymbolicRingABC):
+class SymbolicRing(SymbolicRingABC):
     """
     Symbolic Ring, parent object for all symbolic expressions."""
     
     symbols: dict
     
-    @overload
-    def __init__(self: SymbolicRing[SymbolicRing]): ...
-    @overload
-    def __init__(self, base_ring: R):
+    def __init__(self, base_ring: Ring = SR):
         """
                 Initialize the Symbolic Ring.
 

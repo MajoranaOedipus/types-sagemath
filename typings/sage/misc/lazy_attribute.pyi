@@ -1,10 +1,10 @@
-from typing import Any, overload
+from collections.abc import Callable
+from typing import Any, Self, overload
 
-class _lazy_attribute:
-    """_lazy_attribute(f)
+type _NotUsed = object
 
-    File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 26)
-
+class _lazy_attribute[A, R]:
+    """
     Cython base class for lazy attributes.
 
     EXAMPLES:
@@ -16,11 +16,10 @@ class _lazy_attribute:
         Traceback (most recent call last):
         ...
         NotImplementedError: Only instantiate wrapper python class"""
-    f: f
-    @overload
-    def __init__(self, f) -> Any:
-        '''File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 44)
-
+    f: Callable[[A], R]
+    __name__: str
+    def __init__(self, f: Callable[[A], R]):
+        '''
                 Constructor for lazy attributes.
 
                 EXAMPLES::
@@ -51,45 +50,8 @@ class _lazy_attribute:
                     sage: Parent.element_class.__module__
                     \'sage.structure.parent\'
         '''
-    @overload
-    def __init__(self, lambdax) -> Any:
-        '''File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 44)
-
-                Constructor for lazy attributes.
-
-                EXAMPLES::
-
-                    sage: def f(x):
-                    ....:     "doc of f"
-                    ....:     return 1
-                    ....:
-                    sage: x = lazy_attribute(f); x
-                    <sage.misc.lazy_attribute.lazy_attribute object at ...>
-                    sage: x.__doc__
-                    \'doc of f\'
-                    sage: x.__name__
-                    \'f\'
-                    sage: x.__module__
-                    \'__main__\'
-
-                TESTS:
-
-                We check that :issue:`9251` is solved::
-
-                    sage: Parent.element_class
-                    <sage.misc.lazy_attribute.lazy_attribute object at 0x...>
-                    sage: "The (default) class for the elements of this parent" in Parent.element_class.__doc__
-                    True
-                    sage: Parent.element_class.__name__
-                    \'element_class\'
-                    sage: Parent.element_class.__module__
-                    \'sage.structure.parent\'
-        '''
-    def __get__(self, a, cls) -> Any:
-        """_lazy_attribute.__get__(self, a, cls)
-
-        File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 95)
-
+    def __get__(self, a: A | None, cls: type) -> R:
+        """
         Implement the attribute access protocol.
 
         EXAMPLES::
@@ -101,9 +63,8 @@ class _lazy_attribute:
             sage: f.__get__(A(), A)
             1"""
 
-class lazy_attribute(_lazy_attribute):
-    '''File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 146)
-
+class lazy_attribute[A, R](_lazy_attribute[A, R]):
+    '''
         A lazy attribute for an object is like a usual attribute, except
         that, instead of being computed when the object is constructed
         (i.e. in ``__init__``), it is computed on the fly the first time it
@@ -434,11 +395,8 @@ class lazy_attribute(_lazy_attribute):
             sage: C().unimplemented_B_implemented_A # todo: not implemented
             1
     '''
-    def __init__(self, f) -> Any:
-        '''lazy_attribute.__init__(self, f)
-
-        File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 478)
-
+    def __init__(self, f: Callable[[A], R]):
+        '''
         Initialize ``self``.
 
         EXAMPLES::
@@ -456,9 +414,8 @@ class lazy_attribute(_lazy_attribute):
             sage: x.__module__
             \'__main__\''''
 
-class lazy_class_attribute(lazy_attribute):
-    '''File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 510)
-
+class lazy_class_attribute[A, R](lazy_attribute[type[A], R]):
+    '''
         A lazy class attribute for a class is like a usual class attribute,
         except that, instead of being computed when the class is constructed, it
         is computed on the fly the first time it is accessed, either through the
@@ -537,7 +494,7 @@ class lazy_class_attribute(lazy_attribute):
             sage: "x" in b.__dict__
             False
     '''
-    def __get__(self, _, cls) -> Any:
+    def __get__(self, _: _NotUsed, cls: type) -> R:
         """lazy_class_attribute.__get__(self, _, cls)
 
         File: /build/sagemath/src/sage/src/sage/misc/lazy_attribute.pyx (starting at line 590)

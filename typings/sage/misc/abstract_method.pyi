@@ -1,6 +1,15 @@
-from _typeshed import Incomplete
+"""
+Abstract methods
+"""
+from typing import Literal, overload
+from collections.abc import Callable
 
-def abstract_method(f=None, optional: bool = False):
+@overload
+def abstract_method(f, optional: bool = False) -> AbstractMethod: ...
+@overload
+def abstract_method(
+    f: None = None, optional: bool = False
+) -> Callable[[Callable], AbstractMethod]:
     '''
     Abstract methods.
 
@@ -123,9 +132,9 @@ def abstract_method(f=None, optional: bool = False):
     '''
 
 class AbstractMethod:
-    __doc__: Incomplete
-    __module__: Incomplete
-    def __init__(self, f, optional: bool = False) -> None:
+    __doc__: str
+    __module__: str
+    def __init__(self, f: Callable, optional: bool = False) -> None:
         '''
         Constructor for abstract methods.
 
@@ -157,7 +166,7 @@ class AbstractMethod:
             ...
             NotImplementedError: <abstract method f at ...>
         """
-    def is_optional(self):
+    def is_optional(self) -> bool:
         """
         Return whether an abstract method is optional or not.
 
@@ -175,7 +184,7 @@ class AbstractMethod:
             True
         """
 
-def abstract_methods_of_class(cls):
+def abstract_methods_of_class(cls) -> dict[Literal["optional", "required"], list[str]]:
     """
     Return the required and optional abstract methods of the class.
 
