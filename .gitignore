@@ -167,3 +167,4 @@ sage-src
 
 .continue
 .vscode
+.~lock.*#

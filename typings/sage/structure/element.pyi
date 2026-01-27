@@ -869,7 +869,7 @@ class Element[P: Parent](SageObject):  # should P be invariant or covariant?
             TypeError: unsupported operand parent for unary -: '<sage.structure.parent.Parent object at ...>'"""
     def __pos__(self) -> Self:
         ...
-    def __pow__(self, right, modulus = None) -> Any:
+    def __pow__(self, right, modulus = None, /) -> Any:
         """
         Top-level power operator for :class:`Element` invoking
         the coercion model.

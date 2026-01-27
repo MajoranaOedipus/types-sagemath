@@ -297,7 +297,9 @@ More sanity tests::
     sage: bool(pi < SR.zero())
     False
 """
+# pyright: reportSelfClsParameterName=false
 
+from fractions import Fraction
 from typing import Annotated, Any, Literal, Protocol, Self, SupportsInt, overload
 from collections.abc import Callable, Iterable, Sequence
 from typings_sagemath import (
@@ -308,6 +310,8 @@ from typings_sagemath import (
     CoercibleToExpression, 
     SupportsExp,
     SupportsGamma,
+    RealInexactSage,
+    ComplexInexactSage
 )
 from sage.structure.sage_object import SageObject
 from sage.structure.parent import Parent
@@ -317,16 +321,18 @@ from sage.symbolic.operators import FDerivativeOperator
 from sage.symbolic.function import SymbolicFunction
 from sage.symbolic.maxima_wrapper import MaximaWrapper
 from sage.rings.integer import Integer
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.complex_mpfr import ComplexNumber
 from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
 from sage.rings.polynomial.laurent_polynomial import LaurentPolynomial
+from sage.rings.rational import Rational
 from sage.rings.ring import Ring
 from sage.rings.fraction_field_element import FractionFieldElement
 from sage.rings.power_series_ring_element import PowerSeries
-
 from sage.rings.power_series_poly import PowerSeries_poly
-
+from numpy import number as NumPyNumber
+from gmpy2 import mpz
 type _uint = SupportsInt
 type _NotUsed = object
 type _Domain = Literal["real", "complex", "positive", "integer", "noninteger"]
@@ -9226,6 +9232,40 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             2
         """
 
+    type _AddableWithExpr = int | float | complex | NumPyNumber | Integer | Rational | Expression | CommutativePolynomial | RealInexactSage | ComplexInexactSage
+    def __add__(self, other: _AddableWithExpr) -> Expression: ...
+    def __radd__(self, other: _AddableWithExpr) -> Expression: ...
+    def __sub__(self, other: _AddableWithExpr) -> Expression: ...
+    def __rsub__(self, other: _AddableWithExpr) -> Expression: ...
+    def __mul__(self, other: _AddableWithExpr | mpz) -> Expression: ...
+    def __rmul__(self, other: _AddableWithExpr | mpz) -> Expression: ...
+    def __truediv__(self, other: _AddableWithExpr) -> Expression: ...
+    def __rtruediv__(self, other: _AddableWithExpr) -> Expression: ...
+    def __pow__(
+        self, 
+        other: _AddableWithExpr | mpz | Fraction | IntegerMod_int, 
+        modulus: None = None, /
+    ) -> Expression: ...
+    def __rpow__(
+        self,
+        other: int | float | complex | NumPyNumber | Integer | Rational | Expression | RealInexactSage | ComplexInexactSage,
+        modulus: None = None
+    ): ...
+    
+    @overload
+    def __eq__(self, other: _AddableWithExpr) -> Expression: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __eq__(self, other: object) -> bool: ...
+    @overload
+    def __ne__(self, other: _AddableWithExpr) -> Expression: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __ne__(self, other: object) -> bool: ...
+    def __lt__(self, other: _AddableWithExpr) -> Expression: ...
+    def __le__(self, other: _AddableWithExpr) -> Expression: ...
+    def __gt__(self, other: _AddableWithExpr) -> Expression: ...
+    def __ge__(self, other: _AddableWithExpr) -> Expression: ...
+
+
 @overload
 def solve_diophantine( # pyright: ignore[reportOverlappingOverload]
     f: ConvertibleToExpression, 
@@ -9723,9 +9763,9 @@ class E(Expression):
                     [0 e]
         """
     @overload
-    def __pow__(left, right: ConvertibleToExpression, dummy: _NotUsed) -> Expression[SymbolicRing]: ...
+    def __pow__(left, right: ConvertibleToExpression, dummy: None = None) -> Expression[SymbolicRing]: ...
     @overload
-    def __pow__[T](left, right: SupportsExp[T], dummy: _NotUsed) -> T: # pyright: ignore[reportIncompatibleMethodOverride]
+    def __pow__[T](left, other: SupportsExp[T], dummy: None = None) -> T: # pyright: ignore[reportIncompatibleMethodOverride]
         """
         Call the `exp` function when taking powers of `e`.
 
@@ -9759,7 +9799,7 @@ class E(Expression):
             sage: e^A  # rel tol 5e-14
             [51.968956198705044  74.73656456700327]
             [112.10484685050491 164.07380304920997]"""
-    def __rpow__(self, other) -> Expression[SymbolicRing]: ...
+    def __rpow__(self, other, dummy: None = None) -> Expression[SymbolicRing]: ...
 
 def normalize_index_for_doctests(arg: SupportsInt, nops: SupportsInt) -> int:
     """
