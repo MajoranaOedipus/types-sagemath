@@ -310,8 +310,7 @@ from typings_sagemath import (
     CoercibleToExpression, 
     SupportsExp,
     SupportsGamma,
-    RealInexactSage,
-    ComplexInexactSage
+    FloatingSage
 )
 from sage.structure.sage_object import SageObject
 from sage.structure.parent import Parent
@@ -9232,7 +9231,7 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             2
         """
 
-    type _AddableWithExpr = int | float | complex | NumPyNumber | Integer | Rational | Expression | CommutativePolynomial | RealInexactSage | ComplexInexactSage
+    type _AddableWithExpr = int | float | complex | NumPyNumber | Integer | Rational | Expression | CommutativePolynomial | FloatingSage
     def __add__(self, other: _AddableWithExpr) -> Expression: ...
     def __radd__(self, other: _AddableWithExpr) -> Expression: ...
     def __sub__(self, other: _AddableWithExpr) -> Expression: ...
@@ -9248,7 +9247,7 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
     ) -> Expression: ...
     def __rpow__(
         self,
-        other: int | float | complex | NumPyNumber | Integer | Rational | Expression | RealInexactSage | ComplexInexactSage,
+        other: int | float | complex | NumPyNumber | Integer | Rational | Expression | FloatingSage,
         modulus: None = None
     ): ...
     
