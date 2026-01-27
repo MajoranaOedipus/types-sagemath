@@ -2,12 +2,14 @@ from numbers import Real
 from typings_sagemath import Num
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
-from gmpy2 import mpz
+from gmpy2 import mpz, mpfr
 from sage.rings.infinity import PlusInfinity, MinusInfinity, UnsignedInfinity
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.integer_ring import IntegerRing_class
 from sage.rings.qqbar import AlgebraicField # TODO: with_category
+from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
 from sage.rings.rational_field import RationalField
+from sage.rings.rational import Rational
 from sage.rings.semirings.non_negative_integer_semiring import NonNegativeIntegerSemiring
 from sage.structure.factorization import Factorization
 from sage.structure.element import Matrix, RingElement
@@ -24,7 +26,7 @@ from sympy.core.basic import Basic as SymPyBasic
 type ConvertibleToInteger = Int | str | Gen | bytes | None
 
 # TODO
-type ConvertibleToRealNumber = Real
+type ConvertibleToRealNumber = Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen
 type ConvertibleToComplexNumber = Num
 
 # possible others, if it has a `_symbolic_` method, or it is a finite set (in Sets() and is_finite)
@@ -34,7 +36,7 @@ type ConvertibleToExpression = (
         | RealNumber | RingElement | Matrix | Factorization 
         | PlusInfinity | MinusInfinity| UnsignedInfinity 
         | IntegerRing_class | AlgebraicField | RationalField 
-        | NonNegativeIntegerSemiring
+        | NonNegativeIntegerSemiring 
     )
 
 # not completed, need to check
@@ -52,4 +54,7 @@ type CoercibleToExpression = (
     Expression | int | float | complex | bool
         | NumPyInteger | NumPyFloating | NumPyComplexFloating | SymPyBasic
         | RealInexactSage | ComplexInexactSage
+)
+type CoercibleToRealNumber = (
+    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | PlusInfinity | MinusInfinity
 )

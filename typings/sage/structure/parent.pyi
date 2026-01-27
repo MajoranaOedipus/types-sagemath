@@ -799,7 +799,7 @@ class Parent(CategoryObject):
 
     def __bool__(self) -> bool:
         """True if self else False"""
-    def __call__(self: Self, x: Any = 0, *args, **kwds) -> Element[Self]: # eg for RR, Self is RealField_class, returns RealNumber
+    def __call__[P: Parent](self: P, x: Any = 0, *args, **kwds) -> Element[P]: # eg for RR, Self is RealField_class, returns RealNumber
         """
         This is the generic call method for all parents.
 

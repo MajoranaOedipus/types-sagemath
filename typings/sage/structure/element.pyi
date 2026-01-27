@@ -273,7 +273,7 @@ continue down the MRO and find the ``_add_`` method in the category.
 
 from collections.abc import Callable
 from typing import (
-    Any, TypeGuard, overload, Self, SupportsFloat, 
+    Any, SupportsInt, TypeGuard, overload, Self, SupportsFloat, 
     Literal, SupportsIndex, Protocol
 )
 from typings_sagemath import Int, ComparableWithZero, SupportsSage
@@ -293,6 +293,8 @@ from sage.misc.decorators import sage_wraps as sage_wraps
 from sage.misc.lazy_format import LazyFormat as LazyFormat
 from sage.misc.superseded import deprecation as deprecation
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
+
+type _mpfr_prec_t = SupportsInt
 
 # __getattr__ will look into its parent's _abstract_element_class
 # so concrete elements should include that as base?
@@ -349,7 +351,7 @@ class Element[P: Parent](SageObject):  # should P be invariant or covariant?
 
             Do not re-implement this method in your subclass but
             implement ``__bool__`` instead."""
-    def n(self, prec: Int | None = None, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
+    def n(self, prec: _mpfr_prec_t | None = None, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
         """
         Alias for :meth:`numerical_approx`.
 
@@ -358,7 +360,7 @@ class Element[P: Parent](SageObject):  # should P be invariant or covariant?
             sage: (2/3).n()                                                             # needs sage.rings.real_mpfr
             0.666666666666667"""
     @overload
-    def numerical_approx(self, prec: Int | None = None, *, algorithm=None) -> RealNumber | ComplexNumber: ...
+    def numerical_approx(self, prec: _mpfr_prec_t | None = None, *, algorithm=None) -> RealNumber | ComplexNumber: ...
     @overload
     def numerical_approx(self, *, digits: SupportsFloat | None = None, algorithm=None) -> RealNumber | ComplexNumber:
         """

@@ -10,11 +10,14 @@ interact with the result, or check the result printed in the CLI.
 Modify `operators` and `objects` if you want to test other objects.
 """
 
-from typing import Any
+from typing import Any, cast
 from collections import defaultdict, OrderedDict
 from collections.abc import Sequence, Callable, Mapping
 
-from sage.all import ZZ, QQ, RR, CC, SR, Zmod, sqrt, colormaps
+from sage.all import (
+    ZZ, QQ, RR, CC, SR, Expression, Zmod, sqrt, colormaps, 
+    RIF, RDF, CIF, CDF, RBF, CBF
+)
 
 operator_names = {
     "eq": "==",
@@ -55,8 +58,9 @@ objects = [
     mpz(10), mpfr(3.2), mpc(1+3j),
     float32(1.2), float128(1.3e2), complex64(1+2.j), int32(100), uint16(8),
     ZZ(1), Zmod(7)(3), QQ((1, 2)),
-    3 * SR.var("x") + 1, ZZ["y"](3 + SR.var("y")), ZZ[sqrt(2)](2),
-    RR(10.5), CC(4-5j)
+    3 * cast(Expression, SR.var("x")) + 1, ZZ["y"](3 + cast(Expression, SR.var("y"))), ZZ[sqrt(2)](2),
+    RR(10.5), RDF(17.3), RBF(19.2), RIF(1.9),
+    CC(4-5j), CDF(5+3j), CBF(7+6j), CIF(-3+2j)
 ]
 
 
