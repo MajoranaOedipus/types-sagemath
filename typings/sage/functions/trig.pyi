@@ -19,9 +19,96 @@ Check that :issue:`35696` is fixed::
     Infinity
 """
 
-from sage.symbolic.function import GinacFunction as GinacFunction
 
-class Function_sin(GinacFunction):
+from typing import Any, Literal, Protocol, overload
+from typings_sagemath import (
+    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+from sage.symbolic.function import GinacFunction as GinacFunction
+from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from numpy import (
+    int8 as NumPyInt8,
+    int16 as NumPyInt16,
+    int32 as NumPyInt32,
+    int64 as NumPyInt64,
+    uint8 as NumPyUInt8,
+    uint16 as NumPyUInt16,
+    uint32 as NumPyUInt32,
+    uint64 as NumPyUInt64,
+    float16 as NumPyFloat16,
+    float32 as NumPyFloat32,
+    float64 as NumPyFloat64,
+    float128 as NumPyFloat128,
+    complex64 as NumPyComplex64,
+    complex128 as NumPyComplex128,
+    complex256 as NumPyComplex256,
+    ndarray as NumPyNDArray,
+    dtype as NumPyDtype,
+)
+from mpmath import (
+    mpf as MpmathF,
+    mpc as MpmathC
+)
+from gmpy2 import mpfr, mpc
+
+type _np_byte = NumPyInt8 | NumPyUInt8
+type _np_short = NumPyInt16 | NumPyUInt16
+type _np_int = NumPyInt32 | NumPyUInt32
+type _np_long = NumPyInt64 | NumPyUInt64
+type _np_long_int = _np_int | _np_long
+type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
+type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
+    
+# c.f. symbolic/function.pyx: BuiltinFunction.__call__
+class _TrigFunction(Protocol):
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational 
+            | OrderElement_quadratic | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True] = ...
+    ) -> Expression[SymbolicRing]: ...
+
+class Function_sin(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The sine function.
@@ -145,7 +232,7 @@ class Function_sin(GinacFunction):
 
 sin: Function_sin
 
-class Function_cos(GinacFunction):
+class Function_cos(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The cosine function.
@@ -208,7 +295,7 @@ class Function_cos(GinacFunction):
 
 cos: Function_cos
 
-class Function_tan(GinacFunction):
+class Function_tan(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The tangent function.
@@ -269,7 +356,7 @@ class Function_tan(GinacFunction):
 
 tan: Function_tan
 
-class Function_cot(GinacFunction):
+class Function_cot(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The cotangent function.
@@ -354,7 +441,7 @@ class Function_cot(GinacFunction):
 
 cot: Function_cot
 
-class Function_sec(GinacFunction):
+class Function_sec(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The secant function.
@@ -412,7 +499,7 @@ class Function_sec(GinacFunction):
 
 sec: Function_sec
 
-class Function_csc(GinacFunction):
+class Function_csc(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The cosecant function.
@@ -470,7 +557,7 @@ class Function_csc(GinacFunction):
 
 csc: Function_csc
 
-class Function_arcsin(GinacFunction):
+class Function_arcsin(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arcsine function.
@@ -530,7 +617,7 @@ arcsin: Function_arcsin
 
 asin: Function_arcsin
 
-class Function_arccos(GinacFunction):
+class Function_arccos(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arccosine function.
@@ -595,7 +682,7 @@ arccos: Function_arccos
 
 acos: Function_arccos
 
-class Function_arctan(GinacFunction):
+class Function_arctan(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arctangent function.
@@ -665,7 +752,7 @@ arctan: Function_arctan
 
 atan: Function_arctan
 
-class Function_arccot(GinacFunction):
+class Function_arccot(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arccotangent function.
@@ -715,7 +802,7 @@ arccot: Function_arccot
 
 acot: Function_arccot
 
-class Function_arccsc(GinacFunction):
+class Function_arccsc(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arccosecant function.
@@ -761,7 +848,7 @@ arccsc: Function_arccsc
 
 acsc: Function_arccsc
 
-class Function_arcsec(GinacFunction):
+class Function_arcsec(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The arcsecant function.
@@ -809,7 +896,7 @@ arcsec: Function_arcsec
 
 asec: Function_arcsec
 
-class Function_arctan2(GinacFunction):
+class Function_arctan2(_TrigFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The modified arctangent function.

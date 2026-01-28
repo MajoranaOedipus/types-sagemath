@@ -445,7 +445,6 @@ class _matrix:
     is hard to calculate and not available. The Frobenius-norm lacks some
     mathematical properties you might expect from a norm.
     """
-    __hash__: typing.ClassVar[None] = None
     def __add__(self, other):
         ...
     def __copy__(self):
@@ -574,5 +573,6 @@ class _matrix:
     @rows.setter
     def rows(self, value):
         ...
+matrix = type("matrix", (_matrix,), {})
 colsep: str = '  '
 rowsep: str = '\n'
