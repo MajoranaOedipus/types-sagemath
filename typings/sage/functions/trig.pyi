@@ -64,7 +64,7 @@ type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
 type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
     
 # c.f. symbolic/function.pyx: BuiltinFunction.__call__
-class _TrigFunction(Protocol):
+class _TrigFunction:
     @overload
     def __call__( # pyright: ignore[reportOverlappingOverload]
         self,
@@ -84,6 +84,12 @@ class _TrigFunction(Protocol):
         /
     ) -> NumPyFloat64: ...
     @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational 
+            | OrderElement_quadratic | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
     def __call__[
         F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
             | RealInexactSage | ComplexInexactSage
@@ -93,12 +99,6 @@ class _TrigFunction(Protocol):
     def __call__(self, arg: mpfr, /) -> float: ...
     @overload
     def __call__(self, arg: mpc, /) -> complex: ...
-    @overload
-    def __call__(
-        self, 
-        arg: Expression | int | Integer | Rational 
-            | OrderElement_quadratic | CommutativePolynomial
-    ) -> Expression[SymbolicRing]: ...
     @overload
     def __call__(
         self, 
