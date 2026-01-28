@@ -65,7 +65,7 @@ see the documentation for :class:`Parent`.
 """
 
 from collections.abc import Callable
-from typing import Any, overload
+from typing import Any, TypeGuard, Union, overload
 from typings_sagemath import SupportsSage
 from sage.structure.element import Element
 from sage.structure.sage_object import SageObject
@@ -81,7 +81,9 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 
 
-def is_mpmath_type(t: object) -> bool:
+from typings_sagemath import MpmathType, NumPyType
+
+def is_mpmath_type(t: object) -> TypeGuard[type[MpmathType]]:
     r"""
     Check whether the type ``t`` is a type whose name starts with either
     ``mpmath.`` or ``sage.libs.mpmath.``.
@@ -100,7 +102,8 @@ def is_mpmath_type(t: object) -> bool:
         sage: is_mpmath_type(type(mpmath.mpf(2)))
         True
     """
-def is_numpy_type(t: object) -> bool:
+
+def is_numpy_type(t: object) -> TypeGuard[type[NumPyType]]:
     """
     Return ``True`` if and only if `t` is a type whose name starts
     with ``numpy.``
