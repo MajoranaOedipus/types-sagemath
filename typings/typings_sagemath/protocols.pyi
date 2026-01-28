@@ -81,3 +81,6 @@ class SupportsImagPart[T](Protocol):
 
 class SupportsGamma[T](Protocol):
     def gamma(self) -> T: ...
+
+class Supports__code__(Protocol):
+    def __code__(self): ...

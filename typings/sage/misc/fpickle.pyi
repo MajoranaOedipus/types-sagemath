@@ -7,7 +7,7 @@ REFERENCE: The python cookbook.
 from typing import Any
 from collections.abc import Callable
 from types import CodeType, MethodWrapperType, ModuleType, FunctionType
-from typings_sagemath import CallableArgs
+from typings_sagemath import CallableArgs, Supports__code__
 
 def code_ctor(*args) -> CodeType:
     """
@@ -36,7 +36,7 @@ def reduce_code(co: CodeType) -> tuple[CallableArgs[Any, CodeType], tuple[Any, .
         sage: ctor(*args) == foo.__code__
         True
     """
-def pickle_function(func: function) -> bytes:
+def pickle_function(func: Supports__code__) -> bytes:
     """
     Pickle the Python function func.  This is not a normal pickle; you
     must use the unpickle_function method to unpickle the pickled
