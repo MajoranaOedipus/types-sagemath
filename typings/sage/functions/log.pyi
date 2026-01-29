@@ -12,7 +12,7 @@ from typing import Any, Literal, overload
 from typings_sagemath import (
     RealInexactSage, ComplexInexactSage, CoercibleToExpression)
 from sage.symbolic.function import GinacFunction as GinacFunction
-from sage.symbolic.expression import Expression
+from sage.symbolic.expression import Expression as Expression_
 from sage.symbolic.ring import SymbolicRing
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.complex_mpfr import ComplexNumber
@@ -206,6 +206,48 @@ class Function_exp(GinacFunction):
             sage: maxima(exp(x))._sage_()                                               # needs sage.symbolic
             e^x
         """
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression_ | int | Integer | Rational 
+            | OrderElement_quadratic | CommutativePolynomial
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True] = ...
+    ) -> Expression_[SymbolicRing]: ...
 
 exp: Function_exp
 
@@ -289,9 +331,9 @@ class Function_log1(GinacFunction):
     @overload
     def __call__(
         self, 
-        arg: Expression | int | Integer | Rational 
+        arg: Expression_ | int | Integer | Rational 
             | OrderElement_quadratic | CommutativePolynomial
-    ) -> Expression[SymbolicRing]: ...
+    ) -> Expression_[SymbolicRing]: ...
     @overload
     def __call__( # pyright: ignore[reportOverlappingOverload]
         self,
@@ -336,7 +378,7 @@ class Function_log1(GinacFunction):
         /, 
         *, 
         hold: Literal[True] = ...
-    ) -> Expression[SymbolicRing]: ...
+    ) -> Expression_[SymbolicRing]: ...
 ln: Function_log1
 
 function_log: Function_log1
