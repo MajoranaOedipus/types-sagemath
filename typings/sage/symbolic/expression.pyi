@@ -332,6 +332,8 @@ from sage.rings.power_series_ring_element import PowerSeries
 from sage.rings.power_series_poly import PowerSeries_poly
 from numpy import number as NumPyNumber
 from gmpy2 import mpz
+
+from sage.symbolic.callable import CallableSymbolicExpressionRing_class
 type _uint = SupportsInt
 type _NotUsed = object
 type _Domain = Literal["real", "complex", "positive", "integer", "noninteger"]
@@ -3488,7 +3490,7 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             limit(f(x, y), x, 0)
             sage: e.free_variables()
             (y,)"""
-    def function(self, *args: Expression) -> Expression:
+    def function(self, *args: Expression) -> Expression[CallableSymbolicExpressionRing_class]:
         """
         Return a callable symbolic expression with the given variables.
 
@@ -8974,6 +8976,12 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             (x, y, z)
             sage: (x+y)(x=z^2, y=x^y)
             z^2 + x^y"""
+    # c.f. symbolic.callable.CallableSymbolicExpressionRing_class._call_element_
+    @overload
+    def __call__(
+        self: Expression[CallableSymbolicExpressionRing_class], 
+        *args: _SubsRep, **kwargs: CoercibleToExpression
+    ) -> Expression[SymbolicRing]: ...
     def __complex__(self) -> complex:
         """
         EXAMPLES::
