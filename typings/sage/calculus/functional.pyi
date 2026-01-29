@@ -1,6 +1,59 @@
+"""
+Functional notation support for common calculus methods
+
+EXAMPLES: We illustrate each of the calculus functional functions.
+
+::
+
+    sage: simplify(x - x)
+    0
+    sage: a = var('a')
+    sage: derivative(x^a + sin(x), x)
+    a*x^(a - 1) + cos(x)
+    sage: diff(x^a + sin(x), x)
+    a*x^(a - 1) + cos(x)
+    sage: derivative(x^a + sin(x), x)
+    a*x^(a - 1) + cos(x)
+    sage: integral(a*x*sin(x), x)
+    -(x*cos(x) - sin(x))*a
+    sage: integrate(a*x*sin(x), x)
+    -(x*cos(x) - sin(x))*a
+    sage: limit(a*sin(x)/x, x=0)
+    a
+    sage: taylor(a*sin(x)/x, x, 0, 4)
+    1/120*a*x^4 - 1/6*a*x^2 + a
+    sage: expand((x - a)^3)
+    -a^3 + 3*a^2*x - 3*a*x^2 + x^3
+"""
+from typing import Any, Literal, overload
+from typings_sagemath import (
+    SupportsSimplify, 
+    CoercibleToExpression, 
+    ConvertibleToExpression,
+    ConvertibleToInteger,
+    SupportsDerivative, 
+    SupportsIntegral
+)
+from sage.rings.integer import Integer
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
+
 from sage.structure.element import Expression as Expression
 
-def simplify(f, algorithm: str = 'maxima', **kwds):
+@overload
+def simplify(
+    f: Expression,
+    algorithm: Literal["sympy", "fricas", "giac", "maxima"] = "maxima",
+    **kwds,
+) -> Expression: ...
+@overload
+def simplify[T](
+    f: SupportsSimplify[T],
+    algorithm: str = "maxima",
+    **kwds,
+) -> T: ...
+@overload
+def simplify[T](f: T) -> T:
     '''
     Simplify the expression `f`.
 
@@ -27,7 +80,12 @@ def simplify(f, algorithm: str = 'maxima', **kwds):
         sage: simplify(ex, algorithm=\'giac\')  # needs giac
         I*sqrt(x^2 - 1)
     '''
-def derivative(f, *args, **kwds):
+@overload
+def derivative[T](f: SupportsDerivative[T], *args, **kwargs) -> T: ...
+@overload
+def derivative[P: SymbolicRingABC](f: Expression[P], *args: CoercibleToExpression | int | Integer) -> Expression[P]: ...
+@overload
+def derivative(f: CoercibleToExpression, *args: CoercibleToExpression | int | Integer) -> Expression[SymbolicRing]:
     """
     The derivative of `f`.
 
@@ -121,8 +179,17 @@ def derivative(f, *args, **kwds):
         da = 2 dx∧dy
     """
 diff = derivative
-
-def integral(f, *args, **kwds):
+# TODO: c.f. sage.symbolic.integration.integral.integral
+@overload
+def integral(
+        f: CoercibleToExpression, 
+        v = None, 
+        a = None, 
+        b = None, 
+        algorithm = None, 
+        hold: bool = False) : ...
+@overload
+def integral[T](f: SupportsIntegral[T], *args, **kwds) -> T:
     '''
     The integral of `f`.
 
@@ -259,8 +326,13 @@ def integral(f, *args, **kwds):
         True
     '''
 integrate = integral
-
-def limit(f, dir=None, taylor: bool = False, **argv):
+# TODO: c.f. sage.calculus.calculus.limit
+def limit(
+    f: CoercibleToExpression, 
+    dir=None, 
+    taylor: bool = False, 
+    **argv
+):
     """
     Return the limit as the variable `v` approaches `a`
     from the given direction.
@@ -308,8 +380,28 @@ def limit(f, dir=None, taylor: bool = False, **argv):
         -limit((erf(x) - 1)*e^(x^2), x, +Infinity)
     """
 lim = limit
-
-def taylor(f, *args):
+@overload
+def taylor[P: SymbolicRingABC](
+    f: Expression[P], 
+    x: Expression, 
+    a: ConvertibleToExpression, 
+    n: ConvertibleToInteger, /) -> Expression[P]: ...
+@overload
+def taylor[P: SymbolicRingABC](
+    f: Expression[P], 
+    *args: tuple[ConvertibleToExpression, Any], 
+    n: ConvertibleToInteger) -> Expression[P]: ...
+@overload
+def taylor(
+    f: CoercibleToExpression, 
+    x: Expression, 
+    a: ConvertibleToExpression, 
+    n: ConvertibleToInteger, /) -> Expression[SymbolicRing]: ...
+@overload
+def taylor(
+    f: CoercibleToExpression, 
+    *args: tuple[ConvertibleToExpression, Any], 
+    n: ConvertibleToInteger) -> Expression[SymbolicRing]:
     """
     Expand ``self`` in a truncated Taylor or Laurent series in the
     variable `v` around the point `a`, containing terms
@@ -347,7 +439,10 @@ def taylor(f, *args):
         sage: x,y=var('x y'); taylor(x*y^3,(x,1),(y,-1),4)
         (x - 1)*(y + 1)^3 - 3*(x - 1)*(y + 1)^2 + (y + 1)^3 + 3*(x - 1)*(y + 1) - 3*(y + 1)^2 - x + 3*y + 3
     """
-def expand(x, *args, **kwds):
+@overload
+def expand[P: SymbolicRingABC](x: Expression[P], side: Literal["left", "right"] | None = None) -> Expression[P]: ...
+@overload
+def expand(self: CoercibleToExpression, side: Literal["left", "right"] | None = None) -> Expression[SymbolicRing]:
     """
     EXAMPLES::
 
