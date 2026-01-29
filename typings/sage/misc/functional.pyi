@@ -1,3 +1,67 @@
+"""
+Functional notation
+
+These are functions so that you can write ``foo(x)`` instead of ``x.foo()``
+in certain common cases.
+
+AUTHORS:
+
+- William Stein: Initial version
+
+- David Joyner (2005-12-20): More Examples
+"""
+from typing import Any, Literal, overload
+from typings_sagemath import (
+    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+from sage.symbolic.function import GinacFunction as GinacFunction
+from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.real_double import RealDoubleElement
+from sage.rings.real_arb import RealBall
+from sage.rings.real_mpfi import RealIntervalFieldElement
+from sage.rings.complex_interval import ComplexIntervalFieldElement
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from numpy import (
+    int8 as NumPyInt8,
+    int16 as NumPyInt16,
+    int32 as NumPyInt32,
+    int64 as NumPyInt64,
+    uint8 as NumPyUInt8,
+    uint16 as NumPyUInt16,
+    uint32 as NumPyUInt32,
+    uint64 as NumPyUInt64,
+    float16 as NumPyFloat16,
+    float32 as NumPyFloat32,
+    float64 as NumPyFloat64,
+    float128 as NumPyFloat128,
+    complex64 as NumPyComplex64,
+    complex128 as NumPyComplex128,
+    complex256 as NumPyComplex256,
+    ndarray as NumPyNDArray,
+    dtype as NumPyDtype,
+)
+from mpmath import (
+    mpf as MpmathF,
+    mpc as MpmathC
+)
+from gmpy2 import mpfr, mpc
+
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
+
+type _np_byte = NumPyInt8 | NumPyUInt8
+type _np_short = NumPyInt16 | NumPyUInt16
+type _np_int = NumPyInt32 | NumPyUInt32
+type _np_long = NumPyInt64 | NumPyUInt64
+type _np_long_int = _np_int | _np_long
+type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
+type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
+
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.superseded import deprecation as deprecation
 
@@ -635,7 +699,6 @@ sum = symbolic_sum
         [1, 2]
     """
 
-
 def symbolic_prod(expression, *args, **kwds):
     """
     Return the symbolic product `\\prod_{v = a}^b expression` with respect
@@ -1012,7 +1075,51 @@ def lift(x):
         sage: lift(xmod - 7)                                                            # needs sage.libs.pari
         x - 7
     """
-def log(*args, **kwds):
+
+@overload
+def log(x: IntegerMod_int, /) -> Integer: ...
+@overload
+def log(
+    x: Expression | int | Integer | Rational 
+        | OrderElement_quadratic | CommutativePolynomial
+) -> Expression[SymbolicRing]: ...
+@overload
+def log( # pyright: ignore[reportOverlappingOverload]
+    x: _np_byte, /) -> NumPyFloat16: ...
+@overload
+def log(x: _np_short, /) -> NumPyFloat32: ...
+@overload
+def log(x: _np_long_int, /) -> NumPyFloat64: ...
+@overload
+def log[
+    F: _np_float | RealBall | _np_complex | complex | ComplexInexactSage
+        | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+](x: F, /) -> F: ...
+@overload
+def log(x: RealNumber, /) -> RealNumber | ComplexNumber: ...
+@overload
+def log(x: RealDoubleElement, /) -> RealDoubleElement | ComplexDoubleElement: ...
+@overload
+def log(x: RealIntervalFieldElement, /) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+@overload
+def log(x: MpmathF, /) -> MpmathF | MpmathC: ...
+@overload
+def log(x: MpmathC, /) -> MpmathC: ...
+@overload
+def log(x: mpfr, /) -> float: ...
+@overload
+def log(x: mpc | float, /) -> complex: ...
+@overload
+def log( # pyright: ignore[reportIncompatibleMethodOverride]
+    x: CoercibleToExpression, 
+    /, 
+    *, 
+    hold: Literal[True] = ...
+) -> Expression[SymbolicRing]: ...
+@overload
+def log(x, /, *, base: CoercibleToExpression, **kwds): ...
+@overload
+def log(x, b, /, **kwds):
     """
     Return the logarithm of the first argument to the base of
     the second argument which if missing defaults to ``e``.

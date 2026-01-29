@@ -8,6 +8,58 @@ AUTHORS:
 - Tomas Kalvoda (2015-04-01): Add :meth:`exp_polar()` (:issue:`18085`)
 """
 
+from typing import Any, Literal, overload
+from typings_sagemath import (
+    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+from sage.symbolic.function import GinacFunction as GinacFunction
+from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.real_double import RealDoubleElement
+from sage.rings.real_arb import RealBall
+from sage.rings.real_mpfi import RealIntervalFieldElement
+from sage.rings.complex_interval import ComplexIntervalFieldElement
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from numpy import (
+    int8 as NumPyInt8,
+    int16 as NumPyInt16,
+    int32 as NumPyInt32,
+    int64 as NumPyInt64,
+    uint8 as NumPyUInt8,
+    uint16 as NumPyUInt16,
+    uint32 as NumPyUInt32,
+    uint64 as NumPyUInt64,
+    float16 as NumPyFloat16,
+    float32 as NumPyFloat32,
+    float64 as NumPyFloat64,
+    float128 as NumPyFloat128,
+    complex64 as NumPyComplex64,
+    complex128 as NumPyComplex128,
+    complex256 as NumPyComplex256,
+    ndarray as NumPyNDArray,
+    dtype as NumPyDtype,
+)
+from mpmath import (
+    mpf as MpmathF,
+    mpc as MpmathC
+)
+from gmpy2 import mpfr, mpc
+
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
+
+type _np_byte = NumPyInt8 | NumPyUInt8
+type _np_short = NumPyInt16 | NumPyUInt16
+type _np_int = NumPyInt32 | NumPyUInt32
+type _np_long = NumPyInt64 | NumPyUInt64
+type _np_long_int = _np_int | _np_long
+type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
+type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
+
 from sage.misc.functional import log as log
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.integer import Integer as Integer
@@ -222,6 +274,7 @@ class Function_log1(GinacFunction):
         sage: polylog(QQbar(sqrt(2)),3)                                                 # needs sage.rings.number_field sage.symbolic
         polylog(1.414213562373095?, 3)
     """
+    
     def __init__(self) -> None:
         """
         TESTS::
@@ -231,7 +284,59 @@ class Function_log1(GinacFunction):
             sage: maxima(ln(x))._sage_()                                                # needs sage.symbolic
             log(x)
         """
-
+    @overload
+    def __call__(self, arg: IntegerMod_int, /) -> Integer: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational 
+            | OrderElement_quadratic | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__[
+        F: _np_float | RealBall | _np_complex | complex | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: RealNumber, /) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(self, arg: RealDoubleElement, /) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__(self, arg: RealIntervalFieldElement, /) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(self, arg: MpmathF, /) -> MpmathF | MpmathC: ...
+    @overload
+    def __call__(self, arg: MpmathC, /) -> MpmathC: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc | float, /) -> complex: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True] = ...
+    ) -> Expression[SymbolicRing]: ...
 ln: Function_log1
 
 function_log: Function_log1
