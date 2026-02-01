@@ -1,3 +1,91 @@
+"""
+Subsets of the Real Line
+
+This module contains subsets of the real line that can be constructed
+as the union of a finite set of open and closed intervals.
+
+EXAMPLES::
+
+    sage: RealSet(0,1)
+    (0, 1)
+    sage: RealSet((0,1), [2,3])
+    (0, 1) ∪ [2, 3]
+    sage: RealSet((1,3), (0,2))
+    (0, 3)
+    sage: RealSet(-oo, oo)
+    (-oo, +oo)
+
+Brackets must be balanced in Python, so the naive notation for
+half-open intervals does not work::
+
+    sage: RealSet([0,1))
+    Traceback (most recent call last):
+    ...
+    SyntaxError: ...
+
+Instead, you can use the following construction functions::
+
+    sage: RealSet.open_closed(0,1)
+    (0, 1]
+    sage: RealSet.closed_open(0,1)
+    [0, 1)
+    sage: RealSet.point(1/2)
+    {1/2}
+    sage: RealSet.unbounded_below_open(0)
+    (-oo, 0)
+    sage: RealSet.unbounded_below_closed(0)
+    (-oo, 0]
+    sage: RealSet.unbounded_above_open(1)
+    (1, +oo)
+    sage: RealSet.unbounded_above_closed(1)
+    [1, +oo)
+
+The lower and upper endpoints will be sorted if necessary::
+
+    sage: RealSet.interval(1, 0, lower_closed=True, upper_closed=False)
+    [0, 1)
+
+Relations containing symbols and numeric values or constants::
+
+    sage: # needs sage.symbolic
+    sage: RealSet(x != 0)
+    (-oo, 0) ∪ (0, +oo)
+    sage: RealSet(x == pi)
+    {pi}
+    sage: RealSet(x < 1/2)
+    (-oo, 1/2)
+    sage: RealSet(1/2 < x)
+    (1/2, +oo)
+    sage: RealSet(1.5 <= x)
+    [1.50000000000000, +oo)
+
+Note that multiple arguments are combined as union::
+
+    sage: RealSet(x >= 0, x < 1)                                                        # needs sage.symbolic
+    (-oo, +oo)
+    sage: RealSet(x >= 0, x > 1)                                                        # needs sage.symbolic
+    [0, +oo)
+    sage: RealSet(x >= 0, x > -1)                                                       # needs sage.symbolic
+    (-1, +oo)
+
+AUTHORS:
+
+- Laurent Claessens (2010-12-10): Interval and ContinuousSet, posted
+  to sage-devel at
+  http://www.mail-archive.com/sage-support@googlegroups.com/msg21326.html.
+
+- Ares Ribo (2011-10-24): Extended the previous work defining the
+  class RealSet.
+
+- Jordi Saludes (2011-12-10): Documentation and file reorganization.
+
+- Volker Braun (2013-06-22): Rewrite
+
+- Yueqi Li, Yuan Zhou (2022-07-31): Rewrite RealSet. Adapt faster operations
+  by scan-line (merging) techniques from the code by Matthias Köppe et al., at
+  https://github.com/mkoeppe/cutgeneratingfunctionology/blob/master/cutgeneratingfunctionology/igp/intervals.py
+"""
+
 from _typeshed import Incomplete
 from collections.abc import Generator
 from sage.categories.sets_cat import EmptySetError as EmptySetError
