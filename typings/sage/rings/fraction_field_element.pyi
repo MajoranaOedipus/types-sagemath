@@ -8,11 +8,13 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
+from sage.structure.parent_old import Parent
+
 is_FractionFieldElement: _cython_3_2_1.cython_function_or_method
 make_element: _cython_3_2_1.cython_function_or_method
 make_element_old: _cython_3_2_1.cython_function_or_method
 
-class FractionFieldElement(sage.structure.element.FieldElement):
+class FractionFieldElement[P: Parent](sage.structure.element.FieldElement[P]):
     """FractionFieldElement(parent, numerator, denominator=1, coerce=True, reduce=True)
 
     File: /build/sagemath/src/sage/src/sage/rings/fraction_field_element.pyx (starting at line 58)

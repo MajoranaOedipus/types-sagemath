@@ -1557,8 +1557,12 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             sage: ((1+x)^pi).coefficients()
             [[(x + 1)^pi, 0]]"""
     @overload
-    def coefficients( # pyright: ignore[reportOverlappingOverload]
-        self, x: CoercibleToExpression | None = None, sparse: Literal[False] = ...
+    def coefficients(
+        self, x: CoercibleToExpression | None, sparse: Literal[False]
+    ) -> list[Expression[P]]: ...
+    @overload
+    def coefficients(
+        self, x: CoercibleToExpression | None = None, *, sparse: Literal[False]
     ) -> list[Expression[P]]: ...
     @overload
     def coefficients(
@@ -7648,10 +7652,17 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
         See :func:`sage.symbolic.relation.solve` or the output of ``solve?``
         for extensive documentation."""
     @overload
-    def solve_diophantine( # pyright: ignore[reportOverlappingOverload]
+    def solve_diophantine(
+        self, 
+        x: Expression[P] | tuple[Expression[P], ...] | list[Expression[P]] | None, 
+        solution_dict: Literal[True]
+    ) -> list[dict[Expression[SymbolicRing], Expression[SymbolicRing]]]: ...
+    @overload
+    def solve_diophantine(
         self, 
         x: Expression[P] | tuple[Expression[P], ...] | list[Expression[P]] | None = None, 
-        solution_dict: Literal[True] = ...
+        *,
+        solution_dict: Literal[True]
     ) -> list[dict[Expression[SymbolicRing], Expression[SymbolicRing]]]: ...
     @overload
     def solve_diophantine(
@@ -9304,16 +9315,26 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
     @overload
     def __ge__(self, other: Expression) -> Expression: ...
 
-
 @overload
-def solve_diophantine( # pyright: ignore[reportOverlappingOverload]
+def solve_diophantine(
+    f: ConvertibleToExpression, 
+    x: (
+        Expression[SymbolicRing] 
+        | tuple[Expression[SymbolicRing], ...] 
+        | list[Expression[SymbolicRing]] 
+        | None ), 
+    solution_dict: Literal[True]
+) -> list[dict[Expression[SymbolicRing], Expression[SymbolicRing]]]: ...
+@overload
+def solve_diophantine(
     f: ConvertibleToExpression, 
     x: (
         Expression[SymbolicRing] 
         | tuple[Expression[SymbolicRing], ...] 
         | list[Expression[SymbolicRing]] 
         | None ) = None, 
-    solution_dict: Literal[True] = ...
+    *,
+    solution_dict: Literal[True]
 ) -> list[dict[Expression[SymbolicRing], Expression[SymbolicRing]]]: ...
 @overload
 def solve_diophantine(
@@ -10076,8 +10097,12 @@ class SymbolicSeries[P: SymbolicRingABC](Expression[P]):
         """
     type _ZZZero = Annotated[Integer, Integer(0)]
     @overload
-    def coefficients( # pyright: ignore[reportOverlappingOverload]
-        self, x: CoercibleToExpression | None = None, sparse: Literal[False] = ...
+    def coefficients(
+        self, x: CoercibleToExpression | None, sparse: Literal[False]
+    ) -> list[Expression[P] | _ZZZero]: ...
+    @overload
+    def coefficients(
+        self, x: CoercibleToExpression | None = None, *, sparse: Literal[False]
     ) -> list[Expression[P] | _ZZZero]: ...
     @overload
     def coefficients( # pyright: ignore[reportIncompatibleMethodOverride]

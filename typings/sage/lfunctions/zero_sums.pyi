@@ -117,7 +117,7 @@ class LFunctionZeroSum_abstract(SageObject):
         """
         ...
     @overload
-    def cnlist(self, n: Int, python_floats: Literal[True] = True) -> list[float]: ... # pyright: ignore[reportOverlappingOverload]
+    def cnlist(self, n: Int, python_floats: Literal[True]) -> list[float]: ...
     @overload
     def cnlist(self, n: Int, python_floats: Literal[False] = False) -> list[RealDoubleElement]:
         r"""
