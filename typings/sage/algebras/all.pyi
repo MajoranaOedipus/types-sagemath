@@ -32,4 +32,6 @@ from sage.algebras.tensor_algebra import TensorAlgebra as TensorAlgebra
 from sage.algebras.q_system import QSystem as QSystem
 from sage.algebras.cluster_algebra import ClusterAlgebra as ClusterAlgebra
 from sage.algebras.yangian import Yangian as Yangian
+import sage.algebras.catalog
+algebras = sage.algebras.catalog
 

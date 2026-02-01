@@ -1,34 +1,97 @@
-import os
-import operator
-import math
-import sys
+"""
+all.py -- much of sage is imported into this module, so you don't
+          have to import everything individually.
 
-from cysignals.signals import (AlarmInterrupt, SignalError,
-                               sig_on_reset as sig_on_count)
+TESTS:
 
+This is to test :issue:`10570`. If the number of stackframes at startup
+changes due to a patch you made, please check that this was an
+intended effect of your patch.
+
+::
+
+    sage: import gc
+    sage: import inspect
+    sage: from sage import *
+    sage: frames = [x for x in gc.get_objects() if inspect.isframe(x)]
+
+We exclude the dependencies and check to see that there are no others
+except for the known bad apples::
+
+    sage: allowed = [
+    ....:     'IPython', 'prompt_toolkit', 'jedi',     # sage dependencies
+    ....:     'threading', 'multiprocessing',  # doctest dependencies
+    ....:     'pytz', 'importlib.resources',   # doctest dependencies
+    ....:     '__main__', 'sage.doctest',      # doctesting
+    ....:     'signal', 'enum', 'types'        # may appear in Python 3
+    ....: ]
+    sage: def is_not_allowed(frame):
+    ....:     module = inspect.getmodule(frame)
+    ....:     if module is None: return False
+    ....:     return not any(module.__name__.startswith(name)
+    ....:                    for name in allowed)
+    sage: [inspect.getmodule(f).__name__ for f in frames if is_not_allowed(f)]
+    []
+
+Check lazy import of ``interacts``::
+
+    sage: type(interacts)
+    <class 'sage.misc.lazy_import.LazyImport'>
+    sage: interacts
+    <module 'sage.interacts.all' from '...'>
+
+Check that :issue:`34506` is resolved::
+
+    sage: x = int('1'*4301)
+"""
+
+from typing import Literal
+import os as os
+import operator as operator
+import math as math
+import sys as sys
+import warnings as warnings
+import sage as sage
+
+deprecationWarning: tuple[str, None, type[DeprecationWarning], None, Literal[0]]
+
+from cysignals.signals import (
+    AlarmInterrupt as AlarmInterrupt, 
+    SignalError as SignalError,
+    sig_on_reset)
+sig_on_count = sig_on_reset
 from time import sleep as sleep
 from sage.structure.all import *
-from sage.arith.power import generic_power as power
+from sage.arith.power import generic_power
+power = generic_power
 
 from sage.cpython.all import *
 
-from copy import copy, deepcopy
+from copy import (
+    copy as copy, 
+    deepcopy as deepcopy
+)
 
-from sage.env import SAGE_ROOT, SAGE_SRC, SAGE_DOC_SRC, SAGE_LOCAL, DOT_SAGE, SAGE_ENV
+from sage.env import (
+    SAGE_ROOT as SAGE_ROOT,
+    SAGE_SRC as SAGE_SRC,
+    SAGE_DOC_SRC as SAGE_DOC_SRC,
+    SAGE_LOCAL as SAGE_LOCAL,
+    DOT_SAGE as DOT_SAGE,
+    SAGE_ENV as SAGE_ENV,
+)
 
 from sage.misc.all import *
 
 from sage.doctest.all import *
 from sage.repl.all import *
 
-from functools import reduce
-
-import sage.misc.lazy_import
+from functools import reduce as reduce
 
 from sage.misc.all import *
 from sage.typeset.all import *
 
-from sage.misc.sh import sh
+from sage.misc.sh import sh as sh
 
 from sage.libs.all import *
 from sage.data_structures.all import *
@@ -59,7 +122,8 @@ from sage.calculus.all import *
 from sage.cpython.all import *
 
 from sage.crypto.all import *
-import sage.crypto.mq as mq
+import sage.crypto.mq as _mq
+mq = _mq
 
 from sage.plot.all import *
 from sage.plot.plot3d.all import *
@@ -88,7 +152,8 @@ from sage.logic.all import *
 from sage.numerical.all import *
 
 from sage.stats.all import *
-import sage.stats.all as stats
+import sage.stats.all as _stats
+stats = _stats
 
 from sage.parallel.all import *
 
@@ -108,9 +173,10 @@ from sage.knots.all import *
 from sage.manifolds.all import *
 
 if sys.platform != 'win32':
-    from cysignals.alarm import alarm, cancel_alarm
+    from cysignals.alarm import alarm as alarm, cancel_alarm as cancel_alarm
 
-from sage.interacts import all as interacts
+from sage.interacts import all as _interacts
+interacts = _interacts
 
 CC = ComplexField()
 QQ = RationalField()
@@ -120,14 +186,14 @@ ZZ = IntegerRing()
 true = True
 false = False
 oo = infinity
-from sage.rings.imaginary_unit import I
+from sage.rings.imaginary_unit import I as I
 i = I
 
-from sage.misc.copying import license
+from sage.misc.copying import license as license
 copying = license
 copyright = license
 
-from sage.misc.persist import register_unpickle_override
+from sage.misc.persist import register_unpickle_override as register_unpickle_override
 
 def sage_globals():
     r"""
@@ -144,4 +210,3 @@ def sage_globals():
         sage: 'TheWholeUniverse' in sage_globals()
         False
     """
-

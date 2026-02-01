@@ -14,6 +14,8 @@ from sage.symbolic.function_factory import function_factory as function_factory
 from sage.symbolic.integration.integral import definite_integral as definite_integral, indefinite_integral as indefinite_integral
 from sage.symbolic.ring import SR as SR, var as var
 from sage.symbolic.symbols import symbol_table as symbol_table
+import sage.interfaces.maxima_lib
+maxima = sage.interfaces.maxima_lib
 
 def symbolic_sum(expression, v, a, b, algorithm: str = 'maxima', hold: bool = False):
     """

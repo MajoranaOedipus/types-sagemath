@@ -11,7 +11,8 @@ from sage.structure.element import (
 )
 from sage.structure.parent import Parent as Parent
 from sage.structure.parent_gens import localvars as localvars
-from sage.structure.proof import all as proof
+from sage.structure.proof import all as _proof
+proof = _proof
 from sage.structure.mutability import Mutability as Mutability
 from sage.structure.element_wrapper import ElementWrapper as ElementWrapper
 from sage.structure.formal_sum import (

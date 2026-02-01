@@ -1,3 +1,8 @@
+from sage.misc.lazy_attribute import (
+    lazy_attribute as lazy_attribute,
+    lazy_class_attribute as lazy_class_attribute,
+)
+from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.verbose import (
     set_verbose as set_verbose,
     set_verbose_files as set_verbose_files,
@@ -92,7 +97,8 @@ from sage.misc.sagedoc import (
     constructions as constructions,
     help as help,
 )
-from pydoc import help as python_help
+from pydoc import help as _python_help
+python_help = _python_help
 from sage.misc.classgraph import class_graph as class_graph
 from sage.misc.reset import reset as reset, restore as restore
 
@@ -104,7 +110,8 @@ from sage.misc.defaults import (
     set_series_precision as set_series_precision,
 )
 from sage.misc.cython import cython_lambda as cython_lambda
-from sage.misc.cython import cython_compile as cython
+from sage.misc.cython import cython_compile
+cython = cython_compile
 from sage.misc.func_persist import func_persist as func_persist
 from sage.misc.functional import (
     additive_order as additive_order,
@@ -139,7 +146,7 @@ from sage.misc.functional import (
     kernel as kernel,
     krull_dimension as krull_dimension,
     lift as lift,
-    log as log_b,
+    log as log,
     minimal_polynomial as minimal_polynomial,
     minpoly as minpoly,
     multiplicative_order as multiplicative_order,
@@ -160,10 +167,13 @@ from sage.misc.functional import (
     isqrt as isqrt,
     squarefree_part as squarefree_part,
     sqrt as sqrt,
-    symbolic_sum as sum,
-    symbolic_prod as product,
+    symbolic_sum,
+    symbolic_prod,
     transpose as transpose,
 )
+log_b = log
+sum = symbolic_sum
+product = symbolic_prod
 from sage.misc.latex import (
     LatexExpr as LatexExpr, latex as latex, view as view
 )

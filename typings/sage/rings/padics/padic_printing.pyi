@@ -1,4 +1,15 @@
-import _cython_3_2_1
+"""
+`p`-adic Printing
+
+This file contains code for printing `p`-adic elements.
+
+It has been moved here to prevent code duplication and make finding
+the relevant code easier.
+
+AUTHORS:
+
+- David Roe
+"""
 import sage.structure.sage_object
 from sage.misc.latex import latex_variable_name as latex_variable_name
 from sage.rings.padics.misc import trim_zeros as trim_zeros
@@ -6,7 +17,26 @@ from sage.structure.element import have_same_parent as have_same_parent, parent 
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 from typing import Any, ClassVar, overload
 
-pAdicPrinter: _cython_3_2_1.cython_function_or_method
+def pAdicPrinter(ring, options={}):
+    """
+    Create a :class:`pAdicPrinter`.
+
+    INPUT:
+
+    - ``ring`` -- a `p`-adic ring or field
+
+    - ``options`` -- dictionary, with keys in ``'mode'``, ``'pos'``,
+      ``'ram_name'``, ``'unram_name'``, ``'var_name'``, ``'max_ram_terms'``,
+      ``'max_unram_terms'``, ``'max_terse_terms'``, ``'sep'``, ``'alphabet'``; see
+      :class:`pAdicPrinter_class` for the meanings of these keywords.
+
+    EXAMPLES::
+
+        sage: from sage.rings.padics.padic_printing import pAdicPrinter
+        sage: R = Zp(5)
+        sage: pAdicPrinter(R, {'sep': '&'})
+        series printer for 5-adic Ring with capped relative precision 20
+    """
 
 class pAdicPrinterDefaults(sage.structure.sage_object.SageObject):
     """File: /build/sagemath/src/sage/src/sage/rings/padics/padic_printing.pyx (starting at line 75)
@@ -386,6 +416,8 @@ class pAdicPrinterDefaults(sage.structure.sage_object.SageObject):
 
             sage: padic_printing.sep('|')
             sage: padic_printing.mode('series')"""
+
+_printer_defaults: pAdicPrinterDefaults = pAdicPrinterDefaults()
 
 class pAdicPrinter_class(sage.structure.sage_object.SageObject):
     """pAdicPrinter_class(ring, mode, pos, ram_name, unram_name, var_name, max_ram_terms, max_unram_terms, max_terse_terms, sep, alphabet, show_prec)

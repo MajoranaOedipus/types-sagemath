@@ -1,2 +1,4 @@
+from sage.modular.overconvergent.weightspace import WeightSpace_constructor
+pAdicWeightSpace = WeightSpace_constructor
 from sage.modular.overconvergent.genus0 import OverconvergentModularForms as OverconvergentModularForms
 from sage.modular.overconvergent.hecke_series import hecke_series as hecke_series

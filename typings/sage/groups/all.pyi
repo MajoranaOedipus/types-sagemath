@@ -25,7 +25,8 @@ from sage.groups.affine_gps.euclidean_group import EuclideanGroup as EuclideanGr
 from sage.groups.artin import ArtinGroup as ArtinGroup
 from sage.groups.raag import RightAngledArtinGroup as RightAngledArtinGroup
 
-from sage.groups import groups_catalog as groups
+from sage.groups import groups_catalog
+groups = groups_catalog
 
 from sage.groups.semimonomial_transformations.semimonomial_transformation_group import SemimonomialTransformationGroup as SemimonomialTransformationGroup
 

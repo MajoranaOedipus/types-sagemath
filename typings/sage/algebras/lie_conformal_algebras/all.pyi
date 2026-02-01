@@ -1,3 +1,4 @@
 
 from sage.algebras.lie_conformal_algebras.lie_conformal_algebra import LieConformalAlgebra as LieConformalAlgebra
-from sage.algebras.lie_conformal_algebras import examples as lie_conformal_algebras
+from sage.algebras.lie_conformal_algebras import examples
+lie_conformal_algebras = examples

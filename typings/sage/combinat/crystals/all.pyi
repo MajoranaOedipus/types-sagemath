@@ -22,4 +22,5 @@ See also
 - :ref:`sage.combinat.root_system.all`
 """
 
-from sage.combinat.crystals import catalog as crystals
+from sage.combinat.crystals import catalog
+crystals = catalog

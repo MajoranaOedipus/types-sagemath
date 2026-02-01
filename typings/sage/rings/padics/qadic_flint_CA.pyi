@@ -119,7 +119,7 @@ class CAElement(pAdicTemplateElement):
             Traceback (most recent call last):
             ...
             PrecisionError: not enough precision to determine if element is zero"""
-    @overload
+
     def polynomial(self, var=...) -> Any:
         """CAElement.polynomial(self, var='x')
 
@@ -165,53 +165,7 @@ class CAElement(pAdicTemplateElement):
             (1 + O(5^20))*y + O(5^20)
             sage: (5*a^2 + R(25, 4)).polynomial()
             (5 + O(5^4))*x^2 + O(5^4)*x + 5^2 + O(5^4)"""
-    @overload
-    def polynomial(self, var=...) -> Any:
-        """CAElement.polynomial(self, var='x')
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 943)
-
-        Return a polynomial over the base ring that yields this element
-        when evaluated at the generator of the parent.
-
-        INPUT:
-
-        - ``var`` -- string; the variable name for the polynomial
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.flint
-            sage: R.<a> = ZqCA(5^3)
-            sage: a.polynomial()
-            (1 + O(5^20))*x + O(5^20)
-            sage: a.polynomial(var='y')
-            (1 + O(5^20))*y + O(5^20)
-            sage: (5*a^2 + R(25, 4)).polynomial()
-            (5 + O(5^4))*x^2 + O(5^4)*x + 5^2 + O(5^4)"""
-    @overload
-    def polynomial(self) -> Any:
-        """CAElement.polynomial(self, var='x')
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 943)
-
-        Return a polynomial over the base ring that yields this element
-        when evaluated at the generator of the parent.
-
-        INPUT:
-
-        - ``var`` -- string; the variable name for the polynomial
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.flint
-            sage: R.<a> = ZqCA(5^3)
-            sage: a.polynomial()
-            (1 + O(5^20))*x + O(5^20)
-            sage: a.polynomial(var='y')
-            (1 + O(5^20))*y + O(5^20)
-            sage: (5*a^2 + R(25, 4)).polynomial()
-            (5 + O(5^4))*x^2 + O(5^4)*x + 5^2 + O(5^4)"""
-    @overload
     def precision_absolute(self) -> Any:
         """CAElement.precision_absolute(self)
 
@@ -226,37 +180,7 @@ class CAElement(pAdicTemplateElement):
 
             sage: R = Zp(7,4,'capped-abs'); a = R(7); a.precision_absolute()
             4"""
-    @overload
-    def precision_absolute(self) -> Any:
-        """CAElement.precision_absolute(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 967)
-
-        The absolute precision of this element.
-
-        This is the power of the maximal ideal modulo which this
-        element is defined.
-
-        EXAMPLES::
-
-            sage: R = Zp(7,4,'capped-abs'); a = R(7); a.precision_absolute()
-            4"""
-    @overload
-    def precision_relative(self) -> Any:
-        """CAElement.precision_relative(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 983)
-
-        The relative precision of this element.
-
-        This is the power of the maximal ideal modulo which the unit
-        part of this element is defined.
-
-        EXAMPLES::
-
-            sage: R = Zp(7,4,'capped-abs'); a = R(7); a.precision_relative()
-            3"""
-    @overload
     def precision_relative(self) -> Any:
         """CAElement.precision_relative(self)
 
@@ -289,7 +213,7 @@ class CAElement(pAdicTemplateElement):
             <class 'sage.rings.padics.padic_capped_absolute_element.pAdicCappedAbsoluteElement'>
             sage: R(0).unit_part()
             O(17^0)"""
-    @overload
+
     def unit_part(self) -> Any:
         """CAElement.unit_part(self) -> pAdicTemplateElement
 
@@ -307,63 +231,7 @@ class CAElement(pAdicTemplateElement):
             <class 'sage.rings.padics.padic_capped_absolute_element.pAdicCappedAbsoluteElement'>
             sage: R(0).unit_part()
             O(17^0)"""
-    @overload
-    def unit_part(self) -> Any:
-        """CAElement.unit_part(self) -> pAdicTemplateElement
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 999)
-
-        Return the unit part of this element.
-
-        EXAMPLES::
-
-            sage: R = Zp(17,4,'capped-abs', 'val-unit')
-            sage: a = R(18*17)
-            sage: a.unit_part()
-            18 + O(17^3)
-            sage: type(a)
-            <class 'sage.rings.padics.padic_capped_absolute_element.pAdicCappedAbsoluteElement'>
-            sage: R(0).unit_part()
-            O(17^0)"""
-    @overload
-    def val_unit(self) -> Any:
-        """CAElement.val_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1047)
-
-        Return a 2-tuple, the first element set to the valuation of this
-        element, and the second to the unit part of this element.
-
-        For a zero element, the unit part is ``O(p^0)``.
-
-        EXAMPLES::
-
-            sage: R = ZpCA(5)
-            sage: a = R(75, 6); b = a - a
-            sage: a.val_unit()
-            (2, 3 + O(5^4))
-            sage: b.val_unit()
-            (6, O(5^0))"""
-    @overload
-    def val_unit(self) -> Any:
-        """CAElement.val_unit(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1047)
-
-        Return a 2-tuple, the first element set to the valuation of this
-        element, and the second to the unit part of this element.
-
-        For a zero element, the unit part is ``O(p^0)``.
-
-        EXAMPLES::
-
-            sage: R = ZpCA(5)
-            sage: a = R(75, 6); b = a - a
-            sage: a.val_unit()
-            (2, 3 + O(5^4))
-            sage: b.val_unit()
-            (6, O(5^0))"""
-    @overload
     def val_unit(self) -> Any:
         """CAElement.val_unit(self)
 
@@ -744,7 +612,7 @@ class pAdicCoercion_CA_frac_field(sage.rings.morphism.RingHomomorphism):
                     sage: f = K.coerce_map_from(R); type(f)
                     <class 'sage.rings.padics.qadic_flint_CA.pAdicCoercion_CA_frac_field'>
         """
-    @overload
+
     def is_injective(self) -> Any:
         """pAdicCoercion_CA_frac_field.is_injective(self)
 
@@ -760,23 +628,7 @@ class pAdicCoercion_CA_frac_field(sage.rings.morphism.RingHomomorphism):
             sage: f = K.coerce_map_from(R)
             sage: f.is_injective()
             True"""
-    @overload
-    def is_injective(self) -> Any:
-        """pAdicCoercion_CA_frac_field.is_injective(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1607)
-
-        Return whether this map is injective.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.flint
-            sage: R.<a> = ZqCA(9, implementation='FLINT')
-            sage: K = R.fraction_field()
-            sage: f = K.coerce_map_from(R)
-            sage: f.is_injective()
-            True"""
-    @overload
     def is_surjective(self) -> Any:
         """pAdicCoercion_CA_frac_field.is_surjective(self)
 
@@ -792,44 +644,7 @@ class pAdicCoercion_CA_frac_field(sage.rings.morphism.RingHomomorphism):
             sage: f = K.coerce_map_from(R)
             sage: f.is_surjective()
             False"""
-    @overload
-    def is_surjective(self) -> Any:
-        """pAdicCoercion_CA_frac_field.is_surjective(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1622)
-
-        Return whether this map is surjective.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.flint
-            sage: R.<a> = ZqCA(9, implementation='FLINT')
-            sage: K = R.fraction_field()
-            sage: f = K.coerce_map_from(R)
-            sage: f.is_surjective()
-            False"""
-    @overload
-    def section(self) -> Any:
-        """pAdicCoercion_CA_frac_field.section(self)
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1526)
-
-        Return a map back to the ring that converts elements of
-        nonnegative valuation.
-
-        EXAMPLES::
-
-            sage: # needs sage.libs.flint
-            sage: R.<a> = ZqCA(27, implementation='FLINT')
-            sage: K = R.fraction_field()
-            sage: f = K.coerce_map_from(R)
-            sage: f(K.gen())
-            a + O(3^20)
-            sage: f.section()
-            Generic morphism:
-              From: 3-adic Unramified Extension Field in a defined by x^3 + 2*x + 1
-              To:   3-adic Unramified Extension Ring in a defined by x^3 + 2*x + 1"""
-    @overload
     def section(self) -> Any:
         """pAdicCoercion_CA_frac_field.section(self)
 
@@ -880,21 +695,7 @@ class pAdicCoercion_ZZ_CA(sage.rings.morphism.RingHomomorphism):
                     sage: f = ZpCA(5).coerce_map_from(ZZ); type(f)
                     <class 'sage.rings.padics.padic_capped_absolute_element.pAdicCoercion_ZZ_CA'>
         """
-    @overload
-    def section(self) -> Any:
-        """pAdicCoercion_ZZ_CA.section(self)
 
-        File: /build/sagemath/src/sage/src/sage/rings/padics/CA_template.pxi (starting at line 1219)
-
-        Return a map back to the ring of integers that approximates an element
-        by an integer.
-
-        EXAMPLES::
-
-            sage: f = ZpCA(5).coerce_map_from(ZZ).section()
-            sage: f(ZpCA(5)(-1)) - 5^20
-            -1"""
-    @overload
     def section(self) -> Any:
         """pAdicCoercion_ZZ_CA.section(self)
 
@@ -1316,53 +1117,6 @@ class pAdicTemplateElement(sage.rings.padics.padic_generic_element.pAdicGenericE
             5
             sage: a.lift_to_precision(10000)
             5"""
-    @overload
-    def lift_to_precision(self) -> Any:
-        """pAdicTemplateElement.lift_to_precision(self, absprec=None)
-
-        File: /build/sagemath/src/sage/src/sage/rings/padics/padic_template_element.pxi (starting at line 347)
-
-        Return another element of the same parent with absolute precision at
-        least ``absprec``, congruent to this `p`-adic element modulo the
-        precision of this element.
-
-        INPUT:
-
-        - ``absprec`` -- integer or ``None`` (default: ``None``); the
-          absolute precision of the result. If ``None``, lifts to the maximum
-          precision allowed.
-
-        .. NOTE::
-
-            If setting ``absprec`` that high would violate the precision cap,
-            raises a precision error.  Note that the new digits will not
-            necessarily be zero.
-
-        EXAMPLES::
-
-            sage: R = ZpCA(17)
-            sage: R(-1,2).lift_to_precision(10)
-            16 + 16*17 + O(17^10)
-            sage: R(1,15).lift_to_precision(10)
-            1 + O(17^15)
-            sage: R(1,15).lift_to_precision(30)
-            Traceback (most recent call last):
-            ...
-            PrecisionError: precision higher than allowed by the precision cap
-            sage: R(-1,2).lift_to_precision().precision_absolute() == R.precision_cap()
-            True
-
-            sage: R = Zp(5); c = R(17,3); c.lift_to_precision(8)
-            2 + 3*5 + O(5^8)
-            sage: c.lift_to_precision().precision_relative() == R.precision_cap()
-            True
-
-        Fixed modulus elements don't raise errors::
-
-            sage: R = ZpFM(5); a = R(5); a.lift_to_precision(7)
-            5
-            sage: a.lift_to_precision(10000)
-            5"""
     def residue(self, absprec=..., field=..., check_prec=...) -> Any:
         """pAdicTemplateElement.residue(self, absprec=1, field=None, check_prec=True)
 
@@ -1589,123 +1343,7 @@ class qAdicCappedAbsoluteElement(CAElement):
     @classmethod
     def __init__(cls, *args, **kwargs) -> None:
         """Create and return a new object.  See help(type) for accurate signature."""
-    @overload
-    def frobenius(self) -> Any:
-        """frobenius_unram(self, arithmetic=True)
 
-        File: /build/sagemath/src/sage/src/sage/libs/linkages/padics/unram_shared.pxi (starting at line 4)
-
-        Return the image of this element under the Frobenius automorphism
-        applied to its parent.
-
-        INPUT:
-
-        - ``self`` -- an element of an unramified extension
-        - ``arithmetic`` -- whether to apply the arithmetic Frobenius (acting
-          by raising to the `p`-th power on the residue field). If ``False`` is
-          provided, the image of geometric Frobenius (raising to the `(1/p)`-th
-          power on the residue field) will be returned instead.
-
-        EXAMPLES::
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius()
-            (a^3 + a^2 + 3*a) + (3*a + 1)*5 + (2*a^3 + 2*a^2 + 2*a)*5^2 + O(5^3)
-            sage: f = R.defining_polynomial()
-            sage: f(a)
-            O(5^3)
-            sage: f(a.frobenius())
-            O(5^3)
-            sage: for i in range(4): a = a.frobenius()
-            sage: a
-            a + O(5^3)
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius(arithmetic=False)
-            (3*a^3 + 3*a^2 + a) + (a^3 + 4*a^2 + a + 4)*5 + (3*a^2 + 2*a + 3)*5^2 + O(5^3)
-
-            sage: K.<a> = Qq(7^3,4)
-            sage: b = (a+1)/7
-            sage: c = b.frobenius(); c
-            (3*a^2 + 5*a + 1)*7^-1 + (6*a^2 + 6*a + 6) + (4*a^2 + 3*a + 4)*7 + (6*a^2 + a + 6)*7^2 + O(7^3)
-            sage: c.frobenius().frobenius()
-            (a + 1)*7^-1 + O(7^3)
-
-        An error will be raised if the parent of ``self`` is a ramified extension::
-
-            sage: x = polygen(ZZ, 'x')
-            sage: K.<a> = Qp(5).extension(x^2 - 5)
-            sage: a.frobenius()
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: Frobenius automorphism only implemented for unramified extensions
-
-        TESTS:
-
-        We check that :issue:`23575` is resolved::
-
-            sage: x = R.random_element()
-            sage: x.frobenius(arithmetic=false).frobenius() == x
-            True"""
-    @overload
-    def frobenius(self) -> Any:
-        """frobenius_unram(self, arithmetic=True)
-
-        File: /build/sagemath/src/sage/src/sage/libs/linkages/padics/unram_shared.pxi (starting at line 4)
-
-        Return the image of this element under the Frobenius automorphism
-        applied to its parent.
-
-        INPUT:
-
-        - ``self`` -- an element of an unramified extension
-        - ``arithmetic`` -- whether to apply the arithmetic Frobenius (acting
-          by raising to the `p`-th power on the residue field). If ``False`` is
-          provided, the image of geometric Frobenius (raising to the `(1/p)`-th
-          power on the residue field) will be returned instead.
-
-        EXAMPLES::
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius()
-            (a^3 + a^2 + 3*a) + (3*a + 1)*5 + (2*a^3 + 2*a^2 + 2*a)*5^2 + O(5^3)
-            sage: f = R.defining_polynomial()
-            sage: f(a)
-            O(5^3)
-            sage: f(a.frobenius())
-            O(5^3)
-            sage: for i in range(4): a = a.frobenius()
-            sage: a
-            a + O(5^3)
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius(arithmetic=False)
-            (3*a^3 + 3*a^2 + a) + (a^3 + 4*a^2 + a + 4)*5 + (3*a^2 + 2*a + 3)*5^2 + O(5^3)
-
-            sage: K.<a> = Qq(7^3,4)
-            sage: b = (a+1)/7
-            sage: c = b.frobenius(); c
-            (3*a^2 + 5*a + 1)*7^-1 + (6*a^2 + 6*a + 6) + (4*a^2 + 3*a + 4)*7 + (6*a^2 + a + 6)*7^2 + O(7^3)
-            sage: c.frobenius().frobenius()
-            (a + 1)*7^-1 + O(7^3)
-
-        An error will be raised if the parent of ``self`` is a ramified extension::
-
-            sage: x = polygen(ZZ, 'x')
-            sage: K.<a> = Qp(5).extension(x^2 - 5)
-            sage: a.frobenius()
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: Frobenius automorphism only implemented for unramified extensions
-
-        TESTS:
-
-        We check that :issue:`23575` is resolved::
-
-            sage: x = R.random_element()
-            sage: x.frobenius(arithmetic=false).frobenius() == x
-            True"""
-    @overload
     def frobenius(self) -> Any:
         """frobenius_unram(self, arithmetic=True)
 
@@ -1821,123 +1459,7 @@ class qAdicCappedAbsoluteElement(CAElement):
             sage: x = R.random_element()
             sage: x.frobenius(arithmetic=false).frobenius() == x
             True"""
-    @overload
-    def frobenius(self) -> Any:
-        """frobenius_unram(self, arithmetic=True)
 
-        File: /build/sagemath/src/sage/src/sage/libs/linkages/padics/unram_shared.pxi (starting at line 4)
-
-        Return the image of this element under the Frobenius automorphism
-        applied to its parent.
-
-        INPUT:
-
-        - ``self`` -- an element of an unramified extension
-        - ``arithmetic`` -- whether to apply the arithmetic Frobenius (acting
-          by raising to the `p`-th power on the residue field). If ``False`` is
-          provided, the image of geometric Frobenius (raising to the `(1/p)`-th
-          power on the residue field) will be returned instead.
-
-        EXAMPLES::
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius()
-            (a^3 + a^2 + 3*a) + (3*a + 1)*5 + (2*a^3 + 2*a^2 + 2*a)*5^2 + O(5^3)
-            sage: f = R.defining_polynomial()
-            sage: f(a)
-            O(5^3)
-            sage: f(a.frobenius())
-            O(5^3)
-            sage: for i in range(4): a = a.frobenius()
-            sage: a
-            a + O(5^3)
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius(arithmetic=False)
-            (3*a^3 + 3*a^2 + a) + (a^3 + 4*a^2 + a + 4)*5 + (3*a^2 + 2*a + 3)*5^2 + O(5^3)
-
-            sage: K.<a> = Qq(7^3,4)
-            sage: b = (a+1)/7
-            sage: c = b.frobenius(); c
-            (3*a^2 + 5*a + 1)*7^-1 + (6*a^2 + 6*a + 6) + (4*a^2 + 3*a + 4)*7 + (6*a^2 + a + 6)*7^2 + O(7^3)
-            sage: c.frobenius().frobenius()
-            (a + 1)*7^-1 + O(7^3)
-
-        An error will be raised if the parent of ``self`` is a ramified extension::
-
-            sage: x = polygen(ZZ, 'x')
-            sage: K.<a> = Qp(5).extension(x^2 - 5)
-            sage: a.frobenius()
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: Frobenius automorphism only implemented for unramified extensions
-
-        TESTS:
-
-        We check that :issue:`23575` is resolved::
-
-            sage: x = R.random_element()
-            sage: x.frobenius(arithmetic=false).frobenius() == x
-            True"""
-    @overload
-    def frobenius(self) -> Any:
-        """frobenius_unram(self, arithmetic=True)
-
-        File: /build/sagemath/src/sage/src/sage/libs/linkages/padics/unram_shared.pxi (starting at line 4)
-
-        Return the image of this element under the Frobenius automorphism
-        applied to its parent.
-
-        INPUT:
-
-        - ``self`` -- an element of an unramified extension
-        - ``arithmetic`` -- whether to apply the arithmetic Frobenius (acting
-          by raising to the `p`-th power on the residue field). If ``False`` is
-          provided, the image of geometric Frobenius (raising to the `(1/p)`-th
-          power on the residue field) will be returned instead.
-
-        EXAMPLES::
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius()
-            (a^3 + a^2 + 3*a) + (3*a + 1)*5 + (2*a^3 + 2*a^2 + 2*a)*5^2 + O(5^3)
-            sage: f = R.defining_polynomial()
-            sage: f(a)
-            O(5^3)
-            sage: f(a.frobenius())
-            O(5^3)
-            sage: for i in range(4): a = a.frobenius()
-            sage: a
-            a + O(5^3)
-
-            sage: R.<a> = Zq(5^4,3)
-            sage: a.frobenius(arithmetic=False)
-            (3*a^3 + 3*a^2 + a) + (a^3 + 4*a^2 + a + 4)*5 + (3*a^2 + 2*a + 3)*5^2 + O(5^3)
-
-            sage: K.<a> = Qq(7^3,4)
-            sage: b = (a+1)/7
-            sage: c = b.frobenius(); c
-            (3*a^2 + 5*a + 1)*7^-1 + (6*a^2 + 6*a + 6) + (4*a^2 + 3*a + 4)*7 + (6*a^2 + a + 6)*7^2 + O(7^3)
-            sage: c.frobenius().frobenius()
-            (a + 1)*7^-1 + O(7^3)
-
-        An error will be raised if the parent of ``self`` is a ramified extension::
-
-            sage: x = polygen(ZZ, 'x')
-            sage: K.<a> = Qp(5).extension(x^2 - 5)
-            sage: a.frobenius()
-            Traceback (most recent call last):
-            ...
-            NotImplementedError: Frobenius automorphism only implemented for unramified extensions
-
-        TESTS:
-
-        We check that :issue:`23575` is resolved::
-
-            sage: x = R.random_element()
-            sage: x.frobenius(arithmetic=false).frobenius() == x
-            True"""
-    @overload
     def frobenius(self) -> Any:
         """frobenius_unram(self, arithmetic=True)
 

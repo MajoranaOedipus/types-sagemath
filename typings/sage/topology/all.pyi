@@ -3,6 +3,8 @@ from sage.topology.delta_complex import DeltaComplex as DeltaComplex, delta_comp
 from sage.topology.simplicial_complex import Simplex as Simplex, SimplicialComplex as SimplicialComplex
 from sage.topology.simplicial_complex_morphism import SimplicialComplexMorphism as SimplicialComplexMorphism
 from sage.topology.filtered_simplicial_complex import FilteredSimplicialComplex as FilteredSimplicialComplex
-from sage.topology import simplicial_complex_catalog as simplicial_complexes
-from sage.topology import simplicial_set_catalog as simplicial_sets
+from sage.topology import simplicial_complex_catalog
+simplicial_complexes = simplicial_complex_catalog
+from sage.topology import simplicial_set_catalog
+simplicial_sets = simplicial_set_catalog
 from sage.topology.moment_angle_complex import MomentAngleComplex as MomentAngleComplex

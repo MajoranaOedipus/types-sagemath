@@ -37,6 +37,8 @@ Utilities
 - :ref:`sage.combinat.combinatorial_map`
 - :ref:`sage.combinat.misc`
 """
+from sage.misc.namespace_package import install_dict as install_dict, install_doc as install_doc
+
 from sage.combinat.combinat import (
     CombinatorialObject as CombinatorialObject,
     bell_number as bell_number,
@@ -77,8 +79,10 @@ from sage.combinat.free_module import CombinatorialFreeModule as CombinatorialFr
 from sage.combinat.debruijn_sequence import DeBruijnSequences as DeBruijnSequences
 
 from sage.combinat.schubert_polynomial import SchubertPolynomialRing as SchubertPolynomialRing
-from sage.combinat.key_polynomial import KeyPolynomialBasis as KeyPolynomials
-from sage.combinat.key_polynomial import AtomPolynomialBasis as AtomPolynomials
+from sage.combinat.key_polynomial import KeyPolynomialBasis
+KeyPolynomials = KeyPolynomialBasis
+from sage.combinat.key_polynomial import AtomPolynomialBasis
+AtomPolynomials = AtomPolynomialBasis
 from sage.combinat.symmetric_group_algebra import (
     SymmetricGroupAlgebra as SymmetricGroupAlgebra,
     HeckeAlgebraSymmetricGroupT as HeckeAlgebraSymmetricGroupT,
@@ -431,7 +435,8 @@ from sage.combinat.constellation import (
 # Growth diagrams
 from sage.combinat.growth import GrowthDiagram as GrowthDiagram
 # Path Tableaux
-from sage.combinat.path_tableaux import catalog as path_tableaux
+from sage.combinat.path_tableaux import catalog as _path_tableaux_catalog
+path_tableaux = _path_tableaux_catalog
 
 # Bijectionist
 from sage.combinat.bijectionist import Bijectionist as Bijectionist

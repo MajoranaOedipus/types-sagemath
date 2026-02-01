@@ -3073,4 +3073,4 @@ class InvariantTheoryFactory:
             0
         """
 
-invariant_theory: Incomplete
+invariant_theory: InvariantTheoryFactory

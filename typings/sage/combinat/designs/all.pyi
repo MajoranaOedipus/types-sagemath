@@ -37,11 +37,14 @@ design catalog:
 """
 
 from sage.combinat.designs.incidence_structures import IncidenceStructure as IncidenceStructure
-from sage.combinat.designs.incidence_structures import IncidenceStructure as BlockDesign
-from sage.combinat.designs.incidence_structures import IncidenceStructure as Hypergraph
+BlockDesign = IncidenceStructure
+Hypergraph = IncidenceStructure
 
 from sage.combinat.designs.covering_design import (
     CoveringDesign as CoveringDesign,
     schonheim as schonheim,
     trivial_covering_design as trivial_covering_design
 )
+
+from sage.combinat.designs import design_catalog
+designs = design_catalog

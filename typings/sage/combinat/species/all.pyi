@@ -100,4 +100,5 @@ Miscellaneous
 """
 
 from sage.combinat.species.recursive_species import CombinatorialSpecies as CombinatorialSpecies
-from sage.combinat.species import library as species
+from sage.combinat.species import library
+species = library

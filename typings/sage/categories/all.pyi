@@ -66,6 +66,7 @@ from sage.categories.commutative_ring_ideals import CommutativeRingIdeals as Com
 from sage.categories.coxeter_groups import CoxeterGroups as CoxeterGroups
 from sage.categories.crystals import Crystals as Crystals
 from sage.categories.enumerated_sets import EnumeratedSets as EnumeratedSets
+from sage.categories.finite_coxeter_groups import FiniteCoxeterGroups as FiniteCoxeterGroups
 from sage.categories.finite_crystals import FiniteCrystals as FiniteCrystals
 from sage.categories.finite_dimensional_algebras_with_basis import FiniteDimensionalAlgebrasWithBasis as FiniteDimensionalAlgebrasWithBasis
 from sage.categories.finite_dimensional_bialgebras_with_basis import FiniteDimensionalBialgebrasWithBasis as FiniteDimensionalBialgebrasWithBasis

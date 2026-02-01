@@ -20,4 +20,5 @@ from sage.crypto.lfsr import (
     lfsr_connection_polynomial as lfsr_connection_polynomial
 )
 
-import sage.crypto.key_exchange.catalog as key_exchange
+import sage.crypto.key_exchange.catalog
+key_exchange = sage.crypto.key_exchange.catalog

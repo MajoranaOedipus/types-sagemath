@@ -21,4 +21,5 @@ from sage.dynamics.complex_dynamics.all import *
 from sage.dynamics.cellular_automata.all import *
 
 from sage.dynamics.finite_dynamical_system import DiscreteDynamicalSystem as DiscreteDynamicalSystem
-from sage.dynamics import finite_dynamical_system_catalog as finite_dynamical_systems
+from sage.dynamics import finite_dynamical_system_catalog
+finite_dynamical_systems = finite_dynamical_system_catalog

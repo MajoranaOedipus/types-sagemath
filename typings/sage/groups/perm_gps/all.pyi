@@ -14,7 +14,9 @@ from sage.groups.perm_gps.permgroup import (
 from sage.groups.perm_gps.permgroup_morphism import (
     PermutationGroupMorphism_id as PermutationGroupMorphism_id,
     PermutationGroupMorphism_im_gens as PermutationGroupMorphism_im_gens,
+    PermutationGroupMorphism as _PermutationGroupMorphism
 )
+PermutationGroupMap = _PermutationGroupMorphism
 from sage.groups.perm_gps.permgroup_named import (
     AlternatingGroup as AlternatingGroup,
     CyclicPermutationGroup as CyclicPermutationGroup,

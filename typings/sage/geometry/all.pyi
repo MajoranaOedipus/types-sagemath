@@ -3,7 +3,8 @@ from sage.geometry.hyperbolic_space.all import *
 from sage.geometry.polyhedral_complex import PolyhedralComplex as PolyhedralComplex
 
 from sage.geometry.cone import Cone as Cone, random_cone as random_cone
-from sage.geometry import cone_catalog as cones
+from sage.geometry import cone_catalog
+cones = cone_catalog
 from sage.geometry.fan import Fan as Fan, FaceFan as FaceFan, NormalFan as NormalFan, Fan2d as Fan2d
 from sage.geometry.fan_morphism import FanMorphism as FanMorphism
 from sage.geometry.lattice_polytope import LatticePolytope as LatticePolytope, NefPartition as NefPartition, ReflexivePolytope as ReflexivePolytope, ReflexivePolytopes as ReflexivePolytopes
