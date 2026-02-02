@@ -58,11 +58,18 @@ TESTS::
     0.125000000000...
 """
 from _typeshed import Incomplete
-from collections.abc import Generator, Sequence
+from types import FunctionType
+from typing import overload
+from typings_sagemath import ConvertibleToRealSet, CoercibleToExpression
+from collections.abc import Generator, Iterable
+
+type _NotUsed = object
+
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.rings.infinity import infinity as infinity, minus_infinity as minus_infinity
 from sage.sets.real_set import RealSet as RealSet
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
+from sage.symbolic.ring import SR as SR
 
 class PiecewiseFunction(BuiltinFunction):
     def __init__(self) -> None:
@@ -80,10 +87,16 @@ class PiecewiseFunction(BuiltinFunction):
             sage: f(-1/2)
             1/2*y^2
         """
-    type Domain = Incomplete
-    type Func = Incomplete
-    def __call__(self, function_piecesL: Sequence[tuple[Domain, Func]],  # pyright: ignore[reportIncompatibleMethodOverride]
-                 var = None, **kwds):
+    def __call__(# pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        function_pieces: Iterable[
+            tuple[ConvertibleToRealSet, CoercibleToExpression | FunctionType]],  
+        *, 
+        var: object | None = None, 
+        coerce: bool = True,
+        hold: bool = False,
+        dont_call_method_on_arg: bool = False,
+    ):
         """
         Piecewise functions.
 
@@ -160,7 +173,11 @@ class PiecewiseFunction(BuiltinFunction):
             ...
             NotImplementedError
         """
-    class EvaluationMethods:
+    class EvaluationMethods:    
+        # This is used to create a dynamic class via 
+        #   symbolic.expression.get_dynamic_class_for_function
+        # my idea is that define the dynamically created class here
+        # so that the name lookup works...
         def __pow__(self, parameters, variable, n):
             """
             Return the `n`-th power of the piecewise function by applying the
@@ -177,7 +194,7 @@ class PiecewiseFunction(BuiltinFunction):
                 sage: (f^2).integral(definite=True)
                 4/3
             """
-        def expression_at(self, parameters, variable, point):
+        def expression_at(self, parameters: _NotUsed, variable, point):
             """
             Return the expression defining the piecewise function at
             ``value``.

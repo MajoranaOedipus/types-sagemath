@@ -14,6 +14,7 @@ from sage.rings.semirings.non_negative_integer_semiring import NonNegativeIntege
 from sage.structure.factorization import Factorization
 from sage.structure.element import Matrix, RingElement
 from sage.symbolic.expression import Expression
+from sage.sets.real_set import InternalRealInterval, RealSet
 from numpy import (
     integer as NumPyInteger, 
     floating as NumPyFloating, 
@@ -58,3 +59,5 @@ type CoercibleToExpression = (
 type CoercibleToRealNumber = (
     Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | PlusInfinity | MinusInfinity
 )
+
+type ConvertibleToRealSet = RealSet | InternalRealInterval | tuple[Real, Real] | list[Real]
