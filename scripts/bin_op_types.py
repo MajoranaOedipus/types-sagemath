@@ -16,7 +16,7 @@ from collections.abc import Sequence, Callable, Mapping
 
 from sage.all import (
     ZZ, QQ, RR, CC, SR, Expression, Zmod, sqrt, colormaps, 
-    RIF, RDF, CIF, CDF, RBF, CBF
+    RIF, RDF, CIF, CDF, RBF, CBF, oo, unsigned_infinity, I
 )
 
 operator_names = {
@@ -51,16 +51,28 @@ from gmpy2 import mpz, mpc, mpfr
 from numpy import float32, float128, complex64, int32, uint16
 
 from itertools import product
-from fractions import Fraction
 
 objects = [
-    1, 1.2, 1+3j, Fraction(1, 2), # python objects
-    mpz(10), mpfr(3.2), mpc(1+3j),
+    0, 1, 2, -3, 
+    1.2, -3.0, 
+    1+3j, mpz(10), mpz(0), mpz(1), -mpz(3), mpfr(3.2), -mpfr(1.2), mpc(1+3j),
     float32(1.2), float128(1.3e2), complex64(1+2.j), int32(100), uint16(8),
-    ZZ(1), Zmod(7)(3), QQ((1, 2)),
-    3 * cast(Expression, SR.var("x")) + 1, ZZ["y"](3 + cast(Expression, SR.var("y"))), ZZ[sqrt(2)](2),
+    -float32(1.2), -float128(1.3e2), -int32(100), 
+    ZZ(1), ZZ(3), -ZZ(4), ZZ(0),
+    Zmod(7)(3), 
+    QQ((1, 2)), QQ((1, 1)), -QQ((3, 2)),
+    3 * cast(Expression, SR.var("x")) + 1, 
+    ZZ["y"](1), ZZ["y"](0), ZZ["y"](3 + cast(Expression, SR.var("y"))),
+    QQ["w"](1), QQ["w"](0), QQ["w"](cast(Expression, SR.var("w"))**3),
+    RR["z"](1), RR["z"](0), RR["z"](cast(Expression, SR.var("z"))**2), 
+    CC["u"](1), CC["u"](0), CC["u"](cast(Expression, SR.var("u")) + 4),
+    ZZ[sqrt(2)](1), ZZ[sqrt(2)](0), ZZ[sqrt(2)](2), ZZ[sqrt(2)].gens()[1]
+    ,
+    I,
     RR(10.5), RDF(17.3), RBF(19.2), RIF(1.9),
-    CC(4-5j), CDF(5+3j), CBF(7+6j), CIF(-3+2j)
+    -RR(10.5), -RDF(17.3), -RBF(19.2), -RIF(1.9),
+    CC(4-5j), CDF(5+3j), CBF(7+6j), CIF(-3+2j),
+    oo, -oo, unsigned_infinity,
 ]
 
 
@@ -74,12 +86,16 @@ def test_bin_op(
     with output[type(l), type(r), op.__name__] == type(op(l, r)) if no exceptions,
     else the value would the type of the value.
     """
+    if hasattr(op, "__name__"):
+        op_name = op.__name__
+    else:
+        op_name = str(op)
     try:
         result = type(op(l, r))
     except Exception as e:
         result = e
     return {
-        (type(l), type(r), op.__name__): {result}
+        (type(l), type(r), op_name): {result}
     }
 
 def test_bin_ops(
@@ -113,8 +129,11 @@ def test_bin_ops(
             result = type(bin_op(s, t))
         except Exception as e:
             result = type(e)
-        L, R, op_name = type(s), type(t), bin_op.__name__
-        
+        L, R= type(s), type(t)
+        if hasattr(bin_op, "__name__"):
+            op_name = bin_op.__name__
+        else:
+            op_name = str(bin_op)
         results[L, R, op_name].add(result)
     
     if show:
@@ -159,12 +178,23 @@ parser = ArgumentParser(description=f"Save results of binary operators of the fo
 
 parser.add_argument("output_file", help="the ODS file to write into.")
 
-def main():
-    args = parser.parse_args()
-
+def main(file, objects=objects, operators=operators, show=False):
     results = test_bin_ops(
-        objects, operators, show=False
+        objects, operators, show=show
     )
+
+    objects = list(OrderedDict((type(obj), obj) for obj in objects).values())
+
+    def op_symbol_and_name(op):
+        try:
+            op_name: str = op.__name__
+        except AttributeError:
+            op_name: str= str(op)
+        
+        if op_name in operator_names:
+            return operator_names[op_name], op_name
+        
+        return op_name, op_name
 
     data: OrderedDict[str, list[list[str]]] = OrderedDict()
     data.update({
@@ -177,7 +207,7 @@ def main():
              for obj_R in objects]
             for obj_L in objects
         ]
-        for op_name, op_symbol in operator_names.items()
+        for op_symbol, op_name in map(op_symbol_and_name, operators)
     })
 
     from odfdo import (
@@ -215,8 +245,15 @@ def main():
     N = len(possible_Ts)
 
     i = 0
+    def is_all_error(t):
+        all_error = True
+        for ti in t.split("|"):
+            if "Error" not in ti and "Exception" not in ti:
+                all_error = False
+        return all_error
+    
     for t in possible_Ts:
-        if "Error" in t:
+        if is_all_error(t):
             continue
         else:
             colors[t] = rgb2hex(rgb256(*cmp2(i/N)))
@@ -239,7 +276,7 @@ def main():
                 style = create_table_cell_style(color=rgb2hex((255, 0, 0))),
                 automatic = True
             )
-    for e in filter(lambda s: "Error" in s, possible_Ts):
+    for e in filter(is_all_error, possible_Ts):
         styles[e] = error_style_name
 
     for op, datum in data.items():
@@ -256,9 +293,16 @@ def main():
 
         document.body.append(table)
 
-    document.save(args.output_file, pretty=True)
+    document.save(file, pretty=True)
 
 if __name__ == "__main__":
-    main()
-
+    args = parser.parse_args()
+    main(args.output_file)
+    # from sage.all import log
+    # from sage.functions.log import logb, polylog
+    # logb.__name__ = "logb"
+    # polylog.__name__ = "polylog"
+    # def logb_hold(x, y):
+    #     return logb(x, y, hold=True)
+    # main("./logb.ods", objects, {logb, logb_hold, log, polylog})
 

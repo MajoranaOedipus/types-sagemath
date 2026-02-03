@@ -10,7 +10,7 @@ AUTHORS:
 
 from typing import Any, Literal, overload
 from typings_sagemath import (
-    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+    FloatingSage, RealInexactSage, ComplexInexactSage, CoercibleToExpression)
 from sage.symbolic.function import GinacFunction as GinacFunction
 from sage.symbolic.expression import Expression as Expression_
 from sage.symbolic.ring import SymbolicRing
@@ -22,9 +22,12 @@ from sage.rings.real_arb import RealBall
 from sage.rings.real_mpfi import RealIntervalFieldElement
 from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
-from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
+from sage.rings.infinity import MinusInfinity, UnsignedInfinity, PlusInfinity
+from sage.rings.complex_arb import ComplexBall
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
 from numpy import (
     int8 as NumPyInt8,
     int16 as NumPyInt16,
@@ -43,6 +46,7 @@ from numpy import (
     complex256 as NumPyComplex256,
     ndarray as NumPyNDArray,
     dtype as NumPyDtype,
+    number as NumPyNumber
 )
 from mpmath import (
     mpf as MpmathF,
@@ -50,8 +54,10 @@ from mpmath import (
 )
 from gmpy2 import mpfr, mpc
 
-from sage.rings.finite_rings.integer_mod import IntegerMod_int
 
+type _py_number = int | float | complex
+type _exact_real_sage = Integer | Rational
+type _inf = MinusInfinity | UnsignedInfinity | PlusInfinity
 type _np_byte = NumPyInt8 | NumPyUInt8
 type _np_short = NumPyInt16 | NumPyUInt16
 type _np_int = NumPyInt32 | NumPyUInt32
@@ -66,7 +72,7 @@ from sage.rings.integer import Integer as Integer
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
 from sage.rings.real_double import RDF as RDF
-from sage.structure.element import Expression as Expression
+# from sage.structure.element import Expression as Expression
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction, GinacFunction as GinacFunction
 from sage.symbolic.symbols import register_symbol as register_symbol
 
@@ -228,7 +234,7 @@ class Function_exp(GinacFunction):
     def __call__(
         self, 
         arg: Expression_ | int | Integer | Rational 
-            | OrderElement_quadratic | CommutativePolynomial
+            | CommutativePolynomial
     ) -> Expression_[SymbolicRing]: ...
     @overload
     def __call__[
@@ -331,8 +337,7 @@ class Function_log1(GinacFunction):
     @overload
     def __call__(
         self, 
-        arg: Expression_ | int | Integer | Rational 
-            | OrderElement_quadratic | CommutativePolynomial
+        arg: Expression_ | int | Integer | Rational  | CommutativePolynomial
     ) -> Expression_[SymbolicRing]: ...
     @overload
     def __call__( # pyright: ignore[reportOverlappingOverload]
@@ -410,6 +415,159 @@ class Function_log2(GinacFunction):
             sage: loads(dumps(logb))
             log
         """
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, arg: int, base: int, /
+    ) -> int | UnsignedInfinity | MinusInfinity | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int, 
+        base: float | complex | FloatingSage, 
+        /
+    ) -> Expression_: ...
+    @overload
+    def __call__(
+        self, 
+        arg: float | complex | FloatingSage, 
+        base: int, 
+        /
+    ) -> Expression_: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, arg: int, base: _exact_real_sage | CommutativePolynomial, /
+    ) -> Integer | UnsignedInfinity | MinusInfinity | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, arg: _exact_real_sage | CommutativePolynomial, base: int, /
+    ) -> Integer | UnsignedInfinity | MinusInfinity | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, arg: _exact_real_sage | CommutativePolynomial, 
+        base: _exact_real_sage | CommutativePolynomial, /
+    ) -> Integer | UnsignedInfinity | MinusInfinity | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self: float, arg: float, base, /
+    ) -> float: ...
+    @overload
+    def __call__[T: RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement](
+        self: float, arg: T, base, /
+    ) -> T: ...
+    @overload
+    def __call__[T: RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement](
+        self: T, arg: float, base, /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, arg: float | complex | RealNumber | RealDoubleElement, base: complex, /
+    ) -> complex: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, arg: complex, base: float | RealNumber | RealDoubleElement, /) -> complex: ...
+    @overload
+    def __call__(
+        self, arg: float | complex, base: _exact_real_sage | CommutativePolynomial, /
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, arg: _exact_real_sage | CommutativePolynomial, base: float | complex, /
+    ) -> Integer | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, arg: T, base: complex, /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, arg: complex, base: T, /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, arg: Integer, base: FloatingSage, /
+    ) -> Integer | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[T: FloatingSage](
+        self, arg: T, base: Integer, /) -> T | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self,
+        arg: Expression_[P],
+        base: Expression_[P] | _py_number | _exact_real_sage | FloatingSage | CommutativePolynomial, /
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self,
+        arg:  _py_number | _exact_real_sage | FloatingSage | CommutativePolynomial,
+        base: Expression_[P] , /
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(self, arg: Expression_, base: Expression_ , /) -> Expression_: ...
+    @overload
+    def __call__(
+        self, arg: RealNumber, base: RealNumber | ComplexNumber, /
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, arg: RealNumber, base: RealDoubleElement, /
+    ) -> RealNumber | ComplexNumber | ComplexDoubleElement: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement | RealIntervalFieldElement](
+        self, arg: RealNumber, base: T, /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement | RealIntervalFieldElement](
+        self, arg: T, base: RealNumber, /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, arg: RealDoubleElement, base: RealNumber, /
+    ) -> RealDoubleElement | ComplexNumber | ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, arg: RealDoubleElement, base: RealDoubleElement, /
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, arg: RealDoubleElement, base: T, /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, arg: T, base: RealDoubleElement, /
+    ) -> T: ...
+    @overload
+    def __call__(self, arg: RealBall, base: RealBall, /) -> RealBall | ComplexBall: ...
+    @overload
+    def __call__(
+        self, arg: RealIntervalFieldElement, base: RealIntervalFieldElement, /
+        ) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+    
+    @overload
+    def __call__(self, arg: ComplexBall, base: RealBall | ComplexBall, /) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, 
+        arg: ComplexIntervalFieldElement, 
+        base: RealIntervalFieldElement | ComplexIntervalFieldElement, /
+        ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(self, arg: RealBall, base: ComplexBall, /) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, 
+        arg: RealIntervalFieldElement, 
+        base: ComplexIntervalFieldElement, /
+        ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        arg: _py_number | NumPyNumber | _exact_real_sage
+             | FloatingSage | Expression_ | CommutativePolynomial, 
+        base: _py_number | NumPyNumber | _exact_real_sage
+             | FloatingSage | Expression_ | CommutativePolynomial, 
+        /, 
+        *,
+        hold: Literal[True]
+    ) -> Expression_: ...
 
 logb: Function_log2
 
@@ -515,7 +673,247 @@ class Function_polylog(GinacFunction):
             sage: bool(x*polylog(x,x)==0)                                               # needs sage.symbolic
             False
         """
-
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        s: Expression_[P], 
+        z: _py_number | _exact_real_sage | CommutativePolynomial | FloatingSage | _inf, 
+        /
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        s: _py_number | _exact_real_sage | CommutativePolynomial | FloatingSage | Expression_[P] | _inf, 
+        z: Expression_[P], 
+        /
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, 
+        s: _inf, 
+        z: float | complex | Rational  | FloatingSage | _inf, 
+        /
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        s: _inf, 
+        z: int | Integer | CommutativePolynomial, 
+        /
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        s: _py_number | _exact_real_sage | CommutativePolynomial | FloatingSage |  _inf, 
+        z: _inf, 
+        /
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        s: Expression_, 
+        z: Expression_, 
+        /
+    ) -> Expression_: ...
+    @overload
+    def __call__(
+        self, 
+        s: CommutativePolynomial, 
+        z: _py_number | FloatingSage | _exact_real_sage, 
+        /
+    ) -> Expression_[SymbolicRing] | _py_number | _exact_real_sage | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        s: _py_number | FloatingSage | _exact_real_sage, 
+        z: CommutativePolynomial, 
+        /
+    ) -> Expression_[SymbolicRing] | _py_number | _exact_real_sage | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        s: CommutativePolynomial, 
+        z: CommutativePolynomial, 
+        /
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        s: complex, 
+        z: _py_number | _exact_real_sage | RealNumber | RealDoubleElement, 
+        /
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        s: int | float | _exact_real_sage | RealNumber | RealDoubleElement, 
+        z: complex, 
+        /
+    ) -> complex: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        s: _py_number, 
+        z: T, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        s: T, 
+        z: _py_number, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        s: T,
+        z: int | float | _exact_real_sage | RealNumber | RealDoubleElement, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        s: int | float | _exact_real_sage | RealNumber | RealDoubleElement 
+            | ComplexNumber | ComplexDoubleElement,
+        z: T, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexBall | ComplexIntervalFieldElement](
+        self, 
+        s: T,
+        z: int |  _exact_real_sage, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__[T: ComplexBall | ComplexIntervalFieldElement](
+        self, 
+        s: int |  _exact_real_sage,
+        z: T, 
+        /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        s: ComplexBall,
+        z: ComplexBall | RealBall, 
+        /
+    ) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, 
+        s: RealBall,
+        z: ComplexBall, 
+        /
+    ) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, 
+        s: ComplexIntervalFieldElement,
+        z: ComplexIntervalFieldElement | RealIntervalFieldElement, 
+        /
+    ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(
+        self, 
+        s: RealIntervalFieldElement,
+        z: ComplexIntervalFieldElement, 
+        /
+    ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: float,
+        z: int | float | _exact_real_sage, 
+        /
+    ) -> complex | float: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: int | _exact_real_sage,
+        z: float, 
+        /
+    ) -> complex | float: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: float | _exact_real_sage | RealNumber,
+        z: RealNumber, 
+        /
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: float | _exact_real_sage | RealDoubleElement,
+        z: RealDoubleElement, 
+        /
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: RealNumber,
+        z: float | _exact_real_sage | RealNumber, 
+        /
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__( # pyright: ignore[reportOverlappingOverload]
+        self, 
+        s: RealDoubleElement,
+        z: float | _exact_real_sage | RealDoubleElement, 
+        /
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__[T: FloatingSage](self, s: int, z: T, /) -> T: ...
+    @overload
+    def __call__[T: ComplexInexactSage](self, s: T, z: int, /) -> T: ...
+    @overload
+    def __call__(self, s: int | Integer, z: int | Integer, /) -> Expression_[SymbolicRing] | _exact_real_sage: ...
+    @overload
+    def __call__(self, s: int, z: Rational, /) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(self, s: Rational, z: int | Integer, /) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(self, s: Integer, z: Rational, /) -> Expression_[SymbolicRing] | Rational | Integer: ...
+    @overload
+    def __call__(self, s: _exact_real_sage, z: RealBall, /) -> RealBall: ...
+    @overload
+    def __call__(self, s: RealBall, z: _exact_real_sage, /) -> RealBall | ComplexBall: ...
+    @overload
+    def __call__(
+        self, s: _exact_real_sage, z: RealIntervalFieldElement, /
+    ) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(
+        self, s: RealIntervalFieldElement, z: _exact_real_sage, /
+    ) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(self, s: Rational, z: Rational, /) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, s: RealNumber, z: RealDoubleElement, /
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, s: RealDoubleElement, z: RealNumber, /) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(self, s: RealBall, z: RealBall, /) -> RealBall: ...
+    @overload
+    def __call__(
+        self, s: RealIntervalFieldElement, z: RealIntervalFieldElement, /
+    ) -> RealIntervalFieldElement | ComplexIntervalFieldElement: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        s: _py_number | NumPyNumber | _exact_real_sage
+             | FloatingSage | Expression_ | CommutativePolynomial, 
+        z: _py_number | NumPyNumber | _exact_real_sage
+             | FloatingSage | Expression_ | CommutativePolynomial, 
+        /, 
+        *,
+        hold: Literal[True]
+    ) -> Expression_: ...
+    
 polylog: Function_polylog
 
 class Function_dilog(GinacFunction):
@@ -609,6 +1007,31 @@ class Function_dilog(GinacFunction):
             sage: parent(_)
             Complex Field with 13 bits of precision
         """
+    @overload
+    def __call__[T: int | Integer](self, z: T, /) -> T | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[T: float | complex | FloatingSage](self, z: T, /) -> T: ...
+    @overload
+    def __call__(self, z: mpfr, /) -> float: ...
+    @overload
+    def __call__(
+        self, z: Rational | Expression_[SymbolicRing] | _inf, /
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(self, z: Expression_, /) -> Expression_: ...
+    @overload
+    def __call__(self, z: CommutativePolynomial, /) -> Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, z: Expression_, /, *, hold: Literal[True]) -> Expression_: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        z: _py_number | _exact_real_sage | CommutativePolynomial 
+            | Expression_[SymbolicRing] | FloatingSage, 
+        /, *, 
+        hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
 
 dilog: Function_dilog
 
@@ -723,7 +1146,229 @@ class Function_lambert_w(BuiltinFunction):
             sage: lambert_w(n, x)._fricas_()                                    # optional - fricas, needs sage.symbolic
             generalizedLambertW(n,x)
         '''
-    def __call__(self, *args, **kwds):
+    @overload
+    def __call__(
+        self, 
+        z: int | NumPyNumber | _exact_real_sage | FloatingSage 
+            | Expression_[SymbolicRing] | _inf, 
+        /, *, hold = Literal[True]) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, z: Expression_, 
+        /, *, hold = Literal[True]) -> Expression_: ...
+
+    @overload
+    def __call__(self, n: int, z: int, /) -> Expression_[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        n: int, 
+        z: int | NumPyNumber | _exact_real_sage | RealIntervalFieldElement
+         | ComplexIntervalFieldElement, 
+        /, *, hold: bool = False
+    ) -> int | float: ...
+    @overload
+    def __call__(self, n: int, z: Integer, /) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(self, n: int, z: Rational, /, *, hold: bool = False) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /, 
+    ) -> CommutativePolynomial | complex | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: float, z: ComplexBall, /, 
+    ) -> ComplexBall | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: Integer, z: int, /,) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, n: Integer, z: CommutativePolynomial, /
+    ) -> Expression_[SymbolicRing] | FloatingSage | _exact_real_sage: ...
+    @overload
+    def __call__(
+        self, n: Integer, z: RealBall, /
+    ) -> Expression_[SymbolicRing] | RealBall: ...
+    @overload
+    def __call__(self, n: Integer, z: ComplexBall, /) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, n: Rational, z: ComplexBall, /
+    ) -> Expression_[SymbolicRing] | ComplexBall: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: _py_number | _exact_real_sage | FloatingSage , /
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial | complex | Integer | FloatingSage: ...
+    @overload
+    def __call__(
+        self, n: int | _exact_real_sage, z: float, /, *, hold: bool = False
+    ) -> complex | float: ...
+    @overload
+    def __call__[T: RealNumber | RealDoubleElement](
+        self, n: int | _exact_real_sage , z: T, /, *, hold: bool = False) -> T: ...
+    @overload
+    def __call__(
+        self, n: ComplexDoubleElement, z: int | Integer, /, *, hold: bool = False) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, n: float, z: int | _exact_real_sage, /, *, hold: bool = False
+    ) -> float | complex: ...
+    @overload
+    def __call__(
+        self, n: int | float | RealNumber | RealDoubleElement, z: complex, /, *, hold: bool = False
+        ) -> complex: ...
+    @overload
+    def __call__(self, n: float, z: float, /, *, hold: bool = False) -> complex: ... 
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        n: int | float | _exact_real_sage  | RealNumber | RealDoubleElement
+         | ComplexDoubleElement, 
+         z: T, 
+         /, *, 
+         hold: bool
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, n: float | RealNumber, z: RealNumber, /, *, hold: bool = False) -> ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: float, z: RealDoubleElement, /, *, hold: bool = False
+    ) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        n: float, 
+        z: RealDoubleElement | ComplexDoubleElement, 
+        /, *, hold: bool = False
+    ) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        n: float | Rational | FloatingSage, 
+        z: RealBall, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: _exact_real_sage, z: Rational, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: Rational, z: int | _exact_real_sage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: RealNumber, z: Integer, /, *, hold: bool = False
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: RealNumber, z: RealNumber | ComplexNumber | RealDoubleElement | Rational, /, *, hold: bool = False) -> ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: RealNumber, z: ComplexDoubleElement, /, *, hold: bool = False) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, n: RealDoubleElement, z: int | Integer, /, *, hold: bool = False) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, n: RealDoubleElement, z: ComplexNumber, /, *, hold: bool = False) -> ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: RealDoubleElement, z: float | Rational | RealNumber | RealDoubleElement | ComplexDoubleElement, /, *, hold: bool = False) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        n: ComplexDoubleElement, 
+        z: _py_number | _exact_real_sage 
+            | RealNumber | RealDoubleElement 
+            | ComplexNumber | ComplexDoubleElement, 
+        /, *, hold: bool = False) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        n: ComplexNumber | RealBall | ComplexBall | RealIntervalFieldElement 
+            | ComplexIntervalFieldElement | _inf | complex, 
+        z: _py_number | _exact_real_sage | CommutativePolynomial | FloatingSage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: _py_number | _exact_real_sage | CommutativePolynomial | FloatingSage | _inf, 
+        z:  _inf, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: FloatingSage, 
+        z: ComplexBall, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | float | FloatingSage | _exact_real_sage,
+        z: RealIntervalFieldElement | ComplexIntervalFieldElement | _inf, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: int, 
+        z: int | CommutativePolynomial | RealBall | RealInexactSage
+         | ComplexBall | ComplexIntervalFieldElement, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /, *, hold: Literal[True]
+    ) -> CommutativePolynomial | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: float, z: ComplexDoubleElement, /, *, hold: Literal[True]
+    ) -> ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        n: Integer, 
+        z: int | CommutativePolynomial | RealBall | ComplexBall, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: Rational, z: ComplexBall, /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: _py_number | _exact_real_sage | FloatingSage , /, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, 
+        n: Expression_[SymbolicRing] | _inf, 
+        z: int | NumPyNumber | _exact_real_sage | FloatingSage 
+            | Expression_[SymbolicRing] | _inf, 
+        /, *, hold: Literal[True]) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: Expression_, 
+        z: int | NumPyNumber | _exact_real_sage | FloatingSage 
+            | Expression_ | _inf, 
+        /, *, hold: Literal[True]) -> Expression_: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | NumPyNumber | _exact_real_sage | FloatingSage 
+            | Expression_[SymbolicRing] | _inf, 
+        z: Expression_[SymbolicRing] | _inf, 
+        /, *, hold: Literal[True]) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        n: int | NumPyNumber | _exact_real_sage | FloatingSage 
+            | Expression_ | _inf, 
+        z: Expression_ , 
+        /, *, hold: Literal[True]) -> Expression_[SymbolicRing]:
         """
         Custom call method allows the user to pass one argument or two. If
         one argument is passed, we assume it is ``z`` and that ``n=0``.
@@ -788,6 +1433,28 @@ class Function_exp_polar(BuiltinFunction):
 
             :wikipedia:`Complex_number#Polar_form`
         """
+        @overload
+        def __call__(self, z: MinusInfinity, /) -> Integer: ...
+        @overload
+        def __call__[T: float | complex | Expression_ | RealNumber | RealDoubleElement | ComplexDoubleElement](
+            self, 
+            z: T , 
+            /, *, hold: bool = False
+        ) -> T: ...
+        @overload
+        def __call__(
+            self, 
+            z: int | NumPyNumber | _exact_real_sage | CommutativePolynomial
+             | Expression_[SymbolicRing] | RealBall | RealIntervalFieldElement
+             | ComplexNumber | ComplexBall | ComplexIntervalFieldElement 
+             | PlusInfinity, 
+            /, *, hold: bool = False
+        ) -> Expression_[SymbolicRing]: ...
+        @overload
+        def __call__(
+            self, z: _inf, /, *, hold: Literal[True]
+        ) -> Expression_[SymbolicRing]: ...
+        
 
 exp_polar: Function_exp_polar
 
@@ -935,5 +1602,24 @@ class Function_harmonic_number(BuiltinFunction):
             sage: harmonic_number(x)._sympy_()                                          # needs sympy sage.symbolic
             harmonic(x)
         """
-
+    @overload
+    def __call__(self, z: int, /) -> int | float | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(self, z: Integer | Rational, /) -> Integer | Rational | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(self, z: CommutativePolynomial, /) -> _exact_real_sage  | Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, z: float, /, hold: bool) -> float | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[T: complex | RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement](
+        self, z: T, /, hold: bool) -> T: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, z: Expression_[P], /, hold: bool) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, z: RealBall | RealIntervalFieldElement | ComplexBall | ComplexIntervalFieldElement | _inf, /, hold: bool) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(self, z: int | complex, /, hold: Literal[True]): ... # pyright: ignore[reportIncompatibleMethodOverride]
 harmonic_m1: Function_harmonic_number
