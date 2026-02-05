@@ -18,16 +18,23 @@ Check that :issue:`35696` is fixed::
     sage: cot(x*(x+1)-x^2-x)
     Infinity
 """
-
-
-from typing import Any, Literal, Protocol, overload
+# pyright: reportOverlappingOverload=false
+from typing import Annotated, Any, Literal, overload
 from typings_sagemath import (
-    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
-from sage.symbolic.function import GinacFunction as GinacFunction
+    FloatingSage, RealInexactSage, ComplexInexactSage, CoercibleToExpression)
 from sage.symbolic.expression import Expression
 from sage.symbolic.ring import SymbolicRing
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
 from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
-from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
+from sage.rings.infinity import MinusInfinity, PlusInfinity, UnsignedInfinity
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.real_double import RealDoubleElement
+from sage.rings.real_arb import RealBall
+from sage.rings.real_mpfi import RealIntervalFieldElement
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.complex_arb import ComplexBall
+from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from numpy import (
@@ -55,18 +62,26 @@ from mpmath import (
 )
 from gmpy2 import mpfr, mpc
 
+type _py_number = int | float | complex
+type _MpfrSage = RealNumber | ComplexNumber
+type _DoubleSage = RealDoubleElement | ComplexDoubleElement
+type _RealMpfrDoubleSage = RealNumber | RealDoubleElement
+type _ComplexMpfrDoubleSage = ComplexNumber | ComplexDoubleElement
 type _np_byte = NumPyInt8 | NumPyUInt8
 type _np_short = NumPyInt16 | NumPyUInt16
 type _np_int = NumPyInt32 | NumPyUInt32
 type _np_long = NumPyInt64 | NumPyUInt64
 type _np_long_int = _np_int | _np_long
+type _np_integer = _np_byte | _np_short | _np_long_int
 type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
+type _np_float_std = NumPyFloat16 | NumPyFloat32 | NumPyFloat64
 type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
-    
+
+from sage.symbolic.function import GinacFunction as GinacFunction
 # c.f. symbolic/function.pyx: BuiltinFunction.__call__
 class _TrigFunction:
     @overload
-    def __call__( # pyright: ignore[reportOverlappingOverload]
+    def __call__(
         self,
         arg: _np_byte,
         /,
@@ -86,8 +101,17 @@ class _TrigFunction:
     @overload
     def __call__(
         self, 
-        arg: Expression | int | Integer | Rational 
-            | OrderElement_quadratic | CommutativePolynomial
+        arg: int
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Integer | Rational 
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | CommutativePolynomial
     ) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
@@ -105,7 +129,50 @@ class _TrigFunction:
         arg: CoercibleToExpression, 
         /, 
         *, 
-        hold: Literal[True] = ...
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class _CscCotArccscArccot():
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
     ) -> Expression[SymbolicRing]: ...
 
 class Function_sin(_TrigFunction, GinacFunction):
@@ -356,7 +423,7 @@ class Function_tan(_TrigFunction, GinacFunction):
 
 tan: Function_tan
 
-class Function_cot(_TrigFunction, GinacFunction):
+class Function_cot(_CscCotArccscArccot, GinacFunction):
     def __init__(self) -> None:
         """
         The cotangent function.
@@ -499,7 +566,7 @@ class Function_sec(_TrigFunction, GinacFunction):
 
 sec: Function_sec
 
-class Function_csc(_TrigFunction, GinacFunction):
+class Function_csc(_CscCotArccscArccot, GinacFunction):
     def __init__(self) -> None:
         """
         The cosecant function.
@@ -557,7 +624,63 @@ class Function_csc(_TrigFunction, GinacFunction):
 
 csc: Function_csc
 
-class Function_arcsin(_TrigFunction, GinacFunction):
+class _ArccosArcsin:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Integer | Rational 
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, arg: UnsignedInfinity, /) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class Function_arcsin(_ArccosArcsin, GinacFunction):
     def __init__(self) -> None:
         """
         The arcsine function.
@@ -614,10 +737,9 @@ class Function_arcsin(_TrigFunction, GinacFunction):
         """
 
 arcsin: Function_arcsin
-
 asin: Function_arcsin
 
-class Function_arccos(_TrigFunction, GinacFunction):
+class Function_arccos(_ArccosArcsin, GinacFunction):
     def __init__(self) -> None:
         """
         The arccosine function.
@@ -679,7 +801,6 @@ class Function_arccos(_TrigFunction, GinacFunction):
         """
 
 arccos: Function_arccos
-
 acos: Function_arccos
 
 class Function_arctan(_TrigFunction, GinacFunction):
@@ -747,12 +868,106 @@ class Function_arctan(_TrigFunction, GinacFunction):
             sage: arctan(-x).subs(x=-oo)                                                # needs sage.symbolic
             1/2*pi
         """
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational 
+            |  CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, arg: PlusInfinity | MinusInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
 
 arctan: Function_arctan
-
 atan: Function_arctan
 
-class Function_arccot(_TrigFunction, GinacFunction):
+class _ArccotArccsc:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | int | Integer | Rational 
+            |  CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    type _Zero = Annotated[Integer, Integer(0)]
+    @overload
+    def __call__(
+        self, arg: PlusInfinity | MinusInfinity | UnsignedInfinity, /
+    ) -> _Zero: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class Function_arccot(_CscCotArccscArccot, GinacFunction):
     def __init__(self) -> None:
         """
         The arccotangent function.
@@ -799,10 +1014,9 @@ class Function_arccot(_TrigFunction, GinacFunction):
         """
 
 arccot: Function_arccot
-
 acot: Function_arccot
 
-class Function_arccsc(_TrigFunction, GinacFunction):
+class Function_arccsc(_CscCotArccscArccot, GinacFunction):
     def __init__(self) -> None:
         """
         The arccosecant function.
@@ -845,7 +1059,6 @@ class Function_arccsc(_TrigFunction, GinacFunction):
         """
 
 arccsc: Function_arccsc
-
 acsc: Function_arccsc
 
 class Function_arcsec(_TrigFunction, GinacFunction):
@@ -891,12 +1104,66 @@ class Function_arcsec(_TrigFunction, GinacFunction):
             sage: arcsec(complex(1,1))  # rel tol 1e-15                                 # needs sage.rings.complex_double
             (1.118517879643706+0.5306375309525178j)
         """
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Integer | Rational 
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Expression | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, arg: PlusInfinity | MinusInfinity | UnsignedInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
 
 arcsec: Function_arcsec
-
 asec: Function_arcsec
 
-class Function_arctan2(_TrigFunction, GinacFunction):
+class Function_arctan2(GinacFunction):
     def __init__(self) -> None:
         """
         The modified arctangent function.
@@ -1014,7 +1281,278 @@ class Function_arctan2(_TrigFunction, GinacFunction):
             sage: arctan2(0, I*I)                                                       # needs sage.symbolic
             pi
         """
+    # int
+    @overload
+    def __call__(
+        self, x: int, y: int, /
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, x: int, y: float, /
+    ) -> Expression[SymbolicRing] | float | int: ...
+    @overload
+    def __call__(
+        self, x: _py_number | complex | Integer | Rational | _RealMpfrDoubleSage, y: complex, /
+    ) -> complex: ...
+    @overload
+    def __call__[T: _np_float | ComplexInexactSage](
+        self, x: int, y: T, /) -> T: ...
+    @overload
+    def __call__(self, x: int, y: _np_byte) -> NumPyFloat16: ...
+    @overload
+    def __call__(self, x: int, y: _np_short) -> NumPyFloat32: ...
+    @overload
+    def __call__(self, x: int, y: _np_long_int) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, x: int, y: Integer | Rational | PlusInfinity, /
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, x: int, y: CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | Integer | FloatingSage: ...
+    @overload
+    def __call__[T: RealInexactSage](
+        self, x: int, y: T, /) -> Integer | T | Expression[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, x: _py_number, y: MinusInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    # float
+    @overload
+    def __call__(
+        self, x: float, y: int | float | Integer, /
+    ) -> Expression[SymbolicRing] | float: ...
+    @overload
+    def __call__(self, x: float, y: _np_integer, /) -> NumPyFloat64: ...
+    @overload
+    def __call__(self, x: float, y: Rational, /) -> float: ...
+    @overload
+    def __call__(
+        self, x: float, y: CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | float | FloatingSage: ...
+    @overload
+    def __call__[T: _RealMpfrDoubleSage | _ComplexMpfrDoubleSage](
+        self, x: float, y: T, /) -> T: ...
+    @overload
+    def __call__(
+        self, x: float | complex, y: PlusInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    # complex
+    @overload
+    def __call__(
+        self, 
+        x: complex, 
+        y: int | float | Integer | Rational | _RealMpfrDoubleSage
+        , /
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, x: complex, y: CommutativePolynomial, /
+    ) -> complex | Expression[SymbolicRing] | ComplexInexactSage: ...
+    @overload
+    def __call__[T: _ComplexMpfrDoubleSage](
+        self, x: complex, y: T, /) -> T: ...
+    # NumPy Floats
+    @overload
+    def __call__[T: _np_float_std | ComplexInexactSage](
+        self, x: T, y: int, /) -> T: ...
+    @overload
+    def __call__[T: _np_float | _ComplexMpfrDoubleSage](
+        self, x: T, y: float, /) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        x: NumPyFloat128, 
+        y: _np_float | _np_integer | Integer | Rational, /
+    ) -> NumPyFloat128: ...
+    @overload
+    def __call__(
+        self, 
+        x: _np_float | _np_integer | Integer | Rational, 
+        y: NumPyFloat128, /
+    ) -> NumPyFloat128: ...
+    @overload
+    def __call__(
+        self, 
+        x: NumPyFloat64, 
+        y: NumPyFloat64 | NumPyFloat32 | NumPyFloat16 | _np_integer, 
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, x: NumPyFloat32 | NumPyFloat16 | _np_integer, y: NumPyFloat64, /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        x: NumPyFloat32, 
+        y: NumPyFloat32 | NumPyFloat16 | _np_short | _np_byte, /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self, x: NumPyFloat16 | _np_short | _np_byte, y: NumPyFloat32, /) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self, 
+        x: NumPyFloat16 | _np_byte, 
+        y: NumPyFloat16 | _np_byte, /
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self, x: _np_float_std, y: Integer | Rational, /) -> NumPyFloat64: ...
+    @overload
+    def __call__[T: _np_float_std | _ComplexMpfrDoubleSage](
+        self, x: T, y: _RealMpfrDoubleSage, /) -> T: ...
+    # NumPy Integers
+    @overload
+    def __call__(self, x: _np_byte, y: int | NumPyFloat16, /) -> NumPyFloat16: ...
+    @overload
+    def __call__(self, x: _np_short, y: int, /) -> NumPyFloat32: ...
+    @overload
+    def __call__(self, x: _np_long_int, y: int | float, /) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        x: _np_integer, 
+        y: Integer | Rational | _RealMpfrDoubleSage, /
+    ) -> NumPyFloat64: ...
+    # Integer
+    @overload
+    def __call__(
+        self, x: Integer, y: int | Integer | Rational, /
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, x: Integer, y: float, /
+    ) -> Expression[SymbolicRing] | Integer | float: ...
+    @overload
+    def __call__(
+        self, 
+        x: Integer | Rational | _RealMpfrDoubleSage, 
+        y: _np_float_std | _np_integer, /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, x: Integer, y: CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | Integer | FloatingSage: ...
+    @overload
+    def __call__[T: RealInexactSage](
+        self, x: Integer, y: T, /
+    ) -> Expression[SymbolicRing] | Integer | T: ...
+    @overload
+    def __call__[T: ComplexInexactSage](
+        self, x: Integer | Rational, y: T, /) -> T: ...
+    @overload
+    def __call__(
+        self, x: Integer, y: PlusInfinity, /
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, x: Integer, y: MinusInfinity, /) -> Expression[SymbolicRing]: ...
+    # Rational
+    @overload
+    def __call__(
+        self, 
+        x: Rational, 
+        y: int | Integer | Rational | PlusInfinity | MinusInfinity, 
+        /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, x: Rational, y: CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__[T: float | FloatingSage](self, x: Rational, y: T, /) -> T: ...
+    # FloatingSage
+    @overload
+    def __call__[T: RealInexactSage](
+        self, x: T, y: int | Integer, /) -> Expression[SymbolicRing] | T: ...
+    @overload
+    def __call__[T: ComplexInexactSage](self, x: T, y: int | Integer, /) -> T: ...
+    @overload
+    def __call__[T: _RealMpfrDoubleSage | _ComplexMpfrDoubleSage](
+        self, x: T, y: float, /) -> T: ...
+    @overload
+    def __call__[T: FloatingSage](self, x: T, y: Rational, /) -> T: ...
+    @overload
+    def __call__(
+        self, x: FloatingSage, y: CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, x: RealNumber, y: RealDoubleElement, /) -> RealDoubleElement: ...
+    @overload
+    def __call__(
+        self, x: RealDoubleElement, y: RealNumber, /) -> RealNumber: ...
+    @overload
+    def __call__(
+        self, x: ComplexBall, y: RealBall | ComplexBall, /) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, x: RealBall, y: ComplexBall, /) -> ComplexBall: ...
+    @overload
+    def __call__(
+        self, 
+        x: ComplexIntervalFieldElement, 
+        y: RealIntervalFieldElement | ComplexIntervalFieldElement, 
+        /
+    ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__(
+        self, 
+        x: RealIntervalFieldElement, y: ComplexIntervalFieldElement, /
+    ) -> ComplexIntervalFieldElement: ...
+    @overload
+    def __call__[T: RealInexactSage](
+        self, x: T, y: T, /) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[T: _ComplexMpfrDoubleSage](
+        self, x: T, y: _ComplexMpfrDoubleSage, /) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        x: PlusInfinity, 
+        y: int | Integer | CommutativePolynomial | PlusInfinity
+         | MinusInfinity,
+        /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, x: PlusInfinity, y: float | complex | Rational | FloatingSage, /
+    ) -> Integer: ...
+    @overload
+    def __call__(
+        self, 
+        x: MinusInfinity, 
+        y: _py_number | Integer |Rational | CommutativePolynomial
+            | FloatingSage | MinusInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        x: Expression[P], 
+        y: _py_number | _np_float | _np_integer | Integer | Rational
+            | CommutativePolynomial | Expression[P] | FloatingSage
+            | PlusInfinity | MinusInfinity, 
+        /
+    ) -> Expression[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        x: _py_number | _np_float | _np_integer | Integer | Rational
+            | CommutativePolynomial | FloatingSage | PlusInfinity
+            | MinusInfinity, 
+        y: Expression[P], 
+        /
+    ) -> Expression[P]: ...
+    @overload
+    def __call__(self, x: Expression, y: Expression, /) -> Expression: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, x: CoercibleToExpression, y: CoercibleToExpression, 
+        /, hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
 
 arctan2: Function_arctan2
-
 atan2: Function_arctan2
