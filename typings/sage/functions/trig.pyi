@@ -101,18 +101,16 @@ class _TrigFunction:
     @overload
     def __call__(
         self, 
-        arg: int
+        arg: int, /
     ) -> Expression[SymbolicRing] | int: ...
     @overload
     def __call__(
         self, 
-        arg: Integer | Rational 
+        arg: Integer | Rational, /
     ) -> Expression[SymbolicRing] | Integer: ...
     @overload
     def __call__(
-        self, 
-        arg: Expression | CommutativePolynomial
-    ) -> Expression[SymbolicRing]: ...
+        self, arg: CommutativePolynomial, /) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
         F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
@@ -123,6 +121,9 @@ class _TrigFunction:
     def __call__(self, arg: mpfr, /) -> float: ...
     @overload
     def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__(
         self, 
@@ -154,7 +155,7 @@ class _CscCotArccscArccot():
     @overload
     def __call__(
         self, 
-        arg: Expression | int | Integer | Rational | CommutativePolynomial
+        arg: int | Integer | Rational | CommutativePolynomial, /
     ) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
@@ -166,6 +167,9 @@ class _CscCotArccscArccot():
     def __call__(self, arg: mpfr, /) -> float: ...
     @overload
     def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__(
         self, 
@@ -646,18 +650,16 @@ class _ArccosArcsin:
     @overload
     def __call__(
         self, 
-        arg: int
+        arg: int, /
     ) -> Expression[SymbolicRing] | int: ...
     @overload
     def __call__(
         self, 
-        arg: Integer | Rational 
+        arg: Integer | Rational, /
     ) -> Expression[SymbolicRing] | Integer: ...
     @overload
     def __call__(
-        self, 
-        arg: Expression | CommutativePolynomial
-    ) -> Expression[SymbolicRing]: ...
+        self, arg: CommutativePolynomial, /) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
         F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
@@ -671,6 +673,9 @@ class _ArccosArcsin:
     @overload
     def __call__(
         self, arg: UnsignedInfinity, /) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__(
         self, 
@@ -889,8 +894,7 @@ class Function_arctan(_TrigFunction, GinacFunction):
     @overload
     def __call__(
         self, 
-        arg: Expression | int | Integer | Rational 
-            |  CommutativePolynomial
+        arg: int | Integer | Rational | CommutativePolynomial, /
     ) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
@@ -906,6 +910,9 @@ class Function_arctan(_TrigFunction, GinacFunction):
     def __call__(
         self, arg: PlusInfinity | MinusInfinity, /
     ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, 
@@ -940,8 +947,7 @@ class _ArccotArccsc:
     @overload
     def __call__(
         self, 
-        arg: Expression | int | Integer | Rational 
-            |  CommutativePolynomial
+        arg: int | Integer | Rational | CommutativePolynomial, /
     ) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
@@ -958,6 +964,9 @@ class _ArccotArccsc:
     def __call__(
         self, arg: PlusInfinity | MinusInfinity | UnsignedInfinity, /
     ) -> _Zero: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__(
         self, 
@@ -1125,18 +1134,16 @@ class Function_arcsec(_TrigFunction, GinacFunction):
     @overload
     def __call__(
         self, 
-        arg: int
+        arg: int, /
     ) -> Expression[SymbolicRing] | int: ...
     @overload
     def __call__(
         self, 
-        arg: Integer | Rational 
+        arg: Integer | Rational, /
     ) -> Expression[SymbolicRing] | Integer: ...
     @overload
     def __call__(
-        self, 
-        arg: Expression | CommutativePolynomial
-    ) -> Expression[SymbolicRing]: ...
+        self, arg: CommutativePolynomial, /) -> Expression[SymbolicRing]: ...
     @overload
     def __call__[
         F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
@@ -1151,6 +1158,9 @@ class Function_arcsec(_TrigFunction, GinacFunction):
     def __call__(
         self, arg: PlusInfinity | MinusInfinity | UnsignedInfinity, /
     ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
     @overload
     def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, 
@@ -1298,11 +1308,11 @@ class Function_arctan2(GinacFunction):
     def __call__[T: _np_float | ComplexInexactSage](
         self, x: int, y: T, /) -> T: ...
     @overload
-    def __call__(self, x: int, y: _np_byte) -> NumPyFloat16: ...
+    def __call__(self, x: int, y: _np_byte, /) -> NumPyFloat16: ...
     @overload
-    def __call__(self, x: int, y: _np_short) -> NumPyFloat32: ...
+    def __call__(self, x: int, y: _np_short, /) -> NumPyFloat32: ...
     @overload
-    def __call__(self, x: int, y: _np_long_int) -> NumPyFloat64: ...
+    def __call__(self, x: int, y: _np_long_int, /) -> NumPyFloat64: ...
     @overload
     def __call__(
         self, x: int, y: Integer | Rational | PlusInfinity, /

@@ -18,5 +18,5 @@ I will try my best to mimic the *behaviours* of the classes, though.
 - I will rewrite the class decorator `richcmp_method` to a base class `RichCmpMixin`, 
 since class decorator is not expressible by the current type system.
 - Categories goes into the MRO of the parents, so I will write a lot classes corresponding to those categories so that the type checker finds the correct methods.
-- As of elements, I have currently no ideas, since the maintainer of Sage said that [the `*Element` classes are deprecated](https://github.com/sagemath/sage/pull/41417#issuecomment-3725268422). 
+- As of elements, Basicall I make all `Element` classes generic in their parent type, so that e.g. `Integer <: Element[IntegerRing_class]`.
 - On laziness, should I just remove the decorator?

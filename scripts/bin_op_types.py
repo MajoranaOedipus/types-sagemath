@@ -60,7 +60,7 @@ objects = [
     -float32(1.2), -float128(1.3e2), -int32(100), 
     ZZ(1), ZZ(3), -ZZ(4), ZZ(0),
     Zmod(7)(3), 
-    QQ((1, 2)), QQ((1, 1)), -QQ((3, 2)),
+    QQ((1, 2)), QQ((1, 1)), -QQ((3, 2)), QQ(0),
     3 * cast(Expression, SR.var("x")) + 1, 
     ZZ["y"](1), ZZ["y"](0), ZZ["y"](3 + cast(Expression, SR.var("y"))),
     QQ["w"](1), QQ["w"](0), QQ["w"](cast(Expression, SR.var("w"))**3),

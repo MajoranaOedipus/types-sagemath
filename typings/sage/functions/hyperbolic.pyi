@@ -42,10 +42,275 @@ so expressions of the form ``exp(c*f(x))`` simplify::
     sage: exp(2*acsch(x))
     (sqrt(1/x^2 + 1) + 1/x)^2
 """
+# pyright: reportOverlappingOverload=false
+from typing import Any, Literal, overload
+from typings_sagemath import (
+    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.infinity import MinusInfinity, PlusInfinity, UnsignedInfinity
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.real_double import RealDoubleElement
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from numpy import (
+    int8 as NumPyInt8,
+    int16 as NumPyInt16,
+    int32 as NumPyInt32,
+    int64 as NumPyInt64,
+    uint8 as NumPyUInt8,
+    uint16 as NumPyUInt16,
+    uint32 as NumPyUInt32,
+    uint64 as NumPyUInt64,
+    float16 as NumPyFloat16,
+    float32 as NumPyFloat32,
+    float64 as NumPyFloat64,
+    float128 as NumPyFloat128,
+    complex64 as NumPyComplex64,
+    complex128 as NumPyComplex128,
+    complex256 as NumPyComplex256,
+    ndarray as NumPyNDArray,
+    dtype as NumPyDtype,
+)
+from mpmath import (
+    mpf as MpmathF,
+    mpc as MpmathC
+)
+from gmpy2 import mpfr, mpc
+
+type _py_number = int | float | complex
+type _MpfrSage = RealNumber | ComplexNumber
+type _DoubleSage = RealDoubleElement | ComplexDoubleElement
+type _RealMpfrDoubleSage = RealNumber | RealDoubleElement
+type _ComplexMpfrDoubleSage = ComplexNumber | ComplexDoubleElement
+type _np_byte = NumPyInt8 | NumPyUInt8
+type _np_short = NumPyInt16 | NumPyUInt16
+type _np_int = NumPyInt32 | NumPyUInt32
+type _np_long = NumPyInt64 | NumPyUInt64
+type _np_long_int = _np_int | _np_long
+type _np_integer = _np_byte | _np_short | _np_long_int
+type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
+type _np_float_std = NumPyFloat16 | NumPyFloat32 | NumPyFloat64
+type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
 
 from sage.symbolic.function import GinacFunction as GinacFunction
 
-class Function_sinh(GinacFunction):
+class _HyperbolicFunction:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int, /
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Integer | Rational | CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, arg: PlusInfinity | MinusInfinity, /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class _CothCsch:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int | Integer | Rational | CommutativePolynomial
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(self, arg: PlusInfinity | MinusInfinity, /) -> Integer: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class _ArcsinhArccosh:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int, /
+    ) -> Expression[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, 
+        arg: Integer | Rational | CommutativePolynomial, /
+    ) -> Expression[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        arg: PlusInfinity | MinusInfinity
+            | UnsignedInfinity, 
+        /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class _ArccothArccsch:
+    @overload
+    def __call__(
+        self,
+        arg: _np_byte,
+        /,
+    ) -> NumPyFloat16: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_short,
+        /
+    ) -> NumPyFloat32: ...
+    @overload
+    def __call__(
+        self,
+        arg: _np_long_int,
+        /
+    ) -> NumPyFloat64: ...
+    @overload
+    def __call__(
+        self, 
+        arg: int | Integer | Rational | CommutativePolynomial, /
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def __call__[
+        F: _np_float | _np_complex | MpmathF | MpmathC | float | complex
+            | RealInexactSage | ComplexInexactSage
+            | NumPyNDArray[Any, NumPyDtype[_np_float | _np_complex]]
+    ](self, arg: F, /) -> F: ...
+    @overload
+    def __call__(self, arg: mpfr, /) -> float: ...
+    @overload
+    def __call__(self, arg: mpc, /) -> complex: ...
+    @overload
+    def __call__(
+        self, arg: PlusInfinity | MinusInfinity | UnsignedInfinity, /
+    ) -> Integer: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, arg: Expression[P], /) -> Expression[P]: ...
+    @overload
+    def __call__(
+        self, 
+        arg: CoercibleToExpression, 
+        /, 
+        *, 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+
+class Function_sinh(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic sine function.
@@ -80,7 +345,7 @@ class Function_sinh(GinacFunction):
 
 sinh: Function_sinh
 
-class Function_cosh(GinacFunction):
+class Function_cosh(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic cosine function.
@@ -115,7 +380,7 @@ class Function_cosh(GinacFunction):
 
 cosh: Function_cosh
 
-class Function_tanh(GinacFunction):
+class Function_tanh(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic tangent function.
@@ -180,7 +445,7 @@ class Function_tanh(GinacFunction):
 
 tanh: Function_tanh
 
-class Function_coth(GinacFunction):
+class Function_coth(_CothCsch, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic cotangent function.
@@ -225,7 +490,7 @@ class Function_coth(GinacFunction):
 
 coth: Function_coth
 
-class Function_sech(GinacFunction):
+class Function_sech(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic secant function.
@@ -268,7 +533,7 @@ class Function_sech(GinacFunction):
 
 sech: Function_sech
 
-class Function_csch(GinacFunction):
+class Function_csch(_CothCsch, GinacFunction):
     def __init__(self) -> None:
         """
         The hyperbolic cosecant function.
@@ -309,7 +574,7 @@ class Function_csch(GinacFunction):
 
 csch: Function_csch
 
-class Function_arcsinh(GinacFunction):
+class Function_arcsinh(_ArcsinhArccosh, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic sine function.
@@ -368,7 +633,7 @@ arcsinh: Function_arcsinh
 
 asinh: Function_arcsinh
 
-class Function_arccosh(GinacFunction):
+class Function_arccosh(_ArcsinhArccosh, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic cosine function.
@@ -455,7 +720,7 @@ arccosh: Function_arccosh
 
 acosh: Function_arccosh
 
-class Function_arctanh(GinacFunction):
+class Function_arctanh(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic tangent function.
@@ -512,7 +777,7 @@ arctanh: Function_arctanh
 
 atanh: Function_arctanh
 
-class Function_arccoth(GinacFunction):
+class Function_arccoth(_ArccothArccsch, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic cotangent function.
@@ -558,7 +823,7 @@ arccoth: Function_arccoth
 
 acoth: Function_arccoth
 
-class Function_arcsech(GinacFunction):
+class Function_arcsech(_HyperbolicFunction, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic secant function.
@@ -589,7 +854,7 @@ arcsech: Function_arcsech
 
 asech: Function_arcsech
 
-class Function_arccsch(GinacFunction):
+class Function_arccsch(_ArccothArccsch, GinacFunction):
     def __init__(self) -> None:
         """
         The inverse of the hyperbolic cosecant function.
