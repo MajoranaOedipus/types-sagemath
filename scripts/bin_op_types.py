@@ -55,7 +55,10 @@ from itertools import product
 objects = [
     0, 1, 2, -3, 
     1.2, -3.0, 
-    1+3j, mpz(10), mpz(0), mpz(1), -mpz(3), mpfr(3.2), -mpfr(1.2), mpc(1+3j),
+    1+3j, 
+    mpz(10), mpz(0), mpz(1), -mpz(3), 
+    mpfr(3.2), -mpfr(1.2), 
+    mpc(1+3j),
     float32(1.2), float128(1.3e2), complex64(1+2.j), int32(100), uint16(8),
     -float32(1.2), -float128(1.3e2), -int32(100), 
     ZZ(1), ZZ(3), -ZZ(4), ZZ(0),

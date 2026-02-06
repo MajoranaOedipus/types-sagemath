@@ -200,18 +200,48 @@ REFERENCES:
 
 from typing import Callable, Literal, overload
 from _typeshed import Incomplete
+from typings_sagemath import (
+    FloatingSage, RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+from sage.symbolic.expression import Expression as Expression_
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.infinity import MinusInfinity, PlusInfinity, UnsignedInfinity
+from sage.rings.real_mpfr import RealNumber
+from sage.rings.real_double import RealDoubleElement
+from sage.rings.real_arb import RealBall
+from sage.rings.real_mpfi import RealIntervalFieldElement
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.complex_arb import ComplexBall
+from sage.rings.complex_interval import ComplexIntervalFieldElement
+from sage.rings.rational import Rational
+
+type _py_number = int | float | complex
+type _MpfrSage = RealNumber | ComplexNumber
+type _DoubleSage = RealDoubleElement | ComplexDoubleElement
+type _RealMpfrDoubleSage = RealNumber | RealDoubleElement
+type _ComplexMpfrDoubleSage = ComplexNumber | ComplexDoubleElement
+type _MpfrDoubleSage = _RealMpfrDoubleSage | _ComplexMpfrDoubleSage
+type _BallMpfiSage = RealBall | RealIntervalFieldElement | ComplexBall | ComplexIntervalFieldElement
+type _inf = PlusInfinity | MinusInfinity | UnsignedInfinity
+type _inf_signed = PlusInfinity | MinusInfinity
+
 from sage.functions.gamma import gamma as gamma
 from sage.functions.hyperbolic import cosh as cosh, sinh as sinh
 from sage.functions.log import exp as exp
 from sage.functions.trig import cos as cos, sin as sin
 from sage.misc.functional import sqrt as sqrt
 from sage.misc.lazy_import import lazy_import as lazy_import
+from sage.misc.latex import latex as latex
 from sage.rings.infinity import infinity as infinity, unsigned_infinity as unsigned_infinity
 from sage.rings.integer import Integer as Integer
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
-from sage.structure.element import Expression as Expression, get_coercion_model as get_coercion_model
+# from sage.structure.element import Expression as Expression, get_coercion_model as get_coercion_model
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
+from sage.symbolic.constants import pi as pi
+from sage.symbolic.ring import SR as SR
 
 class Function_Bessel_J(BuiltinFunction):
     """
@@ -318,7 +348,213 @@ class Function_Bessel_J(BuiltinFunction):
             sage: bessel_J(x, x)._sympy_()                                              # needs sympy sage.symbolic
             besselj(x, x)
         """
-        
+    # int
+    @overload
+    def __call__(
+        self, 
+        nu: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        x:  _BallMpfiSage | _inf, 
+        /, *, 
+        hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | Integer | Rational | CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, 
+        hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, nu: int, x: int, /, 
+    ) -> Expression_[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, nu: int | Integer | Rational, x: Integer | Rational, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, nu: int | Integer | Rational, x: CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | Integer | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        nu: Integer | Rational, 
+        x: int, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__[T: float | complex | _MpfrDoubleSage](
+        self, 
+        nu: int | Integer, 
+        x: T, 
+        /, *, hold: bool = False
+    ) -> T: ...
+    #float
+    @overload
+    def __call__(
+        self, nu: float, x: int | float | Integer | Rational, /, *,
+        hold: bool = False
+    ) -> float | complex: ...
+    @overload
+    def __call__(
+        self, nu: float | Rational | _RealMpfrDoubleSage, x: complex, /, *,
+        hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        nu: float | complex | _MpfrDoubleSage, 
+        x: CommutativePolynomial, /, *,
+        hold: bool = False
+    ) -> CommutativePolynomial | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: float | Rational | RealNumber, 
+        x: RealNumber, /, *,
+        hold: bool = False
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, 
+        nu: float | Rational | RealDoubleElement, 
+        x: RealDoubleElement, /, *,
+        hold: bool = False
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        nu: float | complex | Integer | Rational | _RealMpfrDoubleSage | ComplexNumber, 
+        x: T, /, *,
+        hold: bool = False
+    ) -> T: ...
+    # complex
+    @overload
+    def __call__(
+        self, 
+        nu: complex, 
+        x: _py_number | Integer | Rational | _RealMpfrDoubleSage, /, *,
+        hold: bool = False
+    ) -> complex: ...
+    # Rational
+    @overload
+    def __call__(
+        self, nu: Rational, x: float, /, *, hold: bool = False
+    ) -> complex | float: ...
+    # Polynomials
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: float | complex | _MpfrDoubleSage, /, *, hold: bool = False
+    ) -> CommutativePolynomial | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+    ) -> Integer | FloatingSage | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+        *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    # Sage Real Floating
+    @overload
+    def __call__(
+        self, 
+        nu: RealNumber, 
+        x: int | float | Integer | Rational | RealDoubleElement, /, 
+        *, hold: bool = False
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, 
+        nu: RealDoubleElement, 
+        x: int | float | Integer | Rational | RealNumber, /, 
+        *, hold: bool = False
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        nu: _BallMpfiSage, 
+        x: float | complex | _MpfrDoubleSage, /, 
+        *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: RealBall | RealIntervalFieldElement | ComplexBall, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        nu: _BallMpfiSage, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    # Sage Complex Floating
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, nu: T, x: _py_number | Integer | Rational | _MpfrDoubleSage, /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        nu: ComplexIntervalFieldElement, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # inf
+    @overload
+    def __call__(
+        self, 
+        nu: MinusInfinity | UnsignedInfinity, 
+        x: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: float | complex | FloatingSage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        nu: Expression_[P], 
+        x: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | Expression_[P], /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        nu: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage,
+        x: Expression_[P], /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: Expression_,
+        x: Expression_, /, *, hold: bool = False
+    ) -> Expression_: ...
+
 bessel_J: Function_Bessel_J
 
 class Function_Bessel_Y(BuiltinFunction):
@@ -542,6 +778,220 @@ class Function_Bessel_I(BuiltinFunction):
             sage: bessel_I(x, x)._sympy_()                                              # needs sympy sage.symbolic
             besseli(x, x)
         """
+    # int
+    @overload
+    def __call__(
+        self, 
+        nu: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        x:  _BallMpfiSage | _inf, 
+        /, *, 
+        hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | Integer | Rational | CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, 
+        hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, nu: int, x: int, /, 
+    ) -> Expression_[SymbolicRing] | int: ...
+    @overload
+    def __call__(
+        self, nu: int | Integer | Rational, x: Integer | Rational, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, nu: int | Integer | Rational, x: CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | Integer | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | Integer | Rational, 
+        x: float, 
+        /, *, hold: bool = False
+    ) -> float | complex: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | Integer, 
+        x: complex, 
+        /, *, hold: bool = False
+    ) -> complex: ...
+    #float
+    @overload
+    def __call__(
+        self, nu: float, x: int | float | Integer | Rational, /, *,
+        hold: bool = False
+    ) -> float | complex: ...
+    @overload
+    def __call__(
+        self, nu: float | Rational | _RealMpfrDoubleSage, x: complex, /, *,
+        hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        nu: float | complex | _MpfrDoubleSage, 
+        x: CommutativePolynomial, /, *,
+        hold: bool = False
+    ) -> CommutativePolynomial | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | float | Integer | Rational | RealNumber, 
+        x: RealNumber, /, *,
+        hold: bool = False
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, 
+        nu: int | float | Integer | Rational | RealDoubleElement, 
+        x: RealDoubleElement, /, *,
+        hold: bool = False
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, 
+        nu: float | complex | Integer | Rational | _RealMpfrDoubleSage | ComplexNumber, 
+        x: T, /, *,
+        hold: bool = False
+    ) -> T: ...
+    # complex
+    @overload
+    def __call__(
+        self, 
+        nu: complex, 
+        x: _py_number | Integer | Rational | _RealMpfrDoubleSage, /, *,
+        hold: bool = False
+    ) -> complex: ...
+    # Integer
+    @overload
+    def __call__(
+        self, 
+        nu: Integer | Rational, 
+        x: int, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    # Rational
+    @overload
+    def __call__(
+        self, nu: Rational, x: float, /, *, hold: bool = False
+    ) -> complex | float: ...
+    # Polynomials
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: float | complex | _MpfrDoubleSage, /, *, hold: bool = False
+    ) -> CommutativePolynomial | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+    ) -> Integer | FloatingSage | Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: CommutativePolynomial, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+        *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    # Sage Real Floating
+    @overload
+    def __call__(
+        self, 
+        nu: RealNumber, 
+        x: int | float | Integer | Rational | RealDoubleElement, /, 
+        *, hold: bool = False
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, 
+        nu: RealDoubleElement, 
+        x: int | float | Integer | Rational | RealNumber, /, 
+        *, hold: bool = False
+    ) -> RealDoubleElement | ComplexDoubleElement: ...
+    @overload
+    def __call__(
+        self, 
+        nu: _BallMpfiSage, 
+        x: float | complex | _MpfrDoubleSage, /, 
+        *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: RealBall | RealIntervalFieldElement | ComplexBall, 
+        x: int | Integer | Rational | CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        nu: _BallMpfiSage, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    # Sage Complex Floating
+    @overload
+    def __call__[T: ComplexNumber | ComplexDoubleElement](
+        self, nu: T, x: _py_number | Integer | Rational | _MpfrDoubleSage, /
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        nu: ComplexIntervalFieldElement, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # inf
+    @overload
+    def __call__(
+        self, 
+        nu: MinusInfinity | UnsignedInfinity, 
+        x: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: float | complex | FloatingSage, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, 
+    ) -> Expression_[SymbolicRing] | Integer: ...
+    @overload
+    def __call__(
+        self, 
+        nu: PlusInfinity, 
+        x: int | Integer | Rational | CommutativePolynomial, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        nu: Expression_[P], 
+        x: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | Expression_[P], /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        nu: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage,
+        x: Expression_[P], /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, 
+        nu: Expression_,
+        x: Expression_, /, *, hold: bool = False
+    ) -> Expression_: ...
 
 bessel_I: Function_Bessel_I
 
