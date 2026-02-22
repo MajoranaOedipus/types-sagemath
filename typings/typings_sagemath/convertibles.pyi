@@ -1,5 +1,7 @@
 from numbers import Real
 from typings_sagemath import Num
+
+from sage.symbolic.ring import SymbolicRing
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
 from gmpy2 import mpz, mpfr
@@ -27,7 +29,7 @@ from sympy.core.basic import Basic as SymPyBasic
 type ConvertibleToInteger = Int | str | Gen | bytes | None
 
 # TODO
-type ConvertibleToRealNumber = Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen
+type ConvertibleToRealNumber = Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | Expression[SymbolicRing]
 type ConvertibleToComplexNumber = Num
 
 # possible others, if it has a `_symbolic_` method, or it is a finite set (in Sets() and is_finite)
@@ -57,7 +59,7 @@ type CoercibleToExpression = (
         | RealInexactSage | ComplexInexactSage
 )
 type CoercibleToRealNumber = (
-    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | PlusInfinity | MinusInfinity
+    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
 )
 
 type ConvertibleToRealSet = RealSet | InternalRealInterval | tuple[Real, Real] | list[Real]
