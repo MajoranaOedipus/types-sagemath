@@ -2666,6 +2666,166 @@ class SphericalHankel1(BuiltinFunction):
             sage: spherical_hankel1
             spherical_hankel1
         """
+    @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational, 
+        z: int | Integer | Rational, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational, 
+        z: float | complex, 
+        /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational | CommutativePolynomial, 
+        z: CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | float | Integer | Rational, 
+        z: RealNumber, 
+        /, *, hold: bool = False
+    ) -> _MpfrSage: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | float | Integer | Rational, 
+        z: RealDoubleElement, 
+        /, *, hold: bool = False
+    ) -> _DoubleSage: ...
+    @overload
+    def __call__[T: _ComplexMpfrDoubleSage](
+        self, 
+        n: _py_number | Integer | Rational | _RealMpfrDoubleSage, 
+        z: T, 
+        /, *, hold: bool = False
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        n: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        z: _BallMpfiSage | _inf, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # write (T, int) first to avoid stupid complex :> float :> int
+    @overload
+    def __call__(
+        self, n: float | complex, z: int | Integer | Rational, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | complex: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: int | Integer | Rational, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: int | Integer | Rational, /, 
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: _MpfrSage, z: int | Integer | Rational, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: _DoubleSage, z: int | Integer, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | ComplexDoubleElement: ...
+    # float
+    @overload
+    def __call__(
+        self, n: float | complex, z: float | complex, 
+        /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial | complex: ...
+    # write (T, float) first to avoid stupid complex :> float
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: float, /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: float, /
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial | complex: ...
+    @overload
+    def __call__(
+        self, n: _MpfrSage, z: float, /, *, hold: bool = False
+    ) -> ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: _DoubleSage, z: float, /, *, hold: bool = False
+    ) -> ComplexDoubleElement: ...
+    # complex
+    @overload
+    def __call__(
+        self, n: complex | _MpfrDoubleSage, z: CommutativePolynomial, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: complex, z: _RealMpfrDoubleSage, /, *, hold: bool = False
+    ) -> complex: ...
+    # Polynomial
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: complex | _MpfrDoubleSage, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    # RR / RDF
+    @overload
+    def __call__(
+        self, n: _RealMpfrDoubleSage, z: complex, /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, n: RealDoubleElement, z: Rational, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | _DoubleSage: ...
+    @overload
+    def __call__[R: _RealMpfrDoubleSage](
+        self, n: R, z: _RealMpfrDoubleSage, /, *, hold: bool = False) -> R: ...
+    # CC / CDF
+    @overload
+    def __call__[C: _ComplexMpfrDoubleSage](
+        self, n: C, z: complex | _MpfrDoubleSage, /, *, hold: bool = False) -> C: ...
+    # Balls / Mpfi / Inf
+    @overload
+    def __call__(
+        self, 
+        n: _BallMpfiSage | _inf, 
+        z: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # Expressions
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        n: Expression_[P], 
+        z: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf | Expression_[P], 
+        /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        n: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        z: Expression_[P], 
+        /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, n: Expression_, z: Expression_, /, *, hold: bool = False
+    ) -> Expression_: ...
 
 spherical_hankel1: SphericalHankel1
 
@@ -2715,6 +2875,162 @@ class SphericalHankel2(BuiltinFunction):
             sage: spherical_hankel2
             spherical_hankel2
         """
+        @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational, 
+        z: int | Integer | Rational, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational, 
+        z: float | complex, 
+        /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | Integer | Rational | CommutativePolynomial, 
+        z: CommutativePolynomial, /, 
+    ) -> Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | float | Integer | Rational, 
+        z: RealNumber, 
+        /, *, hold: bool = False
+    ) -> _MpfrSage: ...
+    @overload
+    def __call__(
+        self, 
+        n: int | float | Integer | Rational, 
+        z: RealDoubleElement, 
+        /, *, hold: bool = False
+    ) -> _DoubleSage: ...
+    @overload
+    def __call__[T: _ComplexMpfrDoubleSage](
+        self, 
+        n: _py_number | Integer | Rational | _RealMpfrDoubleSage, 
+        z: T, 
+        /, *, hold: bool = False
+    ) -> T: ...
+    @overload
+    def __call__(
+        self, 
+        n: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        z: _BallMpfiSage | _inf, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # write (T, int) first to avoid stupid complex :> float :> int
+    @overload
+    def __call__(
+        self, n: float | complex, z: int | Integer | Rational, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | complex: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: int | Integer | Rational, 
+        /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | FloatingSage: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: int | Integer | Rational, /, 
+    ) -> Expression_[SymbolicRing]: ...
+    @overload
+    def __call__(
+        self, n: _MpfrSage, z: int | Integer | Rational, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: _DoubleSage, z: int | Integer | Rational, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | ComplexDoubleElement: ...
+    # float
+    @overload
+    def __call__(
+        self, n: float | complex, z: float | complex, 
+        /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: float, z: CommutativePolynomial, /
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial | complex: ...
+    # write (T, float) first to avoid stupid complex :> float
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: float, /, *, hold: Literal[True]
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: float, /
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial | complex: ...
+    @overload
+    def __call__(
+        self, n: _MpfrSage, z: float, /, *, hold: bool = False
+    ) -> ComplexNumber: ...
+    @overload
+    def __call__(
+        self, n: _DoubleSage, z: float, /, *, hold: bool = False
+    ) -> ComplexDoubleElement: ...
+    # complex
+    @overload
+    def __call__(
+        self, n: complex | _MpfrDoubleSage, z: CommutativePolynomial, /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    @overload
+    def __call__(
+        self, n: complex, z: _RealMpfrDoubleSage, /, *, hold: bool = False
+    ) -> complex: ...
+    # Polynomial
+    @overload
+    def __call__(
+        self, n: CommutativePolynomial, z: complex | _MpfrDoubleSage, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing] | CommutativePolynomial: ...
+    # RR / RDF
+    @overload
+    def __call__(
+        self, n: _RealMpfrDoubleSage, z: complex, /, *, hold: bool = False
+    ) -> complex: ...
+    @overload
+    def __call__[R: _RealMpfrDoubleSage](
+        self, n: R, z: _RealMpfrDoubleSage, /, *, hold: bool = False) -> R: ...
+    # CC / CDF
+    @overload
+    def __call__[C: _ComplexMpfrDoubleSage](
+        self, n: C, z: complex | _MpfrDoubleSage, /, *, hold: bool = False) -> C: ...
+    # Balls / Mpfi / Inf
+    @overload
+    def __call__(
+        self, 
+        n: _BallMpfiSage | _inf, 
+        z: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        /, *, hold: bool = False
+    ) -> Expression_[SymbolicRing]: ...
+    # Expressions
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        n: Expression_[P], 
+        z: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf | Expression_[P], 
+        /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__[P: SymbolicRingABC](
+        self, 
+        n: _py_number | Integer | Rational | CommutativePolynomial | FloatingSage | _inf, 
+        z: Expression_[P], 
+        /, *, hold: bool = False
+    ) -> Expression_[P]: ...
+    @overload
+    def __call__(
+        self, n: Expression_, z: Expression_, /, *, hold: bool = False
+    ) -> Expression_: ...
 
 spherical_hankel2: SphericalHankel2
 
