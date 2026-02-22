@@ -198,13 +198,12 @@ REFERENCES:
 - [WP-Struve]_
 """
 
-from typing import Callable, Literal, Protocol, overload
-from _typeshed import Incomplete
+from typing import Literal, Protocol, overload
 from typings_sagemath import (
     FloatingSage,
     RealInexactSage,
     ComplexInexactSage,
-    CoercibleToExpression,
+    ConvertibleToMpMathNumber
 )
 from sage.symbolic.expression import Expression as Expression_
 from sage.symbolic.ring import SymbolicRing
@@ -220,6 +219,7 @@ from sage.rings.complex_double import ComplexDoubleElement
 from sage.rings.complex_arb import ComplexBall
 from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.rational import Rational
+from sage.libs.mpmath.ext_main import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
 
 type _py_number = int | float | complex
 type _MpfrSage = RealNumber | ComplexNumber
@@ -230,6 +230,7 @@ type _MpfrDoubleSage = _RealMpfrDoubleSage | _ComplexMpfrDoubleSage
 type _BallMpfiSage = RealBall | RealIntervalFieldElement | ComplexBall | ComplexIntervalFieldElement
 type _inf = PlusInfinity | MinusInfinity | UnsignedInfinity
 type _inf_signed = PlusInfinity | MinusInfinity
+type _MpMathNumber = MpMathMpf | MpMathMpc | MpMathMpi
 
 from sage.functions.gamma import gamma as gamma
 from sage.functions.hyperbolic import cosh as cosh, sinh as sinh
@@ -3034,7 +3035,9 @@ class SphericalHankel2(BuiltinFunction):
 
 spherical_hankel2: SphericalHankel2
 
-def spherical_bessel_f(F, n, z):
+def spherical_bessel_f(
+    F: str, n: ConvertibleToMpMathNumber, z: ConvertibleToMpMathNumber
+) -> _MpMathNumber:
     """
     Numerically evaluate the spherical version, `f`, of the Bessel function `F`
     by computing `f_n(z) = \\sqrt{\\frac{1}{2}\\pi/z} F_{n + \\frac{1}{2}}(z)`.

@@ -1,12 +1,17 @@
 from numbers import Real
-from typings_sagemath import Num
+from typings_sagemath import FloatingSage, Num
 
 from sage.symbolic.ring import SymbolicRing
+
+from sage.rings.finite_rings.integer_mod import IntegerMod_int
+
+from sage.rings.imaginary_unit import NumberFieldElement_gaussian
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
 from gmpy2 import mpz, mpfr
 from sage.rings.infinity import PlusInfinity, MinusInfinity, UnsignedInfinity
 from sage.rings.real_mpfr import RealNumber
+from sage.rings.integer import Integer
 from sage.rings.integer_ring import IntegerRing_class
 from sage.rings.qqbar import AlgebraicField # TODO: with_category
 from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
@@ -17,12 +22,16 @@ from sage.structure.factorization import Factorization
 from sage.structure.element import Matrix, RingElement
 from sage.symbolic.expression import Expression
 from sage.sets.real_set import InternalRealInterval, RealSet
+from sage.libs.mpmath.ext_main import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
 from numpy import (
     integer as NumPyInteger, 
     floating as NumPyFloating, 
     complexfloating as NumPyComplexFloating
 )
 from sympy.core.basic import Basic as SymPyBasic
+
+type _py_number = int | float | complex
+type _MpMathNumber = MpMathMpf | MpMathMpc | MpMathMpi
 
 # possible others, if it has a `_integer_` method 
 # note that `list`, `tuple` objects are only convertible when `base` > 1
@@ -59,7 +68,15 @@ type CoercibleToExpression = (
         | RealInexactSage | ComplexInexactSage
 )
 type CoercibleToRealNumber = (
-    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
+    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic
+     | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
 )
 
 type ConvertibleToRealSet = RealSet | InternalRealInterval | tuple[Real, Real] | list[Real]
+
+# c.f. libs/mpmath/ext_main.pyx: Context.convert and MPF_set_any
+type ConvertibleToMpMathNumber = (
+    _py_number | mpfr | Integer | IntegerMod_int | Expression[SymbolicRing]
+    | OrderElement_quadratic | NumberFieldElement_gaussian | FloatingSage | str
+    | PlusInfinity | MinusInfinity | _MpMathNumber
+)
