@@ -8,9 +8,10 @@ from sage.rings.finite_rings.integer_mod import IntegerMod_int
 from sage.rings.imaginary_unit import NumberFieldElement_gaussian
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
-from gmpy2 import mpz, mpfr
+from gmpy2 import mpc, mpz, mpfr
 from sage.rings.infinity import PlusInfinity, MinusInfinity, UnsignedInfinity
 from sage.rings.real_mpfr import RealNumber
+from sage.rings.real_double import RealDoubleElement
 from sage.rings.integer import Integer
 from sage.rings.integer_ring import IntegerRing_class
 from sage.rings.qqbar import AlgebraicField # TODO: with_category
@@ -32,6 +33,8 @@ from sympy.core.basic import Basic as SymPyBasic
 
 type _py_number = int | float | complex
 type _MpMathNumber = MpMathMpf | MpMathMpc | MpMathMpi
+type _signed_inf = PlusInfinity | MinusInfinity
+type _inf = _signed_inf | UnsignedInfinity
 
 # possible others, if it has a `_integer_` method 
 # note that `list`, `tuple` objects are only convertible when `base` > 1
@@ -39,7 +42,11 @@ type ConvertibleToInteger = Int | str | Gen | bytes | None
 
 # TODO
 type ConvertibleToRealNumber = Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | Expression[SymbolicRing]
-type ConvertibleToComplexNumber = Num
+type ConvertibleToComplexNumber = (
+    int | float | mpz | mpfr | NumPyFloating | NumPyInteger
+        | Integer | Expression | RealNumber | RealDoubleElement
+        | _signed_inf
+)
 
 # possible others, if it has a `_symbolic_` method, or it is a finite set (in Sets() and is_finite)
 # c.f. symbolic.expression.new_Expression
@@ -71,6 +78,12 @@ type CoercibleToRealNumber = (
     Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic
      | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
 )
+type CoercibleToComplexNumber = (
+    _py_number | mpz | mpfr | mpc | NumPyFloating | NumPyInteger
+        | Integer | Rational | Expression | OrderElement_quadratic
+        | NumberFieldElement_gaussian | FloatingSage | _signed_inf
+)
+
 
 type ConvertibleToRealSet = RealSet | InternalRealInterval | tuple[Real, Real] | list[Real]
 
