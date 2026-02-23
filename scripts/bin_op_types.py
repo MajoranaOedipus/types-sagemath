@@ -37,8 +37,9 @@ operator_names = {
     "and_": "&",
     "or_": "|",
     "xor": "^",
-    "lshift": "<<",
-    "rshift": ">>"
+    # disabled because there is some bug in sage that cause a SIGSEGV
+    # "lshift": "<<",
+    # "rshift": ">>"
 }
 
 import operator
@@ -124,7 +125,6 @@ def test_bin_ops(
     results: defaultdict[tuple[type, type, str], set[type]] = defaultdict(set)
 
     for s, t, bin_op in product(objects, objects, bin_ops):
-        
         if filter is not None and not isinstance(s, filter) and not isinstance(t, filter):
             continue
 
