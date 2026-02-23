@@ -106,8 +106,7 @@ Make sure we don't have a new field for every new literal::
     sage: RealField(100, rnd='RNDZ') is RealField(100, rnd=1)
     True
 """
-## pyright: reportOverlappingOverload=false
-
+# pyright: reportOverlappingOverload=false
 from typing import Annotated, Literal, Self, SupportsFloat, SupportsInt, TypeGuard, overload
 from collections.abc import Callable
 from typings_sagemath import (
@@ -801,13 +800,13 @@ class RealField_class(RealFieldABC):
     ) -> RealNumber: ...
     # NumPy Real
     @overload
-    def random_element( # pyright: ignore[reportOverlappingOverload]
+    def random_element(
         self, 
         min: _NumPyRealNotLongdouble,
         max: int | float |  _NumPyRealNotLongdouble | Rational | Integer | OrderElement_quadratic
     ) -> NumPyFloat64: ...
     @overload
-    def random_element( # pyright: ignore[reportOverlappingOverload]
+    def random_element(
         self, 
         min: int | float |  _NumPyRealNotLongdouble | Rational | Integer,
         max: _NumPyRealNotLongdouble
@@ -2655,7 +2654,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
         self, extend: Literal[False], all: Literal[True]
     ) -> tuple[RealNumber, RealNumber]: ...
     @overload
-    def sqrt( # pyright: ignore[reportOverlappingOverload]
+    def sqrt(
         self, extend: Literal[True] = True, all: Literal[True] = ...
     ) -> tuple[RealNumber | ComplexNumber, RealNumber | ComplexNumber]: ...
     @overload
@@ -3096,7 +3095,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
     @overload
     def __radd__(self, left: NumPyComplex) -> NumPyComplex128: ...
     @overload
-    def __radd__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ... # pyright: ignore[reportOverlappingOverload]
+    def __radd__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
     @overload
     def __radd__(
         self, left: int | float | Integer | Rational | RealNumber
@@ -3129,7 +3128,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
     @overload
     def __rsub__(self, left: NumPyComplex) -> NumPyComplex128: ...
     @overload
-    def __rsub__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ... # pyright: ignore[reportOverlappingOverload]
+    def __rsub__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
     @overload
     def __rsub__(
         self, left: int | float | Integer | Rational | RealNumber
@@ -3160,7 +3159,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
     @overload
     def __rmul__(self, left: NumPyComplex) -> NumPyComplex128: ...
     @overload
-    def __rmul__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ... # pyright: ignore[reportOverlappingOverload]
+    def __rmul__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
     @overload
     def __rmul__(
         self, left: int | float | Integer | Rational | RealNumber
@@ -3193,7 +3192,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
     @overload
     def __rtruediv__(self, left: NumPyComplex) -> NumPyComplex128: ...
     @overload
-    def __rtruediv__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ... # pyright: ignore[reportOverlappingOverload]
+    def __rtruediv__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
     @overload
     def __rtruediv__(
         self, left: int | float | Integer | Rational | RealNumber
@@ -3263,11 +3262,11 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
     @overload
     def __rpow__(self, base: mpz) -> mpfr: ...
     @overload
-    def __rpow__(self, base: _NumPyRealNotLongdouble) -> NumPyFloat64: ... # pyright: ignore[reportOverlappingOverload]
+    def __rpow__(self, base: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
     @overload
     def __rpow__(self, base: NumPyComplex) -> NumPyComplex128: ...
     @overload
-    def __rpow__( # pyright: ignore[reportOverlappingOverload]
+    def __rpow__(
         self, 
         base: float | int 
     ) -> RealNumber: ...
@@ -3533,11 +3532,11 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             6.00000000000000"""
     
     @overload
-    def __eq__(self, other: Expression) -> Expression: ... # pyright: ignore[reportOverlappingOverload]
+    def __eq__(self, other: Expression) -> Expression: ...
     @overload
     def __eq__(self, other: object) -> bool: ...
     @overload
-    def __ne__(self, other: Expression) -> Expression: ... # pyright: ignore[reportOverlappingOverload]
+    def __ne__(self, other: Expression) -> Expression: ...
     @overload
     def __ne__(self, other: object) -> bool: ...
     @overload
