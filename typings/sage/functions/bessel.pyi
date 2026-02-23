@@ -197,7 +197,7 @@ REFERENCES:
 
 - [WP-Struve]_
 """
-
+# pyright: reportOverlappingOverload=false
 from typing import Literal, Protocol, overload
 from typings_sagemath import (
     FloatingSage,
@@ -247,7 +247,7 @@ from sage.rings.integer import Integer as Integer
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.rings.rational_field import QQ as QQ
 
-# from sage.structure.element import Expression as Expression, get_coercion_model as get_coercion_model
+from sage.structure.element import Expression as Expression, get_coercion_model as get_coercion_model
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
 from sage.symbolic.constants import pi as pi
 from sage.symbolic.ring import SR as SR
@@ -621,7 +621,7 @@ class Function_Bessel_J(BuiltinFunction):
         hold: bool = False,
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, nu: Expression_, x: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
@@ -863,7 +863,7 @@ class Function_Bessel_Y(BuiltinFunction):
         hold: bool = False
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, nu: Expression_, x: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
@@ -1249,7 +1249,7 @@ class Function_Bessel_I(BuiltinFunction):
         hold: bool = False,
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, nu: Expression_, x: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
@@ -1504,7 +1504,7 @@ class Function_Bessel_K(BuiltinFunction):
         hold: bool = False
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, nu: Expression_, x: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
@@ -2824,7 +2824,7 @@ class SphericalHankel1(BuiltinFunction):
         /, *, hold: bool = False
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, n: Expression_, z: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
@@ -2876,7 +2876,7 @@ class SphericalHankel2(BuiltinFunction):
             sage: spherical_hankel2
             spherical_hankel2
         """
-        @overload
+    @overload
     def __call__(
         self, 
         n: int | Integer | Rational, 
@@ -3029,7 +3029,7 @@ class SphericalHankel2(BuiltinFunction):
         /, *, hold: bool = False
     ) -> Expression_[P]: ...
     @overload
-    def __call__(
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
         self, n: Expression_, z: Expression_, /, *, hold: bool = False
     ) -> Expression_: ...
 
