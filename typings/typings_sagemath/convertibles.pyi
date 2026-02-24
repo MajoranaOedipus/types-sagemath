@@ -39,6 +39,7 @@ type _inf = _signed_inf | UnsignedInfinity
 # possible others, if it has a `_integer_` method 
 # note that `list`, `tuple` objects are only convertible when `base` > 1
 type ConvertibleToInteger = Int | str | Gen | bytes | None
+type CoercibleToInteger = int | mpz | NumPyInteger | IntegerMod_int | Integer | str
 
 # TODO
 type ConvertibleToRealNumber = Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic | Rational | Gen | Expression[SymbolicRing]

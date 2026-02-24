@@ -35,7 +35,7 @@ other types will also coerce to the integers, when it makes sense.
 
 from typing import Annotated, Any, Literal, Self, TypeGuard, overload
 from collections.abc import Callable, Iterable, Iterator
-from typings_sagemath import Int
+from typings_sagemath import Int, CoercibleToInteger
 from sage.rings.ring import PrincipalIdealDomain
 from sage.rings.polynomial.multi_polynomial_ring_base import MPolynomialRing_base
 from sage.rings.polynomial.multi_polynomial import MPolynomial
@@ -374,6 +374,7 @@ class IntegerRing_class(PrincipalIdealDomain):
                     sage: A in InfiniteEnumeratedSets()
                     True
         """
+    def __call__(self, x: CoercibleToInteger = 0) -> Integer: ...
     def absolute_degree(self) -> Literal[1]:
         """
         Return the absolute degree of the integers, which is 1.

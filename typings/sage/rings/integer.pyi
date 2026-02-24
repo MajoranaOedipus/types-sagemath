@@ -126,18 +126,24 @@ AUTHORS:
 """
 
 from collections.abc import Callable, Sequence
-from typing import Annotated, Any, ClassVar, Literal, Self, SupportsIndex, TypeGuard, overload, SupportsInt
-from typings_sagemath import ComplexInexact, ComplexInexactSage, Int, ConvertibleToInteger, Num, RealInexact, RealInexactSage, IntSupportingBitwiseOp
+from typing import Annotated, Any, Literal, Self, SupportsIndex, TypeGuard, overload, SupportsInt
+from typings_sagemath import ComplexInexact, ComplexInexactSage, Int, ConvertibleToInteger, Num, Real, RealInexact, RealInexactSage, IntSupportingBitwiseOp
 from sage.symbolic.expression import Expression
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.finite_rings.integer_mod import IntegerMod_int
 from sage.rings.infinity import PlusInfinity, MinusInfinity, UnsignedInfinity
 from sage.rings.integer_ring import IntegerRing_class
 from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
 from sage.rings.number_field.number_field_base import NumberField
+from sage.rings.number_field.number_field_element_quadratic import NumberFieldElement_quadratic_sqrt, OrderElement_quadratic, NumberFieldElement_gaussian
+from sage.rings.real_double import RealDoubleElement
 from sage.rings.ideal import Ideal_pid
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
+from sage.rings.fraction_field_element import FractionFieldElement
 from sage.structure.parent import Parent
 from sage.structure.element import Element, EuclideanDomainElement
 from sage.structure.factorization import Factorization
@@ -151,10 +157,21 @@ from numpy import (
     floating as NumPyFloat, 
     complexfloating as NumPyComplex
 )
-from gmpy2 import mpfr, mpz
+from gmpy2 import mpc, mpfr, mpz
 from cypari2.gen import Gen
 
+from sage.symbolic.ring import SymbolicRing
+
+from sage.rings.real_arb import RealBall
+
+from sage.rings.real_mpfi import RealIntervalFieldElement
+
+from typings_sagemath.convertibles import CoercibleToInteger
+
 type _NotUsed = object
+type _signed_inf = PlusInfinity | MinusInfinity
+type _inf = PlusInfinity | MinusInfinity | UnsignedInfinity
+type _Zero = Annotated[Integer, Integer(0)]
 
 import sage as sage
 import sage.rings.integer_ring as integer_ring
@@ -3596,13 +3613,50 @@ class Integer(EuclideanDomainElement):
             sage: n = 2
             sage: deepcopy(n) is n
             True"""
-    
-    def __eq__(self, other: Num) -> bool: ...
-    def __ne__(self, other: object) -> bool: ...
-    def __ge__(self, other: object) -> bool: ...
-    def __gt__(self, other: object) -> bool: ...
-    def __le__(self, other: object) -> bool: ...
-    def __lt__(self, other: object) -> bool: ...
+    @overload
+    def __eq__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __eq__(self, other: object, /) -> bool: ...
+    @overload
+    def __ne__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __ne__(self, other: object, /) -> bool: ...
+    @overload
+    def __ge__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
+    @overload
+    def __ge__(
+        self, 
+        other:  CommutativePolynomial | OrderElement_quadratic | Real
+            | NumberFieldElement_gaussian | ComplexNumber | _inf
+            | ComplexDoubleElement | ComplexIntervalFieldElement, /
+    ) -> bool: ...
+    @overload
+    def __gt__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
+    @overload
+    def __gt__(
+        self, 
+        other:  CommutativePolynomial | OrderElement_quadratic | Real
+            | NumberFieldElement_gaussian | ComplexNumber | _inf
+            | ComplexDoubleElement | ComplexIntervalFieldElement, /
+    ) -> bool: ...
+    @overload
+    def __le__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
+    @overload
+    def __le__(
+        self, 
+        other:  CommutativePolynomial | OrderElement_quadratic | Real
+            | NumberFieldElement_gaussian | ComplexNumber | _inf
+            | ComplexDoubleElement | ComplexIntervalFieldElement, /
+    ) -> bool: ...
+    @overload
+    def __lt__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
+    @overload
+    def __lt__(
+        self, 
+        other:  CommutativePolynomial | OrderElement_quadratic | Real
+            | NumberFieldElement_gaussian | ComplexNumber | _inf
+            | ComplexDoubleElement | ComplexIntervalFieldElement, /
+    ) -> bool: ...
 
     def __float__(self) -> float:
         """
@@ -3823,14 +3877,13 @@ class Integer(EuclideanDomainElement):
         """
     @overload
     def __mod__[
-        Y: mpfr | IntegerMod_int | CommutativePolynomial | RealInexactSage
-    ](x, y: Y) -> Y: ...
+        Y: mpfr | IntegerMod_int | CommutativePolynomial | RealNumber
+            | CommutativePolynomial
+    ](x, y: Y, /) -> Y: ...
     @overload
-    def __mod__(x, y: NumPyFloat) -> float64: ...
+    def __mod__(x, y: NumPyFloat, /) -> float64: ...
     @overload
-    def __mod__(x, y: int | mpz | NumPyInteger) -> Integer: ...
-    @overload
-    def __mod__(x, y): 
+    def __mod__(x, y: int | mpz | NumPyInteger, /) -> Integer:
         """
         Return x modulo y.
 
@@ -3876,17 +3929,13 @@ class Integer(EuclideanDomainElement):
             ...
             ArithmeticError: reduction modulo 100 not defined"""
     @overload
-    def __rmod__(self, other: int | Rational) -> Integer: ...
+    def __rmod__(self, other: int) -> Integer: ... # pyright: ignore[reportOverlappingOverload]
     @overload
     def __rmod__(self, other: NumPyInteger) -> int64: ...
     @overload
     def __rmod__(self, other: NumPyFloat) -> float64: ...
     @overload
-    def __rmod__[
-        X: float | mpz | mpfr | IntegerMod_int | CommutativePolynomial | RealNumber
-    ](self, other: X) -> X: ...
-    @overload
-    def __rmod__(self, other): ...
+    def __rmod__[X: float | mpz | mpfr](self, other: X) -> X: ...
     
     def __and__(left, right: int | Integer | NumPyInteger) -> Integer:
         """
@@ -4004,14 +4053,18 @@ class Integer(EuclideanDomainElement):
     def __rrshift__(self, other: NumPyInteger) -> int64: ...
     @overload
     def __rrshift__[L: IntegerMod_int | Rational | CommutativePolynomial](self, other: L) -> L: ...
-    
+
     # the result type of __add__ is mostly through experiment
     @overload
-    def __add__(left, right: Integer | int | NumPyInteger) -> Integer: ...
+    def __add__(left, right: Integer | int | NumPyInteger, /) -> Integer: ...
     @overload
-    def __add__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | mpz](left, right: R) -> R: ...
+    def __add__[
+        R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact
+            | mpz | mpfr | mpc | CommutativePolynomial | _inf
+            | OrderElement_quadratic | NumberFieldElement_gaussian
+        ](left, right: R, /) -> R: ...
     @overload
-    def __add__(left, right) -> Any:
+    def __add__[R: SymbolicRingABC](left, right: Expression[R], /) -> Expression[R]:
         """
         TESTS::
 
@@ -4023,26 +4076,32 @@ class Integer(EuclideanDomainElement):
             5/3
             sage: 1 + (-2/3)
             1/3"""
-        
-    @overload
-    def __radd__(right, left: NumPySignedInt) -> int64: ...
-    @overload
-    def __radd__(right, left: NumPyUInt) -> float64: ...
-    @overload
-    def __radd__(right, left: NumPyComplex) -> complex128: ...
-    @overload
-    def __radd__(right, left: Integer | int) -> Integer: ...
-    @overload
-    def __radd__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexactSage](right, left: R) -> R: ...
-    @overload
-    def __radd__(self, other): ...
 
     @overload
-    def __sub__(self, right: Integer | int | NumPyInteger) -> Integer: ...
+    def __radd__(right, left: NumPySignedInt, /) -> int64: ...
     @overload
-    def __sub__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | mpz](self, right: R) -> R: ...
+    def __radd__(right, left: NumPyUInt, /) -> float64: ...
     @overload
-    def __sub__(self, right) -> Any:
+    def __radd__(right, left: NumPyComplex, /) -> complex128: ...
+    @overload
+    def __radd__(right, left: int, /) -> Integer: ... # pyright: ignore[reportOverlappingOverload]
+    @overload
+    def __radd__[R: RealInexact | complex](right, left: R, /) -> R: ...
+
+    @overload
+    def __sub__(left, right: Integer | int | NumPyInteger, /) -> Integer: ...
+    @overload
+    def __sub__[
+        R: Rational | Integer | IntegerMod_int | RealInexact
+        | CommutativePolynomial | OrderElement_quadratic | UnsignedInfinity
+        | NumberFieldElement_gaussian | ComplexInexact | mpz | mpfr | mpc
+    ](left, right: R, /) -> R: ...
+    @overload
+    def __sub__(left, right: MinusInfinity, /) -> PlusInfinity: ...
+    @overload
+    def __sub__(left, right: PlusInfinity, /) -> MinusInfinity: ...
+    @overload
+    def __sub__[R: SymbolicRingABC](left, right: Expression[R], /) -> Expression[R]:
         """
         TESTS::
 
@@ -4056,25 +4115,28 @@ class Integer(EuclideanDomainElement):
             1/4"""
     
     @overload
-    def __rsub__(right, left: Integer | int) -> Integer: ...
+    def __rsub__(right, left: NumPySignedInt, /) -> int64: ...
     @overload
-    def __rsub__(right, left: NumPySignedInt) -> int64: ...
+    def __rsub__(right, left: NumPyUInt, /) -> float64: ...
     @overload
-    def __rsub__(right, left: NumPyUInt) -> uint64: ...
+    def __rsub__(right, left: NumPyComplex, /) -> complex128: ...
     @overload
-    def __rsub__(right, left: NumPyComplex) -> complex128: ...
+    def __rsub__(right, left: int, /) -> Integer: ... # pyright: ignore[reportOverlappingOverload]
     @overload
-    def __rsub__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexactSage](right, left: R) -> R: ...
-    @overload
-    def __rsub__(right, left): ...
+    def __rsub__[R: RealInexact | complex](right, left: R, /) -> R: ...
     
-    # note that ZZ * mpz -> ZZ, and action on list-like python objects
+    # note that ZZ * mpz -> ZZ
     @overload
-    def __mul__(left, right: Integer | int | NumPyInteger | mpz) -> Integer: ...
+    def __mul__(left, right: Integer | int | NumPyInteger | mpz, /) -> Integer: ...
     @overload
-    def __mul__[R: Rational | IntegerMod_int | RealInexact | ComplexInexact | tuple | str | bytes | list](left, right: R) -> R: ...
+    def __mul__[
+        R: IntegerMod_int | RealInexact | ComplexInexact | CommutativePolynomial
+            |OrderElement_quadratic | NumberFieldElement_gaussian | Rational
+    ](left, right: R, /) -> R: ...
     @overload
-    def __mul__(self, right) -> Any:
+    def __mul__(left, right: _signed_inf) -> _signed_inf: ...
+    @overload
+    def __mul__[R: SymbolicRingABC](left, right: Expression[R], /) -> Expression[R]:
         """
         TESTS::
 
@@ -4088,7 +4150,7 @@ class Integer(EuclideanDomainElement):
             5/2"""
     
     @overload
-    def __rmul__(right, left: Integer | int) -> Integer: ...
+    def __rmul__(right, left: int) -> Integer: ...
     @overload
     def __rmul__(right, left: NumPySignedInt) -> int64: ...
     @overload
@@ -4096,18 +4158,24 @@ class Integer(EuclideanDomainElement):
     @overload
     def __rmul__(right, left: NumPyComplex) -> complex128: ...
     @overload
-    def __rmul__[R: Rational | Integer | IntegerMod_int | RealInexact | ComplexInexact | tuple | str | bytes | list | mpz](right, left: R) -> R: ...
-    @overload
-    def __rmul__(right, left) -> Any: ...
+    def __rmul__(right, left: mpz) -> mpz: ...
 
     @overload
-    def __truediv__(left, right: int | Rational | NumPyInteger) -> Rational: ...
+    def __truediv__(left, right: int | Integer | Rational | NumPyInteger, /) -> Rational: ...
     @overload
-    def __truediv__(left, right: mpz) -> mpfr: ...
+    def __truediv__(left, right: mpz, /) -> mpfr: ...
     @overload
-    def __truediv__[R: RealInexact | ComplexInexact | IntegerMod_int](left, right: R) -> R: ...
+    def __truediv__(left, right: OrderElement_quadratic | NumberFieldElement_quadratic_sqrt) -> NumberFieldElement_quadratic_sqrt: ...
     @overload
-    def __truediv__(left, right) -> Any:
+    def __truediv__[
+        R: RealInexact | ComplexInexact | IntegerMod_int | NumberFieldElement_gaussian
+    ](left, right: R, /) -> R: ...
+    @overload
+    def __truediv__(left, right: CommutativePolynomial, /) -> FractionFieldElement: ...
+    @overload
+    def __truediv__(left, right: _inf, /) -> _Zero: ...
+    @overload
+    def __truediv__[R: SymbolicRingABC](left, right: Expression[R], /) -> Expression[R]:
         """
         TESTS::
 
@@ -4136,52 +4204,64 @@ class Integer(EuclideanDomainElement):
             ZeroDivisionError: division by zero in algebraic field"""
     
     @overload
-    def __rtruediv__(right, left: int | Rational) -> Rational: ...
+    def __rtruediv__(right, left: int | Rational, /) -> Rational: ...
     @overload
-    def __rtruediv__(right, left: mpz) -> mpfr: ...
+    def __rtruediv__(right, left: mpz, /) -> mpfr: ...
     @overload
-    def __rtruediv__(right, left: NumPyInteger | NumPyFloat) -> float64: ...
+    def __rtruediv__(right, left: NumPyInteger | NumPyFloat, /) -> float64: ...
     @overload
-    def __rtruediv__(right, left: NumPyComplex) -> complex128: ...
+    def __rtruediv__(right, left: NumPyComplex, /) -> complex128: ...
     @overload
-    def __rtruediv__[L: RealInexactSage | ComplexInexactSage | complex](right, left: L) -> L: ...
-    @overload
-    def __rtruediv__(right, left): ...
+    def __rtruediv__[L: float | complex](right, left: L, /) -> L: ...
     
     @overload
-    def __floordiv__(self, right: Integer | int | NumPyInteger) -> Integer: ...
+    def __floordiv__(self, right: Integer | int | NumPyInteger, /) -> Integer: ...
     @overload
-    def __floordiv__[R: mpz | IntegerMod_int | float | ComplexInexact | Rational | NumPyFloat](self, right: R) -> R: ...
+    def __floordiv__[
+        R: mpz | IntegerMod_int | Rational | float | RealDoubleElement
+            | ComplexNumber | ComplexDoubleElement | ComplexIntervalFieldElement
+            | NumPyFloat | NumberFieldElement_gaussian | CommutativePolynomial
+    ](self, right: R, /) -> R: ...
     @overload
-    def __floordiv__(self, right) -> Any: ...
+    def __floordiv__(left, right: OrderElement_quadratic | NumberFieldElement_quadratic_sqrt) -> NumberFieldElement_quadratic_sqrt: ...
     @overload
-    def __rfloordiv__(self, left: Integer | int) -> Rational: ...
+    def __rfloordiv__(self, left: Integer | int, /) -> Rational: ...
     @overload
-    def __rfloordiv__(self, left: NumPySignedInt) -> int64: ...
+    def __rfloordiv__(self, left: NumPySignedInt, /) -> int64: ...
     @overload
-    def __rfloordiv__(self, left: NumPyFloat | NumPyUInt) -> float64: ...
+    def __rfloordiv__(self, left: NumPyFloat | NumPyUInt, /) -> float64: ...
     @overload
-    def __rfloordiv__[L: mpz | IntegerMod_int | float | ComplexInexact | Rational | NumPyFloat](self, left: L) -> L: ... 
-    @overload
-    def __rfloordiv__(self, left): ...
+    def __rfloordiv__[L: mpz | float | ComplexInexact | Rational | NumPyFloat](self, left: L, /) -> L: ... 
     
     @overload
     def __pow__(
         left, 
-        right: Integer | int | IntegerMod_int | mpz| NumPyInteger
+        right: Integer | int | float | NumPySignedInt, /
+    ) -> Integer | Rational: ...
+    
+    @overload
+    def __pow__(
+        left, 
+        right: NumPyUInt | IntegerMod_int, /
     ) -> Integer: ...
     @overload
     def __pow__[
-        R: RealInexact | ComplexInexact | mpfr | Rational
-    ](left, right: R) -> R: ...
+        R: RealDoubleElement | RealBall | RealIntervalFieldElement
+            | ComplexInexact | mpfr | mpc
+    ](left, right: R, /) -> R: ...
     @overload
     def __pow__(
-        left, 
-        right: Int | RealInexactSage, 
-        modulus: Int | RealInexactSage | ComplexInexactSage | NumPyFloat | mpfr
-    ) -> Integer: ...# pyright: ignore[reportIncompatibleMethodOverride]
+        left, right: Rational, /
+    ) -> Rational | Expression[SymbolicRing] | NumberFieldElement_gaussian: ...
     @overload
-    def __pow__(left, right, modulus) -> Any: # pyright: ignore[reportIncompatibleMethodOverride]
+    def __pow__(
+        left, right: NumberFieldElement_gaussian, /) -> Expression[SymbolicRing]: ...
+    @overload
+    def __pow__(left, right: RealNumber, /) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __pow__(
+        left, right: CoercibleToInteger, modulus: CoercibleToInteger, /
+    ) -> Integer:
         """
         Return ``(left ^ right) % modulus``.
 
@@ -4264,16 +4344,14 @@ class Integer(EuclideanDomainElement):
             Integer Ring"""
     @overload
     def __rpow__[
-        L: mpz | mpfr | Rational | RealInexactSage | ComplexInexactSage | complex | Integer | IntegerMod_int | int | float
-    ](right, left: L) -> L: ...
+        L: mpz | mpfr | int | float | complex
+    ](right, left: L, /) -> L: ...
     @overload
-    def __rpow__(right, left: NumPyInteger) -> int64: ...
+    def __rpow__(right, left: NumPyInteger, /) -> int64: ...
     @overload
-    def __rpow__(right, left: NumPyFloat) -> float64: ...
+    def __rpow__(right, left: NumPyFloat, /) -> float64: ...
     @overload
-    def __rpow__(right, left: NumPyComplex) -> complex128: ...
-    @overload
-    def __rpow__(right, left): ...
+    def __rpow__(right, left: NumPyComplex, /) -> complex128: ...
     
 class IntegerWrapper(Integer):
     '''
