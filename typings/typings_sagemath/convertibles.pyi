@@ -27,7 +27,8 @@ from sage.libs.mpmath.ext_main import mpf as MpMathMpf, mpc as MpMathMpc, mpi as
 from numpy import (
     integer as NumPyInteger, 
     floating as NumPyFloating, 
-    complexfloating as NumPyComplexFloating
+    complexfloating as NumPyComplexFloating,
+    number as NumPyNumber
 )
 from sympy.core.basic import Basic as SymPyBasic
 
@@ -79,12 +80,20 @@ type CoercibleToRealNumber = (
     Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic
      | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
 )
+type CoercibleToRDF = (
+    Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic
+     | Rational | Gen | PlusInfinity | MinusInfinity | Expression[SymbolicRing]
+)
 type CoercibleToComplexNumber = (
     _py_number | mpz | mpfr | mpc | NumPyFloating | NumPyInteger
         | Integer | Rational | Expression | OrderElement_quadratic
         | NumberFieldElement_gaussian | FloatingSage | _signed_inf
 )
-
+type CoercibleToCDF = (
+    _py_number | mpz | mpfr | mpc | NumPyNumber | OrderElement_quadratic
+        | Integer | Rational | Expression
+        | NumberFieldElement_gaussian | FloatingSage | _signed_inf
+)
 
 type ConvertibleToRealSet = RealSet | InternalRealInterval | tuple[Real, Real] | list[Real]
 

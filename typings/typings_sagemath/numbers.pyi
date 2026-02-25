@@ -16,14 +16,14 @@ from sage.rings.rational import Rational
 from sage.rings.infinity import PlusInfinity, MinusInfinity
 
 from numpy import floating as NumPyFloating, integer as NumPyInteger, complexfloating as NumPyComplex
-from gmpy2 import mpz
+from gmpy2 import mpz, mpfr
 
 # possible others, if it can be lifted to `ZZ`'s element
 type IntSupportingBitwiseOp = int | Integer | NumPyInteger | mpz
 type Int = IntSupportingBitwiseOp | IntegerMod_int
 
 type RealInexactSage = RealNumber | RealBall | RealIntervalFieldElement | RealDoubleElement | RealDoubleElement_gsl | RealIntervalAbsoluteElement
-type RealInexact = float | RealInexactSage | NumPyFloating
+type RealInexact = float | mpfr | RealInexactSage | NumPyFloating
 type ComplexInexactSage = ComplexNumber | ComplexBall | ComplexIntervalFieldElement | ComplexDoubleElement | MPComplexNumber
 type ComplexInexact = complex | ComplexInexactSage | NumPyComplex
 type NumInexact = RealInexact | ComplexInexact
