@@ -1,10 +1,19 @@
 r"""
 Generic numerical approximation function
 """
-from typing import SupportsFloat
-from typings_sagemath import Int
+from typing import SupportsFloat, SupportsInt, overload
+from typings_sagemath import ComplexInexactSage, Real
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.infinity import MinusInfinity, PlusInfinity
+from sage.symbolic.expression import Expression
+from sage.symbolic.ring import SymbolicRing
+from gmpy2 import mpc
+
+from sage.rings.imaginary_unit import NumberFieldElement_gaussian
+
+type _mpfr_prec_t = SupportsInt
+type _signed_inf = PlusInfinity | MinusInfinity
 
 from sage.rings.complex_mpfr import ComplexField as ComplexField
 from sage.rings.real_mpfr import RealField as RealField
@@ -31,7 +40,19 @@ def digits_to_bits(d: SupportsFloat | None) -> int:
         ...
         TypeError: must be real number, not str
     """
-def numerical_approx_generic(x: object, prec: Int) -> RealNumber | ComplexNumber:
+@overload
+def numerical_approx_generic(
+    x: Real | _signed_inf, prec: _mpfr_prec_t
+) -> RealNumber: ...
+@overload
+def numerical_approx_generic(
+    x: complex | mpc | NumberFieldElement_gaussian | ComplexInexactSage, 
+    prec: _mpfr_prec_t
+) -> ComplexNumber: ...
+@overload
+def numerical_approx_generic(
+    x: Expression[SymbolicRing], prec: _mpfr_prec_t
+) -> RealNumber | ComplexNumber:
     """
     Generic implementation of ``numerical_approx`` using coercion or
     conversion to a real or complex field.
