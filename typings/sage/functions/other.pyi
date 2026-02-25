@@ -12,6 +12,17 @@ Check that gamma function imports are deprecated (:issue:`24411`)::
     See https://github.com/sagemath/sage/issues/24411 for details.
     beta(x, x)
 """
+
+from typing import overload
+from typings_sagemath import SupportsFloor, SupportsCeil
+from sage.symbolic.ring import SymbolicRing
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
+from sage.rings.complex_mpfr import ComplexNumber
+from sage.rings.complex_double import ComplexDoubleElement
+from sage.rings.complex_interval import ComplexIntervalFieldElement
+from numpy import number as NumPyNumber
+from gmpy2 import mpz, mpfr
+
 from sage.functions.trig import arctan2 as arctan2
 from sage.misc.functional import sqrt as sqrt
 from sage.misc.lazy_import import lazy_import as lazy_import
@@ -21,6 +32,8 @@ from sage.rings.rational import Rational as Rational
 from sage.structure.element import Element as Element, Expression as Expression, coercion_model as coercion_model
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction, GinacFunction as GinacFunction
 from sage.symbolic.symbols import register_symbol as register_symbol, symbol_table as symbol_table
+
+
 
 class Function_abs(GinacFunction):
     def __init__(self) -> None:
@@ -210,7 +223,20 @@ class Function_ceil(BuiltinFunction):
             sage: loads(dumps(ceil))
             ceil
         """
-    def __call__(self, x, **kwds):
+    @overload
+    def __call__[C](self, x: SupportsCeil[C]) -> C: ...
+    @overload
+    def __call__(
+        self, x: int | float | complex | mpz | mpfr, *, bits = 0
+    ) -> Integer: ...
+    @overload
+    def __call__[N: NumPyNumber](self, x: N) -> N: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        x: CommutativePolynomial | Expression[SymbolicRing] | ComplexNumber | ComplexDoubleElement | ComplexIntervalFieldElement, 
+        *, bits = 0
+    ) -> Integer | Expression[SymbolicRing]:
         """
         Allow an object of this class to behave like a function. If
         ``ceil`` is an instance of this class, we can do ``ceil(n)`` to get
@@ -328,7 +354,20 @@ class Function_floor(BuiltinFunction):
             sage: loads(dumps(floor))
             floor
         """
-    def __call__(self, x, **kwds):
+    @overload
+    def __call__[F](self, x: SupportsFloor[F]) -> F: ...
+    @overload
+    def __call__(
+        self, x: int | float | complex | mpz | mpfr, *, bits = 0
+    ) -> Integer: ...
+    @overload
+    def __call__[N: NumPyNumber](self, x: N) -> N: ...
+    @overload
+    def __call__( # pyright: ignore[reportIncompatibleMethodOverride]
+        self, 
+        x: CommutativePolynomial | Expression[SymbolicRing] | ComplexNumber | ComplexDoubleElement | ComplexIntervalFieldElement, 
+        *, bits = 0
+    ) -> Integer | Expression[SymbolicRing]:
         """
         Allow an object of this class to behave like a function. If
         ``floor`` is an instance of this class, we can do ``floor(n)`` to
