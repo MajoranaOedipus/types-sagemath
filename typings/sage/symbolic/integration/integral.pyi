@@ -1,4 +1,9 @@
 from _typeshed import Incomplete
+from typing import Annotated, Any, Literal, overload
+from sage.symbolic.ring import SymbolicRing
+
+type _Expr = Expression[SymbolicRing]
+
 from sage.structure.element import Expression as Expression
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
 from sage.symbolic.ring import SR as SR
@@ -79,7 +84,23 @@ class DefiniteIntegral(BuiltinFunction):
 
 definite_integral: Incomplete
 
-def integrate(expression, v=None, a=None, b=None, algorithm=None, hold: bool = False):
+# TODO: return type?
+@overload
+def integrate(
+    expression: _Expr, 
+    v: _Expr | Annotated[list[_Expr], len == 1] | tuple[_Expr,], a=None, b=None, 
+    algorithm: Literal["maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"] | None = None, 
+    hold: bool = False
+): ...
+@overload
+def integrate(
+    expression: _Expr, 
+    v: list[_Expr | Any] | tuple[_Expr, Any] | tuple[_Expr, Any, Any],   
+    algorithm: Literal[
+        "maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"
+    ] | None = None, 
+    hold: bool = False
+):
     '''
     Return the indefinite integral with respect to the variable
     `v`, ignoring the constant of integration. Or, if endpoints

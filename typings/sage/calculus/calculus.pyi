@@ -1,4 +1,5 @@
 from _typeshed import Incomplete
+from typing import Any, Literal, overload
 from sage.arith.misc import algebraic_dependency as algebraic_dependency
 from sage.misc.latex import latex as latex
 from sage.misc.lazy_import import lazy_import as lazy_import
@@ -12,12 +13,33 @@ from sage.structure.element import Expression as Expression
 from sage.symbolic.function import Function as Function
 from sage.symbolic.function_factory import function_factory as function_factory
 from sage.symbolic.integration.integral import definite_integral as definite_integral, indefinite_integral as indefinite_integral
-from sage.symbolic.ring import SR as SR, var as var
+from sage.symbolic.ring import SR as SR, SymbolicRing, var as var
 from sage.symbolic.symbols import symbol_table as symbol_table
 import sage.interfaces.maxima_lib
+
+from typings_sagemath import CoercibleToExpression, FloatingSage
 maxima = sage.interfaces.maxima_lib
 
-def symbolic_sum(expression, v, a, b, algorithm: str = 'maxima', hold: bool = False):
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b,  
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima"
+) -> Expression[SymbolicRing] | Integer | FloatingSage | Any: ...
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b, 
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"], 
+    hold: Literal[True]
+) -> Expression[SymbolicRing]: ...
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b, 
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima", 
+    *, hold: Literal[True]
+) -> Expression[SymbolicRing]:
     """
     Return the symbolic sum `\\sum_{v = a}^b expression` with respect
     to the variable `v` with endpoints `a` and `b`.
@@ -316,7 +338,23 @@ def nintegral(ex, x, a, b, desired_relative_error: str = '1e-8', maximum_num_sub
     """
 nintegrate = nintegral
 
-def symbolic_product(expression, v, a, b, algorithm: str = 'maxima', hold: bool = False):
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima"
+) -> Expression[SymbolicRing] | Integer | FloatingSage | Any: ...
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, algorithm: Literal["maxima", "mathematica", "giac", "sympy"],
+    hold: Literal[True]
+) -> Expression[SymbolicRing]: ...
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima",
+    *, hold: Literal[True]
+) -> Expression[SymbolicRing]:
     """
     Return the symbolic product `\\prod_{v = a}^b expression` with respect
     to the variable `v` with endpoints `a` and `b`.

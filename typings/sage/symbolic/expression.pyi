@@ -347,8 +347,6 @@ type _Operator = ( # c.f. the implementation of `Expression.operator`
 import sage as sage
 import sage.libs.mpmath.utils as mpmath_utils
 import sage.structure.element
-import sage.structure.sage_object
-from _typeshed import Incomplete
 from sage.arith.functions import lcm as lcm
 from sage.arith.misc import bernoulli as bernoulli, factorial as factorial, gcd as gcd, is_prime as is_prime
 from sage.arith.numerical_approx import digits_to_bits as digits_to_bits
@@ -4059,15 +4057,26 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             -792/125*y/x^3 + 12/25*(15*x^4*y^5 + 28*x^3*y^5)/(x^6*y^4) - 36/125*(20*x^5*y^4 + 43*x^4*y^4)/(x^7*y^3)
             sage: psr == SR.symbols
             True"""
-    # TODO: this uses sage.symbolic.integration.integral.integral
+    # TODO: this uses sage.symbolic.integration.integral.integral, , return type?
+    @overload
     def integral(
         self, 
-        v = None, 
-        a = None, 
-        b = None, 
-        algorithm = None, 
+        v: Expression[SymbolicRing] | tuple[Expression[SymbolicRing],]
+            | Annotated[list[Expression[SymbolicRing]], len == 1], 
+        a=None, b=None, 
+        algorithm: Literal["maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"] | None = None, 
         hold: bool = False
-    ) -> Any:
+    ): ...
+    @overload
+    def integral(
+        self, 
+        v: list[Expression[SymbolicRing] | Any] | tuple[Expression[SymbolicRing], Any]
+            | tuple[Expression[SymbolicRing], Any, Any],   
+        algorithm: Literal[
+            "maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"
+        ] | None = None, 
+        hold: bool = False
+    ):
         """
         Compute the integral of ``self``.
 
@@ -6082,8 +6091,26 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             y
             sage: (2*x + 4*sin(y)).primitive_part(sin(y))
             x + 2*sin(y)"""
-    # TODO: this uses sage.calculus.calculus.symbolic_product
-    def prod(self, *args, **kwds) -> Any:
+    @overload
+    def prod(
+        self, v: str | Expression[SymbolicRing],
+        a, b, /,
+        algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima"
+    ) -> Expression[SymbolicRing] | Integer | Rational | FloatingSage | Any: ...
+    @overload
+    def prod(
+        self, v: str | Expression[SymbolicRing],
+        a, b, /,
+        algorithm: Literal["maxima", "mathematica", "giac", "sympy"],
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def prod(
+        self, v: str | Expression[SymbolicRing],
+        a, b, /,
+        algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima",
+        *, hold: Literal[True]
+    ) -> Expression[SymbolicRing]:
         """
         Return the symbolic product `\\prod_{v = a}^b` ``self``.
 
@@ -8279,8 +8306,26 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             sqrt(3)*x*sin(x) > -sqrt(2) + cos(sin(x))
             sage: eqn.subtract_from_both_sides(cos(sin(x)))
             sqrt(3)*x*sin(x) + sqrt(2) - cos(sin(x)) > 0"""
-    # TODO: this uses sage.calculus.calculus.symbolic_sum
-    def sum(self, *args, **kwds) -> Any:
+    @overload
+    def sum(
+        self, v: str | Expression[SymbolicRing], 
+        a, b, /, 
+        algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima"
+    ) -> Expression[SymbolicRing] | Integer | Rational | FloatingSage | Any: ...
+    @overload
+    def sum(
+        self, v: str | Expression[SymbolicRing], 
+        a, b, /, 
+        algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"], 
+        hold: Literal[True]
+    ) -> Expression[SymbolicRing]: ...
+    @overload
+    def sum(
+        self, v: str | Expression[SymbolicRing], 
+        a, b, /, 
+        algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima", 
+        *, hold: Literal[True]
+    ) -> Expression[SymbolicRing]:
         """
         Return the symbolic sum `\\sum_{v = a}^b` ``self``.
 
