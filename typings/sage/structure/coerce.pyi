@@ -281,6 +281,7 @@ def py_scalar_parent(py_type: type) -> Parent | None:
     ...
 @overload
 def py_scalar_to_element[P: Parent](x: Element[P]) -> Element[P]: ...
+# TODO: use more specific types here
 @overload
 def py_scalar_to_element[T](x: T) -> Element | T:
     """

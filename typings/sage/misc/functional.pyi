@@ -10,12 +10,21 @@ AUTHORS:
 
 - David Joyner (2005-12-20): More Examples
 """
-from typing import Any, Literal, overload
+from collections.abc import Callable, Iterable
+from typing import (
+    Annotated, Any, Literal, SupportsFloat, SupportsIndex, SupportsInt,
+    SupportsRound, overload, Protocol,
+)
 from typings_sagemath import (
-    RealInexactSage, ComplexInexactSage, CoercibleToExpression)
+    AddableWith, ConvertibleToInteger, FloatingSage, Int, ComplexInexactSage,
+    CoercibleToExpression, CoercibleToRDF, CoercibleToCDF, SupportsFloor, 
+    Addable, RAddableWithExt, Multiplicable, RMultiplicableWithExt, 
+    SupportsModWith, SupportsTruedivWith, SupportsRTruedivWith,
+)
 from sage.symbolic.function import GinacFunction as GinacFunction
 from sage.symbolic.expression import Expression
 from sage.symbolic.ring import SymbolicRing
+from sage.rings.abc import SymbolicRing as SymbolicRingABC
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.complex_mpfr import ComplexNumber
 from sage.rings.complex_double import ComplexDoubleElement
@@ -27,6 +36,7 @@ from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
 from sage.rings.number_field.number_field_element_quadratic import OrderElement_quadratic
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
+from sage.categories.objects import Objects
 from numpy import (
     int8 as NumPyInt8,
     int16 as NumPyInt16,
@@ -50,22 +60,37 @@ from mpmath import (
     mpf as MpmathF,
     mpc as MpmathC
 )
-from gmpy2 import mpfr, mpc
+from gmpy2 import mpfr, mpc, mpz
 
 from sage.rings.finite_rings.integer_mod import IntegerMod_int
+
+from sage.rings.polynomial.polynomial_integer_dense_flint import Polynomial_integer_dense_flint
+
+from sage.rings.infinity import MinusInfinity, UnsignedInfinity
 
 type _np_byte = NumPyInt8 | NumPyUInt8
 type _np_short = NumPyInt16 | NumPyUInt16
 type _np_int = NumPyInt32 | NumPyUInt32
 type _np_long = NumPyInt64 | NumPyUInt64
 type _np_long_int = _np_int | _np_long
+type _np_integer = _np_byte | _np_short | _np_long_int
 type _np_float = NumPyFloat16 | NumPyFloat32 | NumPyFloat64 | NumPyFloat128
 type _np_complex = NumPyComplex64 | NumPyComplex128 | NumPyComplex256
+type _np_real = _np_integer | _np_float
+type _np_number = _np_real | _np_complex
+type _exact_real_sage = Integer | Rational
+type _mpfr_prec_t = SupportsInt
 
 from sage.misc.lazy_import import lazy_import as lazy_import
 from sage.misc.superseded import deprecation as deprecation
+from sage.rings.complex_double import CDF as CDF
+from sage.rings.real_double import RDF as RDF, RealDoubleElement as RealDoubleElement
+from sage.rings.integer_ring import ZZ as ZZ
+from sage.rings.integer import Integer as Integer
 
-def additive_order(x):
+class _SupportsAdditiveOrder[T](Protocol):
+    def additive_order(self) -> T: ...
+def additive_order[T](x: _SupportsAdditiveOrder[T]) -> T:
     """
     Return the additive order of ``x``.
 
@@ -78,7 +103,9 @@ def additive_order(x):
         sage: additive_order(Mod(4,12))
         3
     """
-def base_ring(x):
+class _SupportsBaseRing[R](Protocol):
+    def base_ring(self) -> R: ...
+def base_ring[R](x: _SupportsBaseRing[R]) -> R:
     """
     Return the base ring over which ``x`` is defined.
 
@@ -88,7 +115,9 @@ def base_ring(x):
         sage: base_ring(R)
         Finite Field of size 7
     """
-def base_field(x):
+class _SupportsBaseField[F](Protocol):
+    def base_field(self) -> F: ...
+def base_field[F](x: _SupportsBaseField[F] | _SupportsBaseRing[F]) -> F:
     """
     Return the base field over which ``x`` is defined.
 
@@ -109,6 +138,8 @@ def base_field(x):
         ...
         AttributeError: 'PolynomialRing_dense_mod_p_with_category' object has no attribute 'base_field'...
     """
+class _SupprtsBasis[B](Protocol):
+    def basis(self) -> B: ...
 def basis(x):
     """
     Return the fixed basis of ``x``.
@@ -120,7 +151,12 @@ def basis(x):
         sage: basis(S)                                                                  # needs sage.modules
         [(1, 0, -1), (0, 1, 1/2)]
     """
-def category(x):
+class _SupportsCategory[C](Protocol):
+    def category(self) -> C: ...
+@overload
+def category[C](x: _SupportsCategory[C]) -> C: ... # pyright: ignore[reportOverlappingOverload]
+@overload
+def category(x: object) -> Objects:
     """
     Return the category of ``x``.
 
@@ -131,7 +167,11 @@ def category(x):
         Category of finite dimensional vector spaces with basis over
          (number fields and quotient fields and metric spaces)
     """
-def characteristic_polynomial(x, var: str = 'x'):
+class _SupportsCharacteristicPolynomial[V, P](Protocol):
+    def characteristic_polynomial(self, var: V = 'x') -> P:
+        ...
+def characteristic_polynomial[V, P](
+    x: _SupportsCharacteristicPolynomial[V, P], var: V = 'x') -> P:
     """
     Return the characteristic polynomial of ``x`` in the given variable.
 
@@ -166,8 +206,12 @@ def characteristic_polynomial(x, var: str = 'x'):
         [sqrt(y), -3*sqrt(y) - 1, 3*sqrt(y) + 3, -sqrt(y) - 3, 1]
     """
 charpoly = characteristic_polynomial
-
-def coerce(P, x):
+class _SupportsCoerce[X, T](Protocol):
+    def coerce(self, x: X) -> T: ...
+@overload
+def coerce[X, T](P: _SupportsCoerce[X, T], x: X) -> T: ...
+@overload
+def coerce[X, T](P: Callable[[X], T], x: X) -> T:
     """
     Coerce ``x`` to type ``P`` if possible.
 
@@ -178,7 +222,7 @@ def coerce(P, x):
         sage: type(coerce(QQ,5))
         <class 'sage.rings.rational.Rational'>
     """
-def cyclotomic_polynomial(n, var: str = 'x'):
+def cyclotomic_polynomial(n: Int, var: str = "x") -> Polynomial_integer_dense_flint:
     """
     Return the `n`-th cyclotomic polynomial.
 
@@ -196,7 +240,9 @@ def cyclotomic_polynomial(n, var: str = 'x'):
         sage: cyclotomic_polynomial(11)
         x^10 + x^9 + x^8 + x^7 + x^6 + x^5 + x^4 + x^3 + x^2 + x + 1
     """
-def decomposition(x):
+class _SupportsDecomposition[D](Protocol):
+    def decomposition(self) -> D: ...
+def decomposition[D](x: _SupportsDecomposition[D]) -> D:
     """
     Return the decomposition of ``x``.
 
@@ -217,7 +263,12 @@ def decomposition(x):
         Group of Dirichlet characters modulo 4
          with values in Cyclotomic Field of order 4 and degree 2
     """
-def denominator(x):
+class _SupportsDenominator[D](Protocol):
+    def denominator(self) -> D: ...
+@overload
+def denominator(x: int) -> Literal[1]: ...
+@overload
+def denominator[D](x: _SupportsDenominator[D]) -> D:
     """
     Return the denominator of ``x``.
 
@@ -231,7 +282,9 @@ def denominator(x):
         sage: denominator(r)
         x - 1
     """
-def det(x):
+class _SupportsDet[D](Protocol):
+    def det(self) -> D: ...
+def det[D](x: _SupportsDet[D]) -> D:
     """
     Return the determinant of ``x``.
 
@@ -242,7 +295,9 @@ def det(x):
         sage: det(A)                                                                    # needs sage.modules
         0
     """
-def dimension(x):
+class _SupportsDimension[D](Protocol):
+    def dimension(self) -> D: ...
+def dimension[D](x: _SupportsDimension[D]) -> D:
     """
     Return the dimension of ``x``.
 
@@ -254,8 +309,9 @@ def dimension(x):
         2
     """
 dim = dimension
-
-def discriminant(x):
+class _SupportsDiscriminant[D](Protocol):
+    def discriminant(self) -> D: ...
+def discriminant[D](x: _SupportsDiscriminant[D]) -> D:
     """
     Return the discriminant of ``x``.
 
@@ -268,8 +324,12 @@ def discriminant(x):
         -15975100446626038280218213241591829458737190477345113376757479850566957249523
     """
 disc = discriminant
-
-def eta(x):
+class _SupportsEta[E](Protocol):
+    def eta(self) -> E: ...
+@overload
+def eta[E](x: _SupportsEta[E]) -> E: ...
+@overload
+def eta(x: CoercibleToCDF) -> ComplexDoubleElement:
     """
     Return the value of the `\\eta` function at ``x``, which must be
     in the upper half plane.
@@ -285,7 +345,16 @@ def eta(x):
         sage: eta(1 + I)                                                                # needs sage.symbolic
         0.7420487758365647 + 0.1988313702299107*I
     """
-def fcp(x, var: str = 'x'):
+class _SupportsFcp[V, F](Protocol):
+    def fcp(self, var: V) -> F: ...
+class _SupportsFactor[F](Protocol):
+    def factor(self) -> F: ...
+class _SupportsCharpoly_Factor[V, F](Protocol):
+    def characteristic_polynomial(self, var: V) -> _SupportsFactor[F]: ...
+@overload
+def fcp[V, F](x: _SupportsFcp[V, F], var: V = 'x') -> F: ...
+@overload
+def fcp[V, F](x: _SupportsCharpoly_Factor[V, F], var: V = "x") -> F:
     """
     Return the factorization of the characteristic polynomial of ``x``.
 
@@ -296,7 +365,9 @@ def fcp(x, var: str = 'x'):
         sage: fcp(A, 'x')                                                               # needs sage.libs.pari sage.modules
         x * (x^2 - 15*x - 18)
     """
-def gen(x):
+class _SupportsGen[G](Protocol):
+    def gen(self) -> G: ...
+def gen[G](x: _SupportsGen[G]) -> G:
     """
     Return the generator of ``x``.
 
@@ -312,7 +383,9 @@ def gen(x):
         sage: gen(A)                                                                    # needs sage.groups
         f
     """
-def gens(x):
+class _SupportsGens[G](Protocol):
+    def gens(self) -> G: ...
+def gens[G](x: _SupportsGens[G]) -> G:
     """
     Return the generators of ``x``.
 
@@ -328,7 +401,9 @@ def gens(x):
         sage: gens(A)                                                                   # needs sage.groups
         (f0, f1, f2, f3, f4)
     """
-def hecke_operator(x, n):
+class _SupportsHeckeOperator[N, H](Protocol):
+    def hecke_operator(self, n: N) -> H: ...
+def hecke_operator[N, H](x: _SupportsHeckeOperator[N, H], n: N) -> H:
     """
     Return the `n`-th Hecke operator `T_n` acting on ``x``.
 
@@ -339,7 +414,9 @@ def hecke_operator(x, n):
         Hecke operator T_5 on Modular Symbols space of dimension 3 for Gamma_0(1)
          of weight 12 with sign 0 over Rational Field
     """
-def image(x):
+class _SupportsImage[I](Protocol):
+    def image(self) -> I: ...
+def image[I](x: _SupportsImage[I]) -> I:
     """
     Return the image of ``x``.
 
@@ -353,7 +430,38 @@ def image(x):
         [ 1  0 -1]
         [ 0  1  2]
     """
-def symbolic_sum(expression, *args, **kwds):
+class _SupportsSum[**P, S](Protocol):
+    def sum(self, *args: P.args, **kwds: P.kwargs) -> S: ...
+@overload
+def symbolic_sum[**P, S](
+    expression: _SupportsSum[P, S], *args: P.args, **kwds: P.kwargs
+) -> S: ...
+@overload
+def symbolic_sum[A: Addable](expression: Iterable[A]) -> A: ...
+@overload
+def symbolic_sum[A](expression: Iterable[RAddableWithExt[A, A]], start: A) -> A: ...
+@overload
+def symbolic_sum[A](expression: Iterable[A], start: AddableWith[A]) -> A: ...
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b, /, 
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima"
+) -> Expression[SymbolicRing] | Integer | Rational | FloatingSage | Any: ...
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b, /, 
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"], 
+    hold: Literal[True]
+) -> Expression[SymbolicRing]: ...
+@overload
+def symbolic_sum(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing], 
+    a, b, /, 
+    algorithm: Literal["maxima", "maple", "mathematica", "giac", "sympy"] = "maxima", 
+    *, hold: Literal[True]
+) -> Expression[SymbolicRing]:
     """
     Return the symbolic sum `\\sum_{v = a}^b expression` with respect
     to the variable `v` with endpoints `a` and `b`.
@@ -525,181 +633,36 @@ def symbolic_sum(expression, *args, **kwds):
         sage: sum([[1], [2]], start=[])
         [1, 2]
     """
-
-sum = symbolic_sum
-"""
-    Return the symbolic sum `\\sum_{v = a}^b expression` with respect
-    to the variable `v` with endpoints `a` and `b`.
-
-    INPUT:
-
-    - ``expression`` -- a symbolic expression
-
-    - ``v`` -- a variable or variable name
-
-    - ``a`` -- lower endpoint of the sum
-
-    - ``b`` -- upper endpoint of the sum
-
-    - ``algorithm`` -- (default: ``'maxima'``)  one of
-
-      - ``'maxima'`` -- use Maxima (the default)
-
-      - ``'maple'`` -- (optional) use Maple
-
-      - ``'mathematica'`` -- (optional) use Mathematica
-
-      - ``'giac'`` -- (optional) use Giac
-
-      - ``'sympy'`` -- use SymPy
-
-    EXAMPLES::
-
-        sage: k, n = var('k,n')                                                         # needs sage.symbolic
-        sage: sum(k, k, 1, n).factor()                                                  # needs sage.symbolic
-        1/2*(n + 1)*n
-
-    ::
-
-        sage: sum(1/k^4, k, 1, oo)                                                      # needs sage.symbolic
-        1/90*pi^4
-
-    ::
-
-        sage: sum(1/k^5, k, 1, oo)                                                      # needs sage.symbolic
-        zeta(5)
-
-    .. WARNING::
-
-        This function only works with symbolic expressions. To sum any
-        other objects like list elements or function return values,
-        please use python summation, see
-        http://docs.python.org/library/functions.html#sum
-
-        In particular, this does not work::
-
-            sage: n = var('n')                                                          # needs sage.symbolic
-            sage: mylist = [1,2,3,4,5]
-            sage: sum(mylist[n], n, 0, 3)                                               # needs sage.symbolic
-            Traceback (most recent call last):
-            ...
-            TypeError: unable to convert n to an integer
-
-        Use python ``sum()`` instead::
-
-            sage: sum(mylist[n] for n in range(4))
-            10
-
-        Also, only a limited number of functions are recognized in symbolic sums::
-
-            sage: sum(valuation(n, 2), n, 1, 5)                                         # needs sage.symbolic
-            Traceback (most recent call last):
-            ...
-            TypeError: unable to convert n to an integer
-
-        Again, use python ``sum()``::
-
-            sage: sum(valuation(n + 1, 2) for n in range(5))
-            3
-
-        (now back to the Sage ``sum`` examples)
-
-    A well known binomial identity::
-
-        sage: sum(binomial(n, k), k, 0, n)                                              # needs sage.symbolic
-        2^n
-
-    The binomial theorem::
-
-        sage: x, y = var('x, y')                                                        # needs sage.symbolic
-        sage: sum(binomial(n, k) * x^k * y^(n-k), k, 0, n)                              # needs sage.symbolic
-        (x + y)^n
-
-    ::
-
-        sage: sum(k * binomial(n, k), k, 1, n)                                          # needs sage.symbolic
-        2^(n - 1)*n
-
-    ::
-
-        sage: sum((-1)^k * binomial(n, k), k, 0, n)                                     # needs sage.symbolic
-        0
-
-    ::
-
-        sage: sum(2^(-k)/(k*(k+1)), k, 1, oo)                                           # needs sage.symbolic
-        -log(2) + 1
-
-    Another binomial identity (:issue:`7952`)::
-
-        sage: t, k, i = var('t,k,i')                                                    # needs sage.symbolic
-        sage: sum(binomial(i + t, t), i, 0, k)                                          # needs sage.symbolic
-        binomial(k + t + 1, t + 1)
-
-    Summing a hypergeometric term::
-
-        sage: sum(binomial(n, k) * factorial(k) / factorial(n+1+k), k, 0, n)            # needs sage.symbolic
-        1/2*sqrt(pi)/factorial(n + 1/2)
-
-    We check a well known identity::
-
-        sage: bool(sum(k^3, k, 1, n) == sum(k, k, 1, n)^2)                              # needs sage.symbolic
-        True
-
-    A geometric sum::
-
-        sage: a, q = var('a, q')                                                        # needs sage.symbolic
-        sage: sum(a*q^k, k, 0, n)                                                       # needs sage.symbolic
-        (a*q^(n + 1) - a)/(q - 1)
-
-    The geometric series::
-
-        sage: assume(abs(q) < 1)                                                        # needs sage.symbolic
-        sage: sum(a * q^k, k, 0, oo)                                                    # needs sage.symbolic
-        -a/(q - 1)
-
-    A divergent geometric series.  Don't forget
-    to forget your assumptions::
-
-        sage: forget()                                                                  # needs sage.symbolic
-        sage: assume(q > 1)                                                             # needs sage.symbolic
-        sage: sum(a * q^k, k, 0, oo)                                                    # needs sage.symbolic
-        Traceback (most recent call last):
-        ...
-        ValueError: Sum is divergent.
-
-    This summation only Mathematica can perform::
-
-        sage: sum(1/(1+k^2), k, -oo, oo, algorithm='mathematica')       # optional - mathematica, needs sage.symbolic
-        pi*coth(pi)
-
-    Use Maple as a backend for summation::
-
-        sage: sum(binomial(n, k) * x^k, k, 0, n, algorithm='maple')     # optional - maple, needs sage.symbolic
-        (x + 1)^n
-
-    Python ints should work as limits of summation (:issue:`9393`)::
-
-        sage: sum(x, x, 1r, 5r)                                                         # needs sage.symbolic
-        15
-
-    .. NOTE::
-
-       #. Sage can currently only understand a subset of the output of Maxima, Maple and
-          Mathematica, so even if the chosen backend can perform the summation the
-          result might not be convertible into a Sage expression.
-
-    TESTS:
-
-    Check that :issue:`34007` is fixed::
-
-        sage: sum([1, 2], start=1)
-        4
-        sage: sum([[1], [2]], start=[])
-        [1, 2]
-    """
-
-def symbolic_prod(expression, *args, **kwds):
+class _SupportsProd[**P, S](Protocol):
+    def sum(self, *args: P.args, **kwds: P.kwargs) -> S: ...
+@overload
+def symbolic_prod[**P, S](expression: _SupportsProd[P, S], *args: P.args, **kwds: P.kwargs): ...
+@overload
+def symbolic_prod[A: Multiplicable](expression: Iterable[A]) -> A: ...
+@overload
+def symbolic_prod[A](expression: Iterable[RMultiplicableWithExt[A, A]], start: A, /) -> A: ...
+@overload
+def symbolic_prod[A](expression: Iterable[A], start: Multiplicable, /) -> A: ...
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, /,
+    algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima"
+) -> Expression[SymbolicRing] | Integer | Rational | FloatingSage | Any: ...
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, /,
+    algorithm: Literal["maxima", "mathematica", "giac", "sympy"],
+    hold: Literal[True]
+) -> Expression[SymbolicRing]: ...
+@overload
+def symbolic_prod(
+    expression: CoercibleToExpression, v: str | Expression[SymbolicRing],
+    a, b, /,
+    algorithm: Literal["maxima", "mathematica", "giac", "sympy"] = "maxima",
+    *, hold: Literal[True]
+) -> Expression[SymbolicRing]:
     """
     Return the symbolic product `\\prod_{v = a}^b expression` with respect
     to the variable `v` with endpoints `a` and `b`.
@@ -745,55 +708,30 @@ def symbolic_prod(expression, *args, **kwds):
         sage: product(f(i), i, 1, n).log().log_expand()
         sum(log(f(i)), i, 1, n)
     """
-
-product = symbolic_prod
-"""
-    Return the symbolic product `\\prod_{v = a}^b expression` with respect
-    to the variable `v` with endpoints `a` and `b`.
-
-    INPUT:
-
-    - ``expression`` -- a symbolic expression
-
-    - ``v`` -- a variable or variable name
-
-    - ``a`` -- lower endpoint of the product
-
-    - ``b`` -- upper endpoint of the prduct
-
-    - ``algorithm`` -- (default: ``'maxima'``)  one of
-
-      - ``'maxima'`` -- use Maxima (the default)
-
-      - ``'giac'`` -- (optional) use Giac
-
-      - ``'sympy'`` -- use SymPy
-
-    - ``hold`` -- boolean (default: ``False``); if ``True`` don't evaluate
-
-    EXAMPLES::
-
-        sage: # needs sage.symbolic
-        sage: i, k, n = var('i,k,n')
-        sage: product(k, k, 1, n)
-        factorial(n)
-        sage: product(x + i*(i+1)/2, i, 1, 4)
-        x^4 + 20*x^3 + 127*x^2 + 288*x + 180
-        sage: product(i^2, i, 1, 7)
-        25401600
-        sage: f = function('f')
-        sage: product(f(i), i, 1, 7)
-        f(7)*f(6)*f(5)*f(4)*f(3)*f(2)*f(1)
-        sage: product(f(i), i, 1, n)
-        product(f(i), i, 1, n)
-        sage: assume(k>0)
-        sage: product(integrate(x^k, x, 0, 1), k, 1, n)
-        1/factorial(n + 1)
-        sage: product(f(i), i, 1, n).log().log_expand()
-        sum(log(f(i)), i, 1, n)
-    """
-
-def integral(x, *args, **kwds):
+class _SupportsIntegral[**P, I](Protocol):
+    def integral(self, *args: P.args, **kwds: P.kwargs) -> I: ...
+@overload
+def integral[**P, I](x: _SupportsIntegral[P, I], *args: P.args, **kwds: P.kwargs) -> I: ...
+# TODO: this uses sage.symbolic.integration.integral.integral, return type?
+@overload
+def integral(
+    expression: CoercibleToExpression, 
+    v: Expression[SymbolicRing] | tuple[Expression[SymbolicRing],]
+        | Annotated[list[Expression[SymbolicRing]], len == 1], 
+    a=None, b=None, 
+    algorithm: Literal["maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"] | None = None, 
+    hold: bool = False
+): ...
+@overload
+def integral(
+    expression: CoercibleToExpression, 
+    v: list[Expression[SymbolicRing] | Any] | tuple[Expression[SymbolicRing], Any]
+        | tuple[Expression[SymbolicRing], Any, Any],   
+    algorithm: Literal[
+        "maxima", "sympy", "mathematica_free", "fricas", "giac", "libgiac"
+    ] | None = None, 
+    hold: bool = False
+):
     """
     Return an indefinite or definite integral of an object ``x``.
 
@@ -933,8 +871,9 @@ def integral(x, *args, **kwds):
         0
     """
 integrate = integral
-
-def integral_closure(x):
+class _SupportsIntegralClosure[C](Protocol):
+    def integral_closure(self) -> C: ...
+def integral_closure[C](x: _SupportsIntegralClosure[C]) -> C:
     """
     Return the integral closure of ``x``.
 
@@ -950,7 +889,9 @@ def integral_closure(x):
         Maximal Order generated by 1/2*a + 1/2 in Number Field in a
          with defining polynomial x^2 - 5 with a = 2.236067977499790?
     """
-def interval(a, b):
+class _IntegralEndPoint(SupportsIndex):
+    def __add__(self, other: int) -> SupportsIndex: ...
+def interval(a: SupportsIndex, b: _IntegralEndPoint) -> list[int]:
     """
     Integers between `a` and `b` *inclusive* (`a` and `b` integers).
 
@@ -964,7 +905,7 @@ def interval(a, b):
         sage: 4 in I
         False
     """
-def xinterval(a, b):
+def xinterval(a: SupportsIndex, b: _IntegralEndPoint) -> range:
     """
     Iterator over the integers between `a` and `b`, *inclusive*.
 
@@ -977,7 +918,9 @@ def xinterval(a, b):
         sage: 6 in I
         False
     """
-def is_even(x):
+class _SupportsIsEven(Protocol):
+    def is_even(self) -> bool: ...
+def is_even(x: _SupportsIsEven | SupportsModWith[int, Any]) -> bool:
     """
     Return whether or not an integer ``x`` is even, e.g., divisible by 2.
 
@@ -990,7 +933,7 @@ def is_even(x):
         sage: is_even(-2)
         True
     """
-def is_odd(x):
+def is_odd(x: _SupportsIsEven | SupportsModWith[int, Any]) -> bool:
     """
     Return whether or not ``x`` is odd.
 
@@ -1007,7 +950,9 @@ def is_odd(x):
         sage: is_odd(1)
         True
     """
-def kernel(x):
+class _SupportsKernel[K](Protocol):
+    def kernel(self) -> K: ...
+def kernel[K](x: _SupportsKernel[K]) -> K:
     """
     Return the left kernel of ``x``.
 
@@ -1037,7 +982,9 @@ def kernel(x):
         sage: kernel(A.transpose()).basis()
         [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
     """
-def krull_dimension(x):
+class _SupportsKrullDimension[D](Protocol):
+    def krull_dimension(self) -> D: ...
+def krull_dimension[D](x: _SupportsKrullDimension) -> D:
     """
     Return the Krull dimension of ``x``.
 
@@ -1057,7 +1004,9 @@ def krull_dimension(x):
         sage: U.krull_dimension()
         4
     """
-def lift(x):
+class _SupportsLift[L](Protocol):
+    def lift(self) -> L: ...
+def lift[L](x: _SupportsLift[L]) -> L:
     """
     Lift an object of a quotient ring `R/I` to `R`.
 
@@ -1075,7 +1024,7 @@ def lift(x):
         sage: lift(xmod - 7)                                                            # needs sage.libs.pari
         x - 7
     """
-
+# the single-argument overloads are from sage.functions.log.ln
 @overload
 def log(x: IntegerMod_int, /) -> Integer: ...
 @overload
@@ -1110,16 +1059,51 @@ def log(x: mpfr, /) -> float: ...
 @overload
 def log(x: mpc | float, /) -> complex: ...
 @overload
-def log( # pyright: ignore[reportIncompatibleMethodOverride]
-    x: CoercibleToExpression, 
-    /, 
-    *, 
-    hold: Literal[True] = ...
+def log(
+    x: CoercibleToExpression, /, *, hold: Literal[True]
+) -> Expression[SymbolicRing]: ...
+class _SupportsLog[B, L](Protocol):
+    def log(self, base: B) -> L: ...
+@overload
+def log[B, L](x: _SupportsLog[B, L], /, base: B) -> L: ...
+# the following overloads are from sage.functions.log.log2,
+# while the first argument does not have a log method
+@overload
+def log( # pyright: ignore[reportOverlappingOverload]
+    arg: int, base: int, /
+) -> int | UnsignedInfinity | MinusInfinity | Expression[SymbolicRing]: ...
+@overload
+def log(arg: int, base: float | complex | FloatingSage, /) -> Expression: ...
+@overload
+def log(arg: float | complex, base: int, /) -> Expression: ...
+@overload
+def log( # pyright: ignore[reportOverlappingOverload]
+    arg: int, base: _exact_real_sage | CommutativePolynomial, /
+) -> Integer | UnsignedInfinity | MinusInfinity | Expression[SymbolicRing]: ...
+@overload
+def log(
+    arg: CommutativePolynomial, base: CommutativePolynomial | int, /
+) -> Integer | UnsignedInfinity | MinusInfinity | Expression[SymbolicRing]: ...
+@overload
+def log(arg: float, base: float, /) -> float: ...
+@overload
+def log[
+    T: complex | RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement
+](arg: float, base: T, /) -> T: ...
+@overload
+def log(
+    arg: float | complex, base: _exact_real_sage | CommutativePolynomial, /
 ) -> Expression[SymbolicRing]: ...
 @overload
-def log(x, /, *, base: CoercibleToExpression, **kwds): ...
+def log(
+    arg: complex, base: float | complex | RealNumber | RealDoubleElement, /) -> complex: ...
 @overload
-def log(x, b, /, **kwds):
+def log(
+    arg: CommutativePolynomial, base: float | complex, /
+) -> Integer | Expression[SymbolicRing]: ...
+@overload
+def log[P: SymbolicRingABC](
+    arg:  int | float | complex, base: Expression[P] , /) -> Expression[P]:
     """
     Return the logarithm of the first argument to the base of
     the second argument which if missing defaults to ``e``.
@@ -1308,10 +1292,15 @@ def log(x, b, /, **kwds):
         sage: log(e, base=0)
         0
     """
-
 log_b = log
-
-def minimal_polynomial(x, var: str = 'x'):
+class _SupportsMinimalPolynomial[V, P](Protocol):
+    def minimal_polynomial(self, var: V = 'x') -> P: ...
+class _SupportsMinpoly[V, P](Protocol):
+    def minpoly(self, var: V = 'x') -> P: ...
+def minimal_polynomial[V, P](
+    x: _SupportsMinimalPolynomial[V, P] | _SupportsMinpoly[V, P], 
+    var: V = 'x'
+) -> P:
     """
     Return the minimal polynomial of ``x``.
 
@@ -1329,8 +1318,9 @@ def minimal_polynomial(x, var: str = 'x'):
         theta^2 - 5*theta - 2
     """
 minpoly = minimal_polynomial
-
-def multiplicative_order(x):
+class _SupportsMultiplicativeOrder[O](Protocol):
+    def multiplicative_order(self) -> O: ...
+def multiplicative_order[O](x: _SupportsMultiplicativeOrder[O]) -> O:
     """
     Return the multiplicative order of ``x``, if ``x`` is a unit, or
     raise :exc:`ArithmeticError` otherwise.
@@ -1347,7 +1337,9 @@ def multiplicative_order(x):
         ...
         ArithmeticError: multiplicative order of 2 not defined since it is not a unit modulo 12
     """
-def ngens(x):
+class _SupportsNgens[N](Protocol):
+    def ngens(self) -> N: ...
+def ngens[N](x: _SupportsNgens[N]) -> N:
     """
     Return the number of generators of ``x``.
 
@@ -1363,7 +1355,9 @@ def ngens(x):
         sage: ngens(ZZ)
         1
     """
-def norm(x):
+class _SupportsNorm[N](Protocol):
+    def norm(self) -> N: ...
+def norm[N](x: _SupportsNorm[N]) -> N:
     '''
     Return the norm of ``x``.
 
@@ -1479,7 +1473,12 @@ def norm(x):
         True
         sage: forget()
     '''
-def numerator(x):
+class _SupportsNumerator[N](Protocol):
+    def numerator(self) -> N: ...
+@overload
+def numerator(x: int) -> int: ...
+@overload
+def numerator[N](x: _SupportsNumerator[N]) -> N:
     """
     Return the numerator of ``x``.
 
@@ -1493,7 +1492,36 @@ def numerator(x):
         sage: numerator(17/11111)
         17
     """
-def numerical_approx(x, prec=None, digits=None, algorithm=None):
+class _SupportsNumericalApprox[P, N](Protocol):
+    def numerical_approx(self, prec: P, algorithm = None) -> N: ...
+@overload
+def numerical_approx[P, N](
+    x: _SupportsNumericalApprox[P, N], prec: P = None, algorithm = None
+) -> N: ...
+@overload
+def numerical_approx[N](
+    x: _SupportsNumericalApprox[int, N], 
+    digits: SupportsFloat | None = None, 
+    algorithm = None
+) -> N: ...
+@overload
+def numerical_approx( # pyright: ignore[reportOverlappingOverload]
+    x: int | float | mpz | mpfr | _np_float | _np_integer, 
+    prec: _mpfr_prec_t
+) -> RealNumber: ...
+@overload
+def numerical_approx( # pyright: ignore[reportOverlappingOverload]
+    x: int | float | mpz | mpfr | _np_float | _np_integer, 
+    digits: SupportsFloat | None = None
+) -> RealNumber: ...
+@overload
+def numerical_approx(
+    x: complex | mpc, prec: _mpfr_prec_t
+) -> ComplexNumber: ...
+@overload
+def numerical_approx(
+    x: complex | mpc, digits: SupportsFloat | None =None
+) -> ComplexNumber:
     """
     Return a numerical approximation of ``self`` with ``prec`` bits
     (or decimal ``digits``) of precision.
@@ -1690,8 +1718,9 @@ def numerical_approx(x, prec=None, digits=None, algorithm=None):
     """
 n = numerical_approx
 N = numerical_approx
-
-def objgens(x):
+class _SupportsObjgens[G](Protocol):
+    def objgens(self) -> G: ...
+def objgens[G](x: _SupportsObjgens[G]) -> G:
     """
     EXAMPLES::
 
@@ -1701,7 +1730,9 @@ def objgens(x):
         sage: x
         (x0, x1, x2)
     """
-def objgen(x):
+class _SupportsObjgen[G](Protocol):
+    def objgen(self) -> G: ...
+def objgen[G](x: _SupportsObjgen[G]) -> G:
     """
     EXAMPLES::
 
@@ -1711,7 +1742,9 @@ def objgen(x):
         sage: x
         x
     """
-def order(x):
+class _SupportsOrder[O](Protocol):
+    def order(self) -> O: ...
+def order[O](x: _SupportsOrder[O]) -> O:
     """
     Return the order of ``x``.
 
@@ -1727,7 +1760,9 @@ def order(x):
         sage: order(F)
         7
     """
-def rank(x):
+class _SupportsRank[R](Protocol):
+    def rank(self) -> R: ...
+def rank[R](x: _SupportsRank[R]) -> R:
     """
     Return the rank of ``x``.
 
@@ -1746,7 +1781,9 @@ def rank(x):
         sage: rank(E)                                                                   # needs sage.schemes
         1
     """
-def regulator(x):
+class _SupportsRegulator[R](Protocol):
+    def regulator(self) -> R: ...
+def regulator[R](x: _SupportsRegulator[R]) -> R:
     """
     Return the regulator of ``x``.
 
@@ -1758,7 +1795,16 @@ def regulator(x):
         sage: regulator(EllipticCurve('11a'))                                           # needs sage.schemes
         1.00000000000000
     """
-def round(x, ndigits: int = 0):
+class _SupportsRound[R](Protocol):
+    def round(self) -> R: ...
+@overload
+def round[R](x: _SupportsRound[R]) -> R: ...
+@overload
+def round(x: SupportsRound[CoercibleToRDF]) -> RealDoubleElement: ...
+@overload
+def round(x: SupportsFloat, ndigits: SupportsIndex) -> RealDoubleElement: ...
+@overload
+def round(x: CoercibleToRDF, ndigits: SupportsIndex = 0) -> RealDoubleElement:
     """
     round(number[, ndigits]) - double-precision real number
 
@@ -1809,7 +1855,14 @@ def round(x, ndigits: int = 0):
         more work - i.e., allocating an RDF element and initializing it. To
         access the builtin version do ``import builtins; builtins.round``.
     """
-def quotient(x, y, *args, **kwds):
+class _SupportsQuotient[Y, **P, Q](Protocol):
+    def quotient(self, y: Y, *args: P.args, **kwds: P.kwargs) -> Q: ...
+@overload
+def quotient[Y, **P, Q](x: _SupportsQuotient[Y, P, Q], y: Y, *args: P.args, **kwds: P.kwargs) -> Q: ...
+@overload
+def quotient[Y, T](x: SupportsTruedivWith[Y, T], y: Y) -> T: ...
+@overload
+def quotient[X, T](x: X, y: SupportsRTruedivWith[X, T]) -> T:
     """
     Return the quotient object x/y, e.g., a quotient of numbers or of a
     polynomial ring x by the ideal generated by y, etc.
@@ -1827,8 +1880,18 @@ def quotient(x, y, *args, **kwds):
         Univariate Quotient Polynomial Ring in xbar over Integer Ring with modulus x^2 + 1
     """
 quo = quotient
-
-def isqrt(x):
+class _SupportsIsqrt[I](Protocol):
+     def isqrt(self) -> I: ...
+@overload
+def isqrt[I](x: _SupportsIsqrt[I]) -> I: ...
+@overload
+def isqrt(x: SupportsFloor[ConvertibleToInteger]) -> Integer: ...
+@overload
+def isqrt(
+    x: int | float | mpz | mpfr | CommutativePolynomial | ComplexNumber
+        | Expression[SymbolicRing] | ComplexDoubleElement
+        | ComplexIntervalFieldElement | _np_real,
+) -> Integer:
     """
     Return an integer square root, i.e., the floor of a square root.
 
@@ -1839,7 +1902,19 @@ def isqrt(x):
         sage: isqrt(10r)
         3
     """
-def squarefree_part(x):
+class _SupportsSquarefreePart[T](Protocol):
+    def squarefree_part(self) -> T: ...
+@overload
+def squarefree_part[T](x: _SupportsSquarefreePart[T]) -> T: ...
+# TODO: this should really be
+# `CoercibleToElement[_SupportsFactorIterable[tuple[SupportsModWith[int, Any], T]]]`
+# c.f. sage.structure.coerce.py_scalar_to_element
+@overload
+def squarefree_part(x: ConvertibleToInteger) -> Integer: ...
+@overload
+def squarefree_part[T: Multiplicable](x: _SupportsFactor[
+    Iterable[tuple[SupportsModWith[int, Any], T]]
+]) -> T:
     """
     Return the square free part of ``x``, i.e., a divisor
     `z` such that `x = z y^2`, for a perfect square
@@ -1873,7 +1948,29 @@ def squarefree_part(x):
         sage: g.factor()                                                                # needs sage.libs.pari
         (x - 1) * (x^3 + x + 1)
     """
-def sqrt(x, *args, **kwds):
+class _SupportsSqrt[**P, S](Protocol):
+    def sqrt(self, *args: P.args, **kwds: P.kwargs) -> S: ...
+@overload
+def sqrt(x: float) -> float: ...
+@overload
+def sqrt(x: _np_number) -> _np_float | _np_complex: ...
+@overload
+def sqrt[**P, S](x: _SupportsSqrt[P, S], *args: P.args, **kwds: P.kwargs) -> S: ...
+@overload
+def sqrt(
+    x: mpfr | mpz | str, prec: _mpfr_prec_t, all: Literal[True]
+) -> list[RealNumber | ComplexNumber]: ...
+@overload
+def sqrt(
+    x: mpfr | mpz | str, prec: _mpfr_prec_t, all: Literal[False] = False
+) -> RealNumber | ComplexNumber: ...
+@overload
+def sqrt(
+    x: mpfr | mpz | str, all: Literal[False] = False
+) -> Expression[SymbolicRing]: ...
+@overload
+def sqrt(
+    x: mpfr | mpz | str, all: Literal[True]) -> list[Expression[SymbolicRing]]:
     """
     INPUT:
 
@@ -1953,7 +2050,9 @@ def sqrt(x, *args, **kwds):
         sage: sqrt(a)                                                                   # needs numpy
         array([1.41421356, 1.73205081, 2.        ])
     """
-def transpose(x):
+class _SupportsTranspose[T](Protocol):
+    def transpose(self) -> T: ...
+def transpose[T](x: _SupportsTranspose[T]) -> T:
     """
     Return the transpose of ``x``.
 
