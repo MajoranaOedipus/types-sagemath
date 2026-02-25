@@ -448,15 +448,15 @@ class Function_log2(GinacFunction):
     ) -> Integer | UnsignedInfinity | MinusInfinity | Expression_[SymbolicRing]: ...
     @overload
     def __call__(
-        self: float, arg: float, base, /
+        self, arg: float, base: float, /
     ) -> float: ...
     @overload
     def __call__[T: RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement](
-        self: float, arg: T, base, /
+        self, arg: float, base: T, /
     ) -> T: ...
     @overload
     def __call__[T: RealNumber | RealDoubleElement | ComplexNumber | ComplexDoubleElement](
-        self: T, arg: float, base, /
+        self, arg: T, base: float, /
     ) -> T: ...
     @overload
     def __call__(
