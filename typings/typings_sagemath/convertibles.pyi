@@ -23,7 +23,7 @@ from sage.structure.factorization import Factorization
 from sage.structure.element import Matrix, RingElement
 from sage.symbolic.expression import Expression
 from sage.sets.real_set import InternalRealInterval, RealSet
-from sage.libs.mpmath.ext_main import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
+from sage.libs.mpmath.all import mpf as MpMathMpf, mpc as MpMathMpc
 from numpy import (
     integer as NumPyInteger, 
     floating as NumPyFloating, 

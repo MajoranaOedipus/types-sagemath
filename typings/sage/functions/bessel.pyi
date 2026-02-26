@@ -219,7 +219,7 @@ from sage.rings.complex_double import ComplexDoubleElement
 from sage.rings.complex_arb import ComplexBall
 from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.rational import Rational
-from sage.libs.mpmath.ext_main import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
+from sage.libs.mpmath.all import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
 
 type _py_number = int | float | complex
 type _MpfrSage = RealNumber | ComplexNumber

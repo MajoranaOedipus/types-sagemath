@@ -126,7 +126,7 @@ AUTHORS:
 from typings_sagemath import FiniteNum, Real
 from sage.rings.complex_mpfr import ComplexNumber
 from sage.misc.functional import sqrt as sqrt
-from sage.libs.mpmath.ext_main import mpf
+from sage.libs.mpmath.all import mpf
 from sage.rings.integer import Integer as Integer
 from sage.rings.integer_ring import ZZ as ZZ
 from sage.symbolic.function import BuiltinFunction as BuiltinFunction
