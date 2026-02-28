@@ -8920,7 +8920,7 @@ class Expression[P: SymbolicRingABC](sage.structure.element.Expression[P]):
             (1, 3*y, 3*x^3 + 1)
             sage: ex.unit_content_primitive(y)
             (1, 9*x^3 + 3, y)"""
-    def variables(self) -> tuple[Expression[SymbolicRing]]:
+    def variables(self) -> tuple[Expression[SymbolicRing], ...]:
         """
         Return sorted tuple of variables that occur in this expression.
 
