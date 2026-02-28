@@ -219,7 +219,7 @@ from sage.rings.complex_double import ComplexDoubleElement
 from sage.rings.complex_arb import ComplexBall
 from sage.rings.complex_interval import ComplexIntervalFieldElement
 from sage.rings.rational import Rational
-from sage.libs.mpmath.all import mpf as MpMathMpf, mpc as MpMathMpc, mpi as MpMathMpi
+from sage.libs.mpmath.all import mpf as MpMathMpf, mpc as MpMathMpc
 
 type _py_number = int | float | complex
 type _MpfrSage = RealNumber | ComplexNumber
@@ -230,7 +230,7 @@ type _MpfrDoubleSage = _RealMpfrDoubleSage | _ComplexMpfrDoubleSage
 type _BallMpfiSage = RealBall | RealIntervalFieldElement | ComplexBall | ComplexIntervalFieldElement
 type _inf = PlusInfinity | MinusInfinity | UnsignedInfinity
 type _inf_signed = PlusInfinity | MinusInfinity
-type _MpMathNumber = MpMathMpf | MpMathMpc | MpMathMpi
+type _MpMathNumber = MpMathMpf | MpMathMpc
 
 from sage.functions.gamma import gamma as gamma
 from sage.functions.hyperbolic import cosh as cosh, sinh as sinh

@@ -6,6 +6,10 @@ from sage.symbolic.ring import SymbolicRing
 from sage.rings.finite_rings.integer_mod import IntegerMod_int
 
 from sage.rings.imaginary_unit import NumberFieldElement_gaussian
+
+from sage.structure.parent import Parent
+
+from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
 from .numbers import Int, RealInexactSage, ComplexInexactSage
 from cypari2.gen import Gen
 from gmpy2 import mpc, mpz, mpfr
@@ -33,7 +37,7 @@ from numpy import (
 from sympy.core.basic import Basic as SymPyBasic
 
 type _py_number = int | float | complex
-type _MpMathNumber = MpMathMpf | MpMathMpc | MpMathMpi
+type _MpMathNumber = MpMathMpf | MpMathMpc
 type _signed_inf = PlusInfinity | MinusInfinity
 type _inf = _signed_inf | UnsignedInfinity
 
@@ -54,27 +58,17 @@ type ConvertibleToComplexNumber = (
 # c.f. symbolic.expression.new_Expression
 type ConvertibleToExpression = (
     Expression | str | float | complex | int
-        | RealNumber | RingElement | Matrix | Factorization 
+        | RealNumber | RingElement[Parent] | Matrix | Factorization 
         | PlusInfinity | MinusInfinity| UnsignedInfinity 
         | IntegerRing_class | AlgebraicField | RationalField 
         | NonNegativeIntegerSemiring 
     )
-
-# not completed, need to check
-#   (PolynomialRing_generic, MPolynomialRing_base, 
-#    FractionField_generic, LaurentPolynomialRing_generic)
-# elements
-# also (sage.rings.abc.RealIntervalField,
-#       sage.rings.abc.ComplexIntervalField,
-#       sage.rings.abc.RealBallField,
-#       sage.rings.abc.ComplexBallField,
-#       sage.rings.abc.IntegerModRing,
-#       FiniteField)
-# elements are all coercible to SR
 type CoercibleToExpression = (
     Expression | int | float | complex | bool
         | NumPyInteger | NumPyFloating | NumPyComplexFloating | SymPyBasic
         | RealInexactSage | ComplexInexactSage
+        | Integer | Rational | CommutativePolynomial
+        | _inf
 )
 type CoercibleToRealNumber = (
     Int | str | float | mpfr | NumPyFloating | RealInexactSage | OrderElement_quadratic
