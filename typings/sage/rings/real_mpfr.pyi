@@ -118,7 +118,7 @@ from typings_sagemath import (
     CoercibleToRealNumber,
     ConvertibleToInteger
 )
-from sage.rings.abc import RealField as RealFieldABC
+from sage.rings.abc import RealField as RealFieldABC, SymbolicRing as SymbolicRingABC
 from sage.rings.integer import Integer
 from sage.rings.rational_field import RationalField
 from sage.rings.rational import Rational
@@ -129,7 +129,7 @@ from sage.rings.number_field.number_field_element_quadratic import OrderElement_
 from sage.rings.polynomial.commutative_polynomial import CommutativePolynomial
 from sage.rings.real_mpfi import RealIntervalFieldElement
 from sage.rings.fraction_field_element import FractionFieldElement
-from sage.rings.infinity import PlusInfinity
+from sage.rings.infinity import MinusInfinity, PlusInfinity, UnsignedInfinity
 from sage.symbolic.expression import Expression
 from sage.categories.pushout import CompletionFunctor
 from sage.categories.map import Map
@@ -155,6 +155,8 @@ from sage.libs.pari.convert_sage_real_mpfr import new_gen_from_real_mpfr_element
 from sage.structure.element import have_same_parent as have_same_parent, parent as parent
 from sage.structure.richcmp import revop as revop, rich_to_bool as rich_to_bool, rich_to_bool_sgn as rich_to_bool_sgn, richcmp as richcmp, richcmp_not_equal as richcmp_not_equal
 
+from sage.rings.imaginary_unit import NumberFieldElement_gaussian
+
 type _NotUsed = object
 type _int = SupportsInt
 type _long = SupportsInt
@@ -165,6 +167,8 @@ type _pynumber = int | float | complex
 type _NumPyRealNotLongdouble = NumPyFloat64 | NumPyFloat32 | NumPyFloat16
 type _NumPyNotLongdouble = _NumPyRealNotLongdouble | NumPyComplex | NumPyInteger
 type _Zero = Annotated[Integer, Integer(0)]
+type _inf = PlusInfinity | MinusInfinity | UnsignedInfinity
+type _signed_inf = PlusInfinity | MinusInfinity
 
 def mpfr_prec_min() -> int:
     """
@@ -3068,19 +3072,19 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             1.64493406684823"""
 
     @overload
-    def __add__[
-        T: NumPyFloating |  RealIntervalFieldElement | mpfr 
-            | complex | mpc | NumPyComplex | ComplexDoubleElement | ComplexNumber 
-            | CommutativePolynomial | Expression
-    ](self, right: T) -> T: ...
-    @overload
-    def __add__(self, right: mpz) -> mpfr: ...
-    @overload
     def __add__(
         self, 
         right: int | float | RealNumber | RealDoubleElement | Rational
-            | OrderElement_quadratic
-    ) -> RealNumber:
+            | OrderElement_quadratic  | Integer | NumPyInteger, /
+    ) -> RealNumber: ...
+    @overload
+    def __add__[
+        T: NumPyFloating |  RealIntervalFieldElement | mpfr 
+            | complex | mpc | NumPyComplex | ComplexDoubleElement | ComplexNumber 
+            | CommutativePolynomial | Expression | _inf
+    ](self, right: T, /) -> T: ...
+    @overload
+    def __add__(self, right: mpz, /) -> mpfr:
         """
         TESTS::
 
@@ -3091,29 +3095,31 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             2
             sage: import warnings; warnings.resetwarnings()"""
     @overload
-    def __radd__[T: mpfr | complex | mpc](self, left: T) -> T: ...
+    def __radd__(self, left: int | float, /) -> RealNumber: ...
     @overload
-    def __radd__(self, left: NumPyComplex) -> NumPyComplex128: ...
+    def __radd__[T: mpfr | complex | mpc](self, left: T, /) -> T: ...
     @overload
-    def __radd__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
+    def __radd__(self, left: NumPyComplex, /) -> NumPyComplex128: ...
     @overload
-    def __radd__(
-        self, left: int | float | Integer | Rational | RealNumber
+    def __radd__(self, left: _NumPyRealNotLongdouble, /) -> NumPyFloat64: ...
+    @overload
+    def __sub__(
+        self, 
+        right: int | float | RealNumber | RealDoubleElement | Rational
+            | OrderElement_quadratic | Integer | NumPyInteger, /
     ) -> RealNumber: ...
     @overload
     def __sub__[
         T: NumPyFloating |  RealIntervalFieldElement | mpfr 
             | complex | mpc | NumPyComplex | ComplexDoubleElement | ComplexNumber 
-            | CommutativePolynomial | Expression
-    ](self, right: T) -> T: ...
+            | CommutativePolynomial | Expression | UnsignedInfinity
+    ](self, right: T, /) -> T: ...
     @overload
-    def __sub__(self, right: mpz) -> mpfr: ...
+    def __sub__(self, right: PlusInfinity, /) -> MinusInfinity: ...
     @overload
-    def __sub__(
-        self, 
-        right: int | float | RealNumber | RealDoubleElement | Rational
-            | OrderElement_quadratic
-    ) -> RealNumber:
+    def __sub__(self, right: MinusInfinity, /) -> PlusInfinity: ...
+    @overload
+    def __sub__(self, right: mpz, /) -> mpfr:
         """
         TESTS::
 
@@ -3124,27 +3130,27 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             1
             sage: import warnings; warnings.resetwarnings()"""
     @overload
-    def __rsub__[T: mpfr | complex | mpc](self, left: T) -> T: ...
+    def __rsub__(self, left: int | float, /) -> RealNumber: ...
     @overload
-    def __rsub__(self, left: NumPyComplex) -> NumPyComplex128: ...
+    def __rsub__[T: mpfr | complex | mpc](self, left: T, /) -> T: ...
     @overload
-    def __rsub__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
+    def __rsub__(self, left: NumPyComplex, /) -> NumPyComplex128: ...
     @overload
-    def __rsub__(
-        self, left: int | float | Integer | Rational | RealNumber
+    def __rsub__(self, left: _NumPyRealNotLongdouble, /) -> NumPyFloat64: ...
+    @overload
+    def __mul__(
+        self, 
+        right: int | float | RealNumber | RealDoubleElement | Rational
+            | OrderElement_quadratic | mpz | Integer | NumPyInteger, /
     ) -> RealNumber: ...
+    @overload
+    def __mul__(self, right: _signed_inf, /) -> _signed_inf: ...
     @overload
     def __mul__[
         T: NumPyFloating |  RealIntervalFieldElement | mpfr 
             | complex | mpc | NumPyComplex | ComplexDoubleElement | ComplexNumber 
             | CommutativePolynomial | Expression
-    ](self, right: T) -> T: ...
-    @overload
-    def __mul__(
-        self, 
-        right: int | float | RealNumber | RealDoubleElement | Rational
-            | OrderElement_quadratic | mpz
-    ) -> RealNumber:
+    ](self, right: T, /) -> T: 
         """
         TESTS::
 
@@ -3155,29 +3161,29 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             1
             sage: import warnings; warnings.resetwarnings()"""
     @overload
-    def __rmul__[T: mpfr | complex | mpc](self, left: T) -> T: ...
+    def __rmul__(self, left: int | float, /) -> RealNumber: ...
     @overload
-    def __rmul__(self, left: NumPyComplex) -> NumPyComplex128: ...
+    def __rmul__[T: mpfr | complex | mpc](self, left: T, /) -> T: ...
     @overload
-    def __rmul__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
+    def __rmul__(self, left: NumPyComplex, /) -> NumPyComplex128: ...
     @overload
-    def __rmul__(
-        self, left: int | float | Integer | Rational | RealNumber
+    def __rmul__(self, left: _NumPyRealNotLongdouble, /) -> NumPyFloat64: ...
+    @overload
+    def __truediv__(
+        self, 
+        right: int | float | RealNumber | RealDoubleElement | Rational
+            | OrderElement_quadratic | mpz | Integer | NumPyInteger, /
     ) -> RealNumber: ...
     @overload
     def __truediv__[
         T: NumPyFloating |  RealIntervalFieldElement | mpfr 
             | complex | mpc | NumPyComplex | ComplexDoubleElement | ComplexNumber 
             |  Expression
-    ](self, right: T) -> T: ...
+    ](self, right: T, /) -> T: ...
     @overload
-    def __truediv__(self, right: CommutativePolynomial) -> FractionFieldElement: ...
+    def __truediv__(self, right: _inf, /) -> _Zero: ...
     @overload
-    def __truediv__(
-        self, 
-        right: int | float | RealNumber | RealDoubleElement | Rational
-            | OrderElement_quadratic | mpz
-    ) -> RealNumber:
+    def __truediv__(self, right: CommutativePolynomial, /) -> FractionFieldElement:
         """
         TESTS::
 
@@ -3188,26 +3194,30 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             2
             sage: import warnings; warnings.resetwarnings()"""
     @overload
-    def __rtruediv__[T: mpfr | complex | mpc](self, left: T) -> T: ...
+    def __rtruediv__(self, left: int | float, /) -> RealNumber: ...
     @overload
-    def __rtruediv__(self, left: NumPyComplex) -> NumPyComplex128: ...
+    def __rtruediv__[T: mpfr | complex | mpc](self, left: T, /) -> T: ...
     @overload
-    def __rtruediv__(self, left: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
+    def __rtruediv__(self, left: NumPyComplex, /) -> NumPyComplex128: ...
     @overload
-    def __rtruediv__(
-        self, left: int | float | Integer | Rational | RealNumber
-    ) -> RealNumber: ...
+    def __rtruediv__(self, left: _NumPyRealNotLongdouble, /) -> NumPyFloat64: ...
+    @overload
+    def __pow__(self, exponent: Int, modulus: _NotUsed = None, /) -> RealNumber: ...
+    @overload
+    def __pow__(
+        self, 
+        exponent: float | Rational | RealNumber | RealDoubleElement | OrderElement_quadratic,
+        modulus: _NotUsed = None, / 
+    ) -> RealNumber | ComplexNumber: ...
+    @overload
+    def __pow__(
+        self, exponent: NumberFieldElement_gaussian, modulus: _NotUsed = None, /
+    ) -> ComplexNumber: ...
     @overload
     def __pow__[
         T: complex | mpfr | mpc | NumPyFloating | NumPyComplex
         | Expression | ComplexNumber | ComplexDoubleElement
-    ](self, exponent: T, modulus: _NotUsed = None) -> T: ...
-    @overload
-    def __pow__(
-        self, 
-        exponent: float | Int | RealNumber | RealDoubleElement | Rational, 
-        modulus: _NotUsed = None
-    ) -> RealNumber:
+    ](self, exponent: T, modulus: _NotUsed = None, /) -> T: 
         """
         Compute ``self`` raised to the power of exponent, rounded in the
         direction specified by the parent of ``self``.
@@ -3258,18 +3268,16 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             sage: int(0)^(0.0)
             1.00000000000000"""
     @overload
-    def __rpow__[T: complex | mpfr | mpc](self, base: T) -> T: ...
+    def __rpow__(self, base: float | int, /) -> RealNumber: ...
     @overload
-    def __rpow__(self, base: mpz) -> mpfr: ...
+    def __rpow__[T: complex | mpfr | mpc](self, base: T, /) -> T: ...
     @overload
-    def __rpow__(self, base: _NumPyRealNotLongdouble) -> NumPyFloat64: ...
+    def __rpow__(self, base: mpz, /) -> mpfr: ...
     @overload
-    def __rpow__(self, base: NumPyComplex) -> NumPyComplex128: ...
+    def __rpow__(self, base: _NumPyRealNotLongdouble, /) -> NumPyFloat64: ...
     @overload
-    def __rpow__(
-        self, 
-        base: float | int 
-    ) -> RealNumber: ...
+    def __rpow__(self, base: NumPyComplex, /) -> NumPyComplex128: ...
+    
     
     def __abs__(self) -> RealNumber:
         """
@@ -3492,7 +3500,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             2.10000000000000
         """
     
-    def __lshift__(self, y: ConvertibleToInteger) -> RealNumber:
+    def __lshift__(self, y: ConvertibleToInteger, /) -> RealNumber:
         """
         Return ``self * (2^n)`` for an integer ``n``.
 
@@ -3513,7 +3521,7 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             TypeError: unsupported operands for <<
             sage: 1.5 << -2
             0.375000000000000"""
-    def __rshift__(self, y: ConvertibleToInteger) -> RealNumber:
+    def __rshift__(self, y: ConvertibleToInteger, /) -> RealNumber:
         """
         Return ``self / (2^n)`` for an integer ``n``.
 
@@ -3532,29 +3540,53 @@ class RealNumber(sage.structure.element.RingElement[RealField_class]):
             6.00000000000000"""
     
     @overload
-    def __eq__(self, other: Expression) -> Expression: ...
+    def __eq__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __eq__(self, other: object) -> bool: ...
+    def __eq__(self, other: object, /) -> bool: ...
     @overload
-    def __ne__(self, other: Expression) -> Expression: ...
+    def __ne__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __ne__(self, other: object) -> bool: ...
+    def __ne__(self, other: object, /) -> bool: ...
     @overload
-    def __ge__(self, other: Expression) -> Expression: ...
+    def __ge__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __ge__(self, other: int | float | mpfr | NumPyNumber) -> bool: ...
+    def __ge__(
+        self, 
+        other: int | float | mpfr | NumPyNumber | Integer | Rational
+            | CommutativePolynomial | OrderElement_quadratic
+            | RealNumber | RealDoubleElement | ComplexNumber
+            | ComplexDoubleElement | NumberFieldElement_gaussian | _inf, /
+    ) -> bool: ...
     @overload
-    def __gt__(self, other: Expression) -> Expression: ...
+    def __gt__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __gt__(self, other: int | float | mpfr | NumPyNumber) -> bool: ...
+    def __gt__(
+        self, 
+        other: int | float | mpfr | NumPyNumber | Integer | Rational
+            | CommutativePolynomial | OrderElement_quadratic
+            | RealNumber | RealDoubleElement | ComplexNumber
+            | ComplexDoubleElement | NumberFieldElement_gaussian | _inf, /
+    ) -> bool: ...
     @overload
-    def __le__(self, other: Expression) -> Expression: ...
+    def __le__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __le__(self, other: int | float | mpfr | NumPyNumber) -> bool: ...
+    def __le__(
+        self, 
+        other: int | float | mpfr | NumPyNumber | Integer | Rational
+            | CommutativePolynomial | OrderElement_quadratic
+            | RealNumber | RealDoubleElement | ComplexNumber
+            | ComplexDoubleElement | NumberFieldElement_gaussian | _inf, /
+    ) -> bool: ...
     @overload
-    def __lt__(self, other: Expression) -> Expression: ...
+    def __lt__[R: SymbolicRingABC](self, other: Expression[R], /) -> Expression[R]: ...
     @overload
-    def __lt__(self, other: int | float | mpfr | NumPyNumber) -> bool: ...
+    def __lt__(
+        self, 
+        other: int | float | mpfr | NumPyNumber | Integer | Rational
+            | CommutativePolynomial | OrderElement_quadratic
+            | RealNumber | RealDoubleElement | ComplexNumber
+            | ComplexDoubleElement | NumberFieldElement_gaussian | _inf, /
+    ) -> bool: ...
 
 class RealLiteral(RealNumber):
     """
